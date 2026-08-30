@@ -1,0 +1,19 @@
+{
+  "name": "infernal-fechtschule-vertical-slice",
+  "version": "0.1.1",
+  "private": true,
+  "type": "module",
+  "description": "Mobile-first historical fencing horde-brawler vertical slice set on Meyer’s journey into Italy.",
+  "scripts": {
+    "build": "tsc -p tsconfig.json && node tools/write-service-worker.mjs",
+    "start": "node tools/serve.mjs",
+    "test": "npm run build && node --test tests/*.test.mjs",
+    "check": "npm run test"
+  },
+  "devDependencies": {
+    "typescript": "5.8.3"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

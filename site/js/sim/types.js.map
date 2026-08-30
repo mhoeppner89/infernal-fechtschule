@@ -1,0 +1,1 @@
+{"version":3,"file":"types.js","sourceRoot":"","sources":["../../../src/sim/types.ts"],"names":[],"mappings":"AA0CA,MAAM,CAAC,MAAM,aAAa,GAAyB,MAAM,CAAC,MAAM,CAAC;IAC/D,KAAK,EAAE,CAAC;IACR,KAAK,EAAE,CAAC;IACR,YAAY,EAAE,KAAK;IACnB,YAAY,EAAE,KAAK;IACnB,eAAe,EAAE,KAAK;IACtB,aAAa,EAAE,KAAK;IACpB,SAAS,EAAE,KAAK;IAChB,YAAY,EAAE,KAAK;CACpB,CAAC,CAAC"}

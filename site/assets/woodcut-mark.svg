@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 150" role="img" aria-labelledby="title desc">
+  <title id="title">Infernal Fechtschule mark</title>
+  <desc id="desc">Crossed sword and dussack above a road winding south through hills toward a castle.</desc>
+  <g fill="none" stroke="#2b211c" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M6 118 Q62 62 116 110" fill="#d7c79f" stroke-width="7"/>
+    <path d="M234 118 Q178 56 124 110" fill="#d7c79f" stroke-width="7"/>
+    <path d="M104 146 Q122 128 106 112 Q92 98 116 82 Q140 68 124 52" stroke="#b99450" stroke-width="5" stroke-dasharray="3 9"/>
+    <path d="M182 92 L182 46 L196 46 L196 92" stroke-width="6"/>
+    <path d="M177 46 L201 46" stroke-width="5"/>
+    <path d="M177 46 L184 36 L194 36 L201 46" stroke-width="4"/>
+    <path d="M42 125 L186 8" stroke-width="10"/>
+    <path d="M55 137 L198 20" stroke="#b99450" stroke-width="5"/>
+    <path d="M193 12 L207 2 L202 20" fill="#2b211c" stroke-width="4"/>
+    <path d="M198 125 Q117 85 47 9" stroke-width="10"/>
+    <path d="M185 137 Q114 96 35 20" stroke="#b99450" stroke-width="5"/>
+    <path d="M35 14 Q27 4 21 12 Q28 29 43 30" fill="#2b211c" stroke-width="4"/>
+  </g>
+</svg>

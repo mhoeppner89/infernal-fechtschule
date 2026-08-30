@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#241b18">
+  <meta name="description" content="A mobile-first historical fencing horde-brawler vertical slice starring Joachim Meyer.">
+  <title>The Infernal Fechtschule — Vertical Slice</title>
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./icons/icon-192.png">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body data-mode="title">
+  <main id="app" aria-label="The Infernal Fechtschule game">
+    <canvas id="game-canvas" aria-label="Game arena"></canvas>
+
+    <section id="title-screen" class="overlay title-screen">
+      <div class="title-panel manuscript-panel">
+        <img class="title-mark" src="./assets/woodcut-mark.svg" alt="Crossed fencing weapons above the road to Italy">
+        <p class="eyebrow">A HISTORICAL-ARCADE HORDE BRAWLER</p>
+        <h1>THE INFERNAL<br><span>FECHTSCHULE</span></h1>
+        <p class="title-copy">
+          Joachim Meyer crosses the Alps to seek out the Italian masters. Change between
+          longsword and dussack, chain short signature combinations, and cut a road through
+          streets, gatehouses, fencing halls, and castle courts.
+        </p>
+        <div class="title-actions">
+          <button id="start-solo" class="primary-button">Begin Meyer’s Italian Journey</button>
+          <button id="open-network" class="secondary-button">Two-phone Co-op Lab</button>
+        </div>
+        <div class="setup-row">
+          <button id="enable-tilt" class="text-button">Enable tilt</button>
+          <button id="recenter-tilt" class="text-button">Recenter</button>
+          <span id="tilt-status">Virtual stick and keyboard are ready.</span>
+        </div>
+        <details class="controls-primer">
+          <summary>Controls and signature routes</summary>
+          <div class="primer-grid">
+            <div><strong>Move</strong><span>Tilt, virtual stick, WASD, or arrows</span></div>
+            <div><strong>Light</strong><span>J / Z</span></div>
+            <div><strong>Heavy</strong><span>K / X</span></div>
+            <div><strong>Jump / Dodge</strong><span>L / C</span></div>
+            <div><strong>Guard / Parry</strong><span>I / V / Shift</span></div>
+            <div><strong>Switch weapon</strong><span>U / Space</span></div>
+          </div>
+          <p>Try Light → Light → Heavy, Heavy → Light, Dodge → Light, and Parry → Heavy.</p>
+        </details>
+        <p class="prototype-note">Original procedural placeholder art. No Little Fighter 2 assets or code are used.</p>
+      </div>
+    </section>
+
+    <section id="game-hud" class="game-hud is-hidden" aria-live="polite">
+      <div class="player-hud hud-panel">
+        <div class="hud-heading">
+          <strong id="player-name">Joachim Meyer</strong>
+          <span id="weapon-name">LONGSWORD</span>
+        </div>
+        <div class="bar-row">
+          <span>Health</span>
+          <div class="bar health-bar"><i id="health-fill"></i></div>
+          <small id="health-number">110 / 110</small>
+        </div>
+        <div class="bar-row">
+          <span>Guard</span>
+          <div class="bar guard-bar"><i id="guard-fill"></i></div>
+          <small id="guard-number">72 / 72</small>
+        </div>
+      </div>
+
+      <div class="wave-hud hud-panel">
+        <span id="wave-label">PREPARE</span>
+        <strong id="wave-title">Meyer Crosses the Alps</strong>
+      </div>
+
+      <div class="meta-hud hud-panel">
+        <span>SCORE</span>
+        <strong id="score-value">0</strong>
+      </div>
+
+      <div class="doctrine" aria-label="Meyer doctrine: Provoke, Take, Hit">
+        <span id="doctrine-provoke">PROVOKE</span>
+        <i>›</i>
+        <span id="doctrine-take">TAKE</span>
+        <i>›</i>
+        <span id="doctrine-hit">HIT</span>
+      </div>
+
+      <div id="boss-hud" class="boss-hud is-hidden">
+        <strong id="boss-name">The Bound Grotesque</strong>
+        <div class="bar boss-bar"><i id="boss-health-fill"></i></div>
+      </div>
+
+      <div id="combo-count" class="combo-count"></div>
+      <button id="pause-button" class="pause-button" aria-label="Pause">Ⅱ</button>
+    </section>
+
+    <section id="touch-controls" class="touch-controls is-hidden" aria-label="Touch controls">
+      <div class="joystick" data-control="joystick" aria-label="Virtual movement stick">
+        <div class="joystick-runes">✥</div>
+        <div class="joystick-knob" data-control="joystick-knob"></div>
+      </div>
+      <div class="action-cluster">
+        <button class="action-button mobility" data-button="mobility" aria-label="Jump or dodge"><b>↗</b><span>MOVE</span></button>
+        <button class="action-button light" data-button="light" aria-label="Light attack"><b>L</b><span>LIGHT</span></button>
+        <button class="action-button heavy" data-button="heavy" aria-label="Heavy attack"><b>H</b><span>HEAVY</span></button>
+        <button class="action-button guard" data-button="guard" aria-label="Block or parry"><b>◇</b><span>GUARD</span></button>
+        <button class="switch-button" data-button="switch" aria-label="Switch weapon"><b>⇄</b><span>WEAPON</span></button>
+      </div>
+    </section>
+
+    <section id="banner" class="banner is-hidden" aria-live="assertive">
+      <span id="banner-title"></span>
+      <small id="banner-subtitle"></small>
+    </section>
+
+    <section id="upgrade-overlay" class="overlay modal-overlay is-hidden">
+      <div class="lesson-panel manuscript-panel">
+        <p class="eyebrow">CHOOSE ONE LESSON</p>
+        <h2>Lessons of the Road</h2>
+        <p>Lessons alter moves and routes. They expire when the run ends.</p>
+        <div id="upgrade-cards" class="lesson-cards"></div>
+        <p id="lesson-waiting" class="waiting-note is-hidden">The host is choosing the shared co-op lesson.</p>
+      </div>
+    </section>
+
+    <section id="end-overlay" class="overlay modal-overlay is-hidden" data-outcome="victory">
+      <div class="end-panel manuscript-panel">
+        <p class="eyebrow">RUN COMPLETE</p>
+        <h2 id="end-title">THE JOURNEY CONTINUES</h2>
+        <p id="end-copy">A name echoes across the castle court.</p>
+        <div class="end-actions">
+          <button id="end-restart" class="primary-button">Fence the Road Again</button>
+          <button id="end-title-button" class="secondary-button">Return to Title</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="pause-overlay" class="overlay modal-overlay is-hidden">
+      <div class="pause-panel manuscript-panel">
+        <p class="eyebrow">PAUSED</p>
+        <h2>The Road Waits</h2>
+        <div class="pause-actions">
+          <button id="resume-button" class="primary-button">Resume</button>
+          <button id="restart-button" class="secondary-button">Restart Run</button>
+          <button id="pause-title-button" class="text-button">Return to Title</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="network-overlay" class="overlay modal-overlay is-hidden">
+      <div class="network-panel manuscript-panel">
+        <button id="close-network" class="modal-close" aria-label="Close network setup">×</button>
+        <p class="eyebrow">EXPERIMENTAL WEBRTC CO-OP</p>
+        <h2>Pair Two Phones</h2>
+        <p class="network-intro">
+          Use the same Wi-Fi or a phone hotspot. Pairing is manual in this slice so the GitHub Pages build needs no signaling server.
+          Exchange the tokens through a message, email, or nearby-share tool.
+        </p>
+        <div class="network-tabs">
+          <button class="is-active" data-network-tab="host">Host</button>
+          <button data-network-tab="guest">Guest</button>
+        </div>
+
+        <div data-network-panel="host" class="network-flow">
+          <ol>
+            <li>Create an invitation and send it to the guest.</li>
+            <li>Paste the guest’s answer below.</li>
+            <li>Start when the connection indicator turns ready.</li>
+          </ol>
+          <button id="host-generate" class="secondary-button">Create Host Invitation</button>
+          <label>Host invitation
+            <textarea id="host-offer" spellcheck="false" readonly></textarea>
+          </label>
+          <button class="text-button copy-button" data-copy-target="host-offer">Copy</button>
+          <label>Guest answer
+            <textarea id="host-answer" spellcheck="false"></textarea>
+          </label>
+          <button id="host-apply-answer" class="secondary-button">Apply Guest Answer</button>
+          <button id="host-start" class="primary-button" disabled>Start Two-player Run</button>
+        </div>
+
+        <div data-network-panel="guest" class="network-flow is-hidden">
+          <ol>
+            <li>Paste the host invitation.</li>
+            <li>Create an answer and return it to the host.</li>
+            <li>The game starts when the host begins the run.</li>
+          </ol>
+          <label>Host invitation
+            <textarea id="guest-offer" spellcheck="false"></textarea>
+          </label>
+          <button id="guest-generate-answer" class="secondary-button">Create Guest Answer</button>
+          <label>Guest answer
+            <textarea id="guest-answer" spellcheck="false" readonly></textarea>
+          </label>
+          <button class="text-button copy-button" data-copy-target="guest-answer">Copy</button>
+        </div>
+        <p id="network-status" class="network-status">No peer connection.</p>
+      </div>
+    </section>
+
+    <section class="rotate-overlay" aria-live="polite">
+      <div>
+        <strong>Rotate the phone</strong>
+        <span>The arena is designed for landscape play.</span>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="./js/main.js"></script>
+</body>
+</html>
