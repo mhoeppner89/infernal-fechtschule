@@ -2,11 +2,15 @@ import { AudioEngine } from '../audio/audio.js';
 import { InputHub } from '../input/input.js';
 import { ManualPeerSession } from '../network/manual-peer.js';
 import { CanvasRenderer } from '../render/canvas-renderer.js';
+import { ATTACKS } from '../sim/attacks.js';
 import { WAVES } from '../sim/waves.js';
 import { GameWorld } from '../sim/world.js';
-import { NEUTRAL_INPUT } from '../sim/types.js';
+import { GAME_SNAPSHOT_VERSION, NEUTRAL_INPUT } from '../sim/types.js';
 import { GameUI } from '../ui/ui.js';
 const FIXED_STEP = 1 / 60;
+const GUEST_SNAPSHOT_PERIOD = 1 / 20;
+const MAX_GUEST_SNAPSHOT_PERIOD = 0.15;
+const CONTINUOUS_ANIMATION_STATES = new Set(['idle', 'move', 'block', 'crouch']);
 export class GameController {
     renderer;
     ui = new GameUI();
@@ -15,6 +19,10 @@ export class GameController {
     peer = new ManualPeerSession();
     world = null;
     guestSnapshot = null;
+    guestPreviousSnapshot = null;
+    guestPresentedSnapshot = null;
+    guestPresentationElapsed = 0;
+    guestSnapshotPeriod = GUEST_SNAPSHOT_PERIOD;
     mode = 'title';
     paused = false;
     running = false;
@@ -27,20 +35,87 @@ export class GameController {
     lastRemoteAt = 0;
     localPlayerIndex = 0;
     lastUiPhase = '';
+    manualClock = false;
     constructor(canvas, controlRoot) {
         const debug = new URLSearchParams(location.search).has('debug');
         this.renderer = new CanvasRenderer(canvas, debug);
         this.input = new InputHub(controlRoot);
         this.bindUi();
         this.bindPeer();
+        this.bindPauseKeys();
         this.renderTitleBackdrop();
         const params = new URLSearchParams(location.search);
         if (params.get('autostart') === '1') {
-            window.setTimeout(() => this.startSolo(params.get('skipCountdown') === '1'), 60);
+            // Automated captures do not have a user gesture, so Web Audio cannot
+            // resume. Muting keeps the deterministic browser hook from stalling.
+            this.audio.setMuted(true);
+            const seedParam = params.get('seed');
+            const requestedSeed = seedParam === null ? Number.NaN : Number(seedParam);
+            const seed = Number.isInteger(requestedSeed) ? requestedSeed : undefined;
+            window.setTimeout(() => this.startSolo(params.get('skipCountdown') === '1', seed), 60);
         }
     }
     getSnapshot() {
-        return this.mode === 'guest' ? this.guestSnapshot : this.world?.snapshot() ?? null;
+        return this.mode === 'guest'
+            ? this.guestPresentedSnapshot ?? this.guestSnapshot
+            : this.world?.snapshot() ?? null;
+    }
+    advanceTime(milliseconds) {
+        this.manualClock = true;
+        const steps = Math.max(1, Math.min(600, Math.round(Math.max(0, milliseconds) / (FIXED_STEP * 1000))));
+        for (let index = 0; index < steps; index += 1) {
+            const sampled = this.input.sample(FIXED_STEP);
+            this.mergeIntoPending(this.pendingLocal, sampled);
+            if (!this.paused) {
+                if (this.mode === 'guest')
+                    this.updateGuest(FIXED_STEP, sampled);
+                else
+                    this.updateAuthority(FIXED_STEP);
+            }
+            // Render every fixed step. Besides making captures match the real 60 Hz
+            // presentation, this advances sparks, hit flashes, and damage text at the
+            // same rate as combat instead of leaving them frozen across long probes.
+            this.renderCurrentSnapshot(this.paused ? 0 : FIXED_STEP);
+        }
+    }
+    renderGameToText() {
+        const snapshot = this.getSnapshot();
+        if (!snapshot)
+            return JSON.stringify({ mode: this.mode, phase: 'title' });
+        return JSON.stringify({
+            coordinates: 'origin top-left; x increases right; z increases downstage',
+            mode: this.mode,
+            paused: this.paused,
+            phase: snapshot.phase,
+            tick: snapshot.tick,
+            time: Number(snapshot.time.toFixed(3)),
+            wave: { index: snapshot.waveIndex, title: snapshot.waveTitle, bossPhase: snapshot.bossPhase },
+            score: snapshot.score,
+            animationAssets: this.renderer.getAnimationReadiness(),
+            backgroundAssets: this.renderer.getBackgroundReadiness(),
+            actors: snapshot.actors.filter((actor) => actor.state !== 'dead' || actor.deathTimer < actor.stateDuration).map((actor) => ({
+                id: actor.id,
+                team: actor.team,
+                archetype: actor.archetype,
+                x: Math.round(actor.x),
+                z: Math.round(actor.z),
+                facing: actor.facing,
+                health: Math.round(actor.health),
+                guard: Math.round(actor.guard),
+                armor: Math.round(actor.armor),
+                state: actor.state,
+                crouching: actor.state === 'crouch' || (actor.state === 'attack' &&
+                    actor.attackId !== null &&
+                    ATTACKS[actor.attackId]?.crouchedPosture === true),
+                stateElapsed: Number(actor.stateElapsed.toFixed(3)),
+                weapon: actor.weapon,
+                attackId: actor.attackId,
+                hitZone: actor.attackId ? ATTACKS[actor.attackId]?.hitZone ?? null : null,
+                attackElapsed: Number(actor.attackElapsed.toFixed(3)),
+                reactionZone: actor.reactionZone,
+                comboCount: actor.comboCount
+            }))
+        });
     }
     bindUi() {
         this.ui.bind({
@@ -63,12 +138,26 @@ export class GameController {
         this.peer.onClose = () => this.ui.setPeerConnected(false);
         this.peer.onMessage = (message) => this.handlePeerMessage(message);
     }
-    async startSolo(skipCountdown) {
+    /** Escape toggles pause once a run exists, matching the documented control. */
+    bindPauseKeys() {
+        window.addEventListener('keydown', (event) => {
+            if (event.code !== 'Escape' || event.repeat)
+                return;
+            event.preventDefault();
+            this.togglePause();
+        });
+    }
+    async startSolo(skipCountdown, seed) {
         await this.audio.unlock();
         this.mode = 'solo';
         this.localPlayerIndex = 0;
-        this.world = new GameWorld({ playerCount: 1, seed: Date.now() & 0x7fffffff, skipCountdown });
+        this.world = new GameWorld({
+            playerCount: 1,
+            seed: seed ?? (Date.now() & 0x7fffffff),
+            skipCountdown
+        });
         this.guestSnapshot = null;
+        this.resetGuestPresentation();
         this.startRunLoop();
     }
     async startHostRun() {
@@ -82,6 +171,7 @@ export class GameController {
         this.localPlayerIndex = 0;
         this.world = new GameWorld({ playerCount: 2, seed });
         this.guestSnapshot = null;
+        this.resetGuestPresentation();
         this.peer.send({ type: 'start', seed });
         this.startRunLoop();
     }
@@ -91,6 +181,7 @@ export class GameController {
         this.localPlayerIndex = 1;
         this.world = null;
         this.guestSnapshot = null;
+        this.resetGuestPresentation();
         this.startRunLoop();
         this.ui.setNetworkStatus(`Co-op run started (seed ${seed}).`);
     }
@@ -115,21 +206,28 @@ export class GameController {
             return;
         const dt = Math.min(0.05, Math.max(0, (now - this.lastFrameTime) / 1000));
         this.lastFrameTime = now;
-        const sampled = this.input.sample(dt || FIXED_STEP);
-        this.mergeIntoPending(this.pendingLocal, sampled);
-        if (!this.paused) {
-            if (this.mode === 'guest')
-                this.updateGuest(dt, sampled);
-            else
-                this.updateAuthority(dt);
+        if (!this.manualClock) {
+            const sampled = this.input.sample(dt || FIXED_STEP);
+            this.mergeIntoPending(this.pendingLocal, sampled);
+            if (!this.paused) {
+                if (this.mode === 'guest')
+                    this.updateGuest(dt, sampled);
+                else
+                    this.updateAuthority(dt);
+            }
         }
-        const snapshot = this.getSnapshot();
-        if (snapshot) {
-            this.renderer.render(snapshot, dt || FIXED_STEP);
-            this.ui.update(snapshot, this.localPlayerIndex);
-            this.syncOverlayToSnapshot(snapshot);
-        }
+        this.renderCurrentSnapshot(this.manualClock ? 0 : dt || FIXED_STEP);
         requestAnimationFrame((time) => this.frame(time));
+    }
+    renderCurrentSnapshot(dt) {
+        const snapshot = this.mode === 'guest'
+            ? this.updateGuestPresentation(dt)
+            : this.world?.snapshot() ?? null;
+        if (!snapshot)
+            return;
+        this.renderer.render(snapshot, dt);
+        this.ui.update(snapshot, this.localPlayerIndex);
+        this.syncOverlayToSnapshot(snapshot);
     }
     updateAuthority(dt) {
         const world = this.world;
@@ -228,7 +326,7 @@ export class GameController {
                 break;
             case 'snapshot':
                 if (this.mode === 'guest')
-                    this.guestSnapshot = message.snapshot;
+                    this.acceptGuestSnapshot(message.snapshot);
                 break;
             case 'upgrade':
                 if (this.mode === 'host')
@@ -278,6 +376,7 @@ export class GameController {
         this.mode = 'title';
         this.world = null;
         this.guestSnapshot = null;
+        this.resetGuestPresentation();
         this.paused = false;
         this.peer.close();
         this.ui.setPeerConnected(false);
@@ -306,12 +405,23 @@ export class GameController {
         this.ui.showPause(paused);
     }
     mergeIntoPending(target, source) {
-        target.moveX = source.moveX;
-        target.moveZ = source.moveZ;
+        const mobilityAlreadyPending = target.mobilityPressed;
+        if (!mobilityAlreadyPending) {
+            target.moveX = source.moveX;
+            target.moveZ = source.moveZ;
+        }
         target.guardHeld = source.guardHeld;
+        const attackAlreadyPending = target.lightPressed || target.heavyPressed;
         target.lightPressed ||= source.lightPressed;
         target.heavyPressed ||= source.heavyPressed;
-        target.mobilityPressed ||= source.mobilityPressed;
+        // InputHub only emits Duck+Attack together when Duck happened first. Keep
+        // that order and its movement vector when several render samples collapse
+        // into one fixed step.
+        if (!attackAlreadyPending && source.mobilityPressed && !mobilityAlreadyPending) {
+            target.mobilityPressed = true;
+            target.moveX = source.moveX;
+            target.moveZ = source.moveZ;
+        }
         target.switchPressed ||= source.switchPressed;
         target.guardPressed ||= source.guardPressed;
     }
@@ -324,9 +434,44 @@ export class GameController {
         target.guardPressed = false;
         return result;
     }
+    acceptGuestSnapshot(snapshot) {
+        const latest = this.guestSnapshot;
+        // The data channel is ordered, but ignoring an old duplicate here keeps the
+        // presentation clock monotonic if a transport implementation ever retries.
+        if (latest && snapshot.tick <= latest.tick)
+            return;
+        this.guestPreviousSnapshot = latest;
+        this.guestSnapshot = snapshot;
+        this.guestPresentationElapsed = 0;
+        this.guestSnapshotPeriod = latest
+            ? clamp((snapshot.tick - latest.tick) * FIXED_STEP, FIXED_STEP, MAX_GUEST_SNAPSHOT_PERIOD)
+            : GUEST_SNAPSHOT_PERIOD;
+        if (!this.guestPresentedSnapshot) {
+            this.guestPresentedSnapshot = interpolateGuestSnapshot(latest, snapshot, 0, this.guestSnapshotPeriod);
+        }
+    }
+    updateGuestPresentation(dt) {
+        const latest = this.guestSnapshot;
+        if (!latest)
+            return null;
+        const safeDt = Number.isFinite(dt) ? Math.max(0, dt) : 0;
+        this.guestPresentationElapsed += safeDt;
+        const next = interpolateGuestSnapshot(this.guestPreviousSnapshot, latest, this.guestPresentationElapsed, this.guestSnapshotPeriod);
+        if (this.guestPresentedSnapshot) {
+            preserveContinuousAnimationClocks(next, this.guestPresentedSnapshot, safeDt);
+        }
+        this.guestPresentedSnapshot = next;
+        return this.guestPresentedSnapshot;
+    }
+    resetGuestPresentation() {
+        this.guestPreviousSnapshot = null;
+        this.guestPresentedSnapshot = null;
+        this.guestPresentationElapsed = 0;
+        this.guestSnapshotPeriod = GUEST_SNAPSHOT_PERIOD;
+    }
     renderTitleBackdrop() {
         const backdrop = {
-            version: 1,
+            version: GAME_SNAPSHOT_VERSION,
             tick: 0,
             time: 0,
             phase: 'title',
@@ -343,5 +488,85 @@ export class GameController {
 }
 function cloneInput(frame) {
     return { ...frame };
+}
+/**
+ * Creates a render-only guest snapshot without mutating either authoritative
+ * network snapshot. Position and matching animation clocks interpolate across
+ * one host packet. Only looping states may advance past the newest packet;
+ * attacks and reactions stop at the last authoritative clock value.
+ */
+export function interpolateGuestSnapshot(previous, latest, elapsed, snapshotPeriod) {
+    const safeElapsed = Number.isFinite(elapsed) ? Math.max(0, elapsed) : 0;
+    const safePeriod = Number.isFinite(snapshotPeriod)
+        ? clamp(snapshotPeriod, FIXED_STEP, MAX_GUEST_SNAPSHOT_PERIOD)
+        : GUEST_SNAPSHOT_PERIOD;
+    const alpha = previous ? clamp(safeElapsed / safePeriod, 0, 1) : 1;
+    // Wait for a second packet before predicting presentation time. Advancing the
+    // first packet would force its loop clock backwards when that second packet
+    // establishes the interpolation interval.
+    const loopClockExtra = previous ? Math.max(0, safeElapsed - safePeriod) : 0;
+    const base = previous && alpha < 1 ? previous : latest;
+    const previousActors = new Map(previous?.actors.map((actor) => [actor.id, actor]) ?? []);
+    const actors = latest.actors.map((latestActor) => {
+        const previousActor = previousActors.get(latestActor.id);
+        if (!previousActor) {
+            return advanceContinuousAnimationClock({ ...latestActor }, loopClockExtra);
+        }
+        const sameAnimation = hasSameAnimation(previousActor, latestActor) &&
+            latestActor.stateElapsed >= previousActor.stateElapsed &&
+            latestActor.attackElapsed >= previousActor.attackElapsed;
+        const actorBase = alpha < 1 ? previousActor : latestActor;
+        const presented = {
+            ...actorBase,
+            x: lerp(previousActor.x, latestActor.x, alpha),
+            z: lerp(previousActor.z, latestActor.z, alpha)
+        };
+        if (sameAnimation) {
+            presented.stateElapsed = lerp(previousActor.stateElapsed, latestActor.stateElapsed, alpha);
+            presented.attackElapsed = lerp(previousActor.attackElapsed, latestActor.attackElapsed, alpha);
+        }
+        if (alpha >= 1)
+            advanceContinuousAnimationClock(presented, loopClockExtra);
+        return presented;
+    });
+    const timeAdvanced = previous && latest.time >= previous.time
+        ? lerp(previous.time, latest.time, alpha)
+        : base.time;
+    return {
+        ...base,
+        time: timeAdvanced,
+        upgrades: [...base.upgrades],
+        offeredUpgrades: [...base.offeredUpgrades],
+        actors
+    };
+}
+function hasSameAnimation(previous, latest) {
+    return previous.state === latest.state &&
+        previous.attackId === latest.attackId &&
+        previous.reactionZone === latest.reactionZone &&
+        previous.weapon === latest.weapon &&
+        previous.desiredWeapon === latest.desiredWeapon;
+}
+function advanceContinuousAnimationClock(actor, elapsed) {
+    if (CONTINUOUS_ANIMATION_STATES.has(actor.state))
+        actor.stateElapsed += elapsed;
+    return actor;
+}
+function preserveContinuousAnimationClocks(next, previousPresentation, dt) {
+    const previousActors = new Map(previousPresentation.actors.map((actor) => [actor.id, actor]));
+    for (const actor of next.actors) {
+        const previousActor = previousActors.get(actor.id);
+        if (!previousActor ||
+            !CONTINUOUS_ANIMATION_STATES.has(actor.state) ||
+            !hasSameAnimation(previousActor, actor))
+            continue;
+        actor.stateElapsed = Math.max(actor.stateElapsed, previousActor.stateElapsed + dt);
+    }
+}
+function lerp(from, to, amount) {
+    return from + (to - from) * amount;
+}
+function clamp(value, minimum, maximum) {
+    return Math.max(minimum, Math.min(maximum, value));
 }
 //# sourceMappingURL=controller.js.map

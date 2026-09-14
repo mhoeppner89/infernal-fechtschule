@@ -1,0 +1,35 @@
+{
+  "id": "grotesque-v2",
+  "design": "Bound Grotesque: a hunched two-phase crypt horror in cracked grey-brown hide over a massive frame, wrapped in blackened chain and iron bands, with ember-orange glow between the plates",
+  "canvas": [384, 384],
+  "rootScale": 1.0,
+  "rasterScale": 0.78,
+  "footAnchor": [192, 350],
+  "proportions": {
+    "torso": 88,
+    "neck": 26,
+    "headRadius": 30,
+    "shoulderWidth": 108,
+    "hipWidth": 58,
+    "upperArm": 68,
+    "forearm": 64,
+    "thigh": 78,
+    "shin": 72
+  },
+  "palette": {
+    "ink": "#140f0e",
+    "skin": "#7d7166",
+    "skinLight": "#9c9084",
+    "hide": "#64594d",
+    "hideDark": "#463d34",
+    "plate": "#4d433c",
+    "plateLight": "#75695f",
+    "rust": "#7c4426",
+    "chain": "#5c5348",
+    "chainLight": "#867c6e",
+    "ember": "#c96a2a",
+    "accent": "#8c2f24",
+    "claw": "#2a2320",
+    "leather": "#382c23"
+  }
+}

@@ -1,0 +1,529 @@
+{
+  "actor": "captain",
+  "canvas": [
+    384,
+    384
+  ],
+  "footAnchor": [
+    192,
+    350
+  ],
+  "frames": [
+    {
+      "alphaBBox": [
+        89,
+        96,
+        237,
+        351
+      ],
+      "cue": "contact",
+      "file": "captain/captain-sword/hitstun/01.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 4,
+      "landmarks": {
+        "chest": [
+          181.724,
+          184.161
+        ],
+        "frontAnkle": [
+          208.006,
+          338.495
+        ],
+        "frontElbow": [
+          189.544,
+          217.402
+        ],
+        "frontHip": [
+          205.6,
+          237.811
+        ],
+        "frontKnee": [
+          217.531,
+          289.492
+        ],
+        "frontShoulder": [
+          212.691,
+          180.359
+        ],
+        "frontWrist": [
+          156.32,
+          240.666
+        ],
+        "head": [
+          177.066,
+          146.226
+        ],
+        "neck": [
+          179.252,
+          164.033
+        ],
+        "pelvis": [
+          188.568,
+          239.903
+        ],
+        "rearAnkle": [
+          167.414,
+          342.98
+        ],
+        "rearElbow": [
+          118.296,
+          217.191
+        ],
+        "rearHip": [
+          171.536,
+          241.994
+        ],
+        "rearKnee": [
+          159.605,
+          293.675
+        ],
+        "rearShoulder": [
+          150.756,
+          187.964
+        ],
+        "rearWrist": [
+          100.515,
+          253.646
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "297c91462396728c462e2f65738f684902725ab51bb247b083c1f2ff46ea8d8c"
+    },
+    {
+      "alphaBBox": [
+        70,
+        99,
+        230,
+        351
+      ],
+      "cue": "recovery",
+      "file": "captain/captain-sword/hitstun/02.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 5,
+      "landmarks": {
+        "chest": [
+          159.686,
+          183.844
+        ],
+        "frontAnkle": [
+          201.378,
+          328.173
+        ],
+        "frontElbow": [
+          164.816,
+          207.701
+        ],
+        "frontHip": [
+          198.972,
+          227.49
+        ],
+        "frontKnee": [
+          210.904,
+          279.17
+        ],
+        "frontShoulder": [
+          187.963,
+          170.658
+        ],
+        "frontWrist": [
+          131.591,
+          230.965
+        ],
+        "head": [
+          143.533,
+          149.205
+        ],
+        "neck": [
+          151.115,
+          165.464
+        ],
+        "pelvis": [
+          183.42,
+          234.742
+        ],
+        "rearAnkle": [
+          163.746,
+          342.98
+        ],
+        "rearElbow": [
+          98.948,
+          226.257
+        ],
+        "rearHip": [
+          167.868,
+          241.994
+        ],
+        "rearKnee": [
+          155.936,
+          293.675
+        ],
+        "rearShoulder": [
+          131.409,
+          197.029
+        ],
+        "rearWrist": [
+          81.168,
+          262.712
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "464fd185c6d4f6d55fa4fa368e2c1289d08a4abceed8eabcc7e854239a220bd9"
+    },
+    {
+      "alphaBBox": [
+        75,
+        97,
+        232,
+        351
+      ],
+      "cue": "recovery",
+      "file": "captain/captain-sword/hitstun/03.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 3,
+      "landmarks": {
+        "chest": [
+          166.125,
+          183.332
+        ],
+        "frontAnkle": [
+          203.536,
+          331.165
+        ],
+        "frontElbow": [
+          172.371,
+          209.908
+        ],
+        "frontHip": [
+          201.13,
+          230.481
+        ],
+        "frontKnee": [
+          213.062,
+          282.162
+        ],
+        "frontShoulder": [
+          195.518,
+          172.866
+        ],
+        "frontWrist": [
+          139.146,
+          233.173
+        ],
+        "head": [
+          153.304,
+          147.326
+        ],
+        "neck": [
+          159.322,
+          164.227
+        ],
+        "pelvis": [
+          184.964,
+          236.238
+        ],
+        "rearAnkle": [
+          164.676,
+          342.98
+        ],
+        "rearElbow": [
+          104.273,
+          223.025
+        ],
+        "rearHip": [
+          168.799,
+          241.994
+        ],
+        "rearKnee": [
+          156.867,
+          293.675
+        ],
+        "rearShoulder": [
+          136.733,
+          193.798
+        ],
+        "rearWrist": [
+          86.492,
+          259.481
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "79fd6f43f47a8783aef895cf29324c03a39469208def209fffa790da984acf6d"
+    },
+    {
+      "alphaBBox": [
+        84,
+        96,
+        235,
+        351
+      ],
+      "cue": "recovery",
+      "file": "captain/captain-sword/hitstun/04.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 3,
+      "landmarks": {
+        "chest": [
+          175.711,
+          183.512
+        ],
+        "frontAnkle": [
+          206.399,
+          335.659
+        ],
+        "frontElbow": [
+          183.104,
+          214.174
+        ],
+        "frontHip": [
+          203.993,
+          234.976
+        ],
+        "frontKnee": [
+          215.924,
+          286.656
+        ],
+        "frontShoulder": [
+          206.251,
+          177.131
+        ],
+        "frontWrist": [
+          149.88,
+          237.438
+        ],
+        "head": [
+          167.895,
+          146.099
+        ],
+        "neck": [
+          171.564,
+          163.66
+        ],
+        "pelvis": [
+          187.195,
+          238.485
+        ],
+        "rearAnkle": [
+          166.276,
+          342.98
+        ],
+        "rearElbow": [
+          112.709,
+          219.12
+        ],
+        "rearHip": [
+          170.398,
+          241.994
+        ],
+        "rearKnee": [
+          158.466,
+          293.675
+        ],
+        "rearShoulder": [
+          145.17,
+          189.892
+        ],
+        "rearWrist": [
+          94.929,
+          255.575
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "913e1f64d4a6862e2c2bf3d10898a3048834f2be2d819b887bf490ed82d372ef"
+    },
+    {
+      "alphaBBox": [
+        95,
+        97,
+        238,
+        351
+      ],
+      "cue": "recovery",
+      "file": "captain/captain-sword/hitstun/05.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 5,
+      "landmarks": {
+        "chest": [
+          187.405,
+          185.139
+        ],
+        "frontAnkle": [
+          209.405,
+          341.18
+        ],
+        "frontElbow": [
+          195.429,
+          220.821
+        ],
+        "frontHip": [
+          206.999,
+          240.497
+        ],
+        "frontKnee": [
+          218.93,
+          292.178
+        ],
+        "frontShoulder": [
+          218.576,
+          183.778
+        ],
+        "frontWrist": [
+          162.204,
+          244.085
+        ],
+        "head": [
+          185.738,
+          146.955
+        ],
+        "neck": [
+          186.521,
+          164.878
+        ],
+        "pelvis": [
+          189.855,
+          241.246
+        ],
+        "rearAnkle": [
+          168.589,
+          342.98
+        ],
+        "rearElbow": [
+          123.774,
+          215.728
+        ],
+        "rearHip": [
+          172.711,
+          241.994
+        ],
+        "rearKnee": [
+          160.78,
+          293.675
+        ],
+        "rearShoulder": [
+          156.235,
+          186.5
+        ],
+        "rearWrist": [
+          105.994,
+          252.183
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "f4cf33efe07ec40d8505f6d076df414bfaba12bc47014895f6a2f8de1340235f"
+    },
+    {
+      "alphaBBox": [
+        104,
+        97,
+        243,
+        351
+      ],
+      "cue": "recovery",
+      "file": "captain/captain-sword/hitstun/06.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 5,
+      "landmarks": {
+        "chest": [
+          196.895,
+          184.855
+        ],
+        "frontAnkle": [
+          211.501,
+          342.98
+        ],
+        "frontElbow": [
+          204.829,
+          224.617
+        ],
+        "frontHip": [
+          209.095,
+          242.297
+        ],
+        "frontKnee": [
+          221.026,
+          293.977
+        ],
+        "frontShoulder": [
+          227.976,
+          187.574
+        ],
+        "frontWrist": [
+          171.604,
+          247.881
+        ],
+        "head": [
+          200.226,
+          146.78
+        ],
+        "neck": [
+          198.662,
+          164.652
+        ],
+        "pelvis": [
+          192.0,
+          240.801
+        ],
+        "rearAnkle": [
+          170.783,
+          340.291
+        ],
+        "rearElbow": [
+          133.353,
+          211.363
+        ],
+        "rearHip": [
+          174.905,
+          239.305
+        ],
+        "rearKnee": [
+          162.974,
+          290.986
+        ],
+        "rearShoulder": [
+          165.813,
+          182.135
+        ],
+        "rearWrist": [
+          115.572,
+          247.818
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "efebd41ed470681ddc74fd6fa21a10f87902840c4f39c48c45e3c74c42be3565"
+    }
+  ],
+  "id": "hitstun",
+  "kind": "state",
+  "playback": "once",
+  "rasterScale": 0.78,
+  "rootScale": 1.0,
+  "weapon": "captain-sword"
+}

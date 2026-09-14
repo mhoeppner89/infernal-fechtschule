@@ -6,9 +6,13 @@ if (!(canvas instanceof HTMLCanvasElement) || !(controls instanceof HTMLElement)
 }
 const controller = new GameController(canvas, controls);
 Object.assign(window, {
+    advanceTime: (milliseconds) => controller.advanceTime(milliseconds),
+    render_game_to_text: () => controller.renderGameToText(),
     __FECHTSCHULE__: {
         controller,
-        snapshot: () => controller.getSnapshot()
+        snapshot: () => controller.getSnapshot(),
+        advanceTime: (milliseconds) => controller.advanceTime(milliseconds),
+        renderGameToText: () => controller.renderGameToText()
     }
 });
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {

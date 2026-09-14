@@ -33,6 +33,15 @@ test('every literal UI id used by the TypeScript exists in the game shell', asyn
   assert.deepEqual(missing, []);
 });
 
+test('the mobility control is presented as Duck with its low-attack route', async () => {
+  const html = await readFile(path.join(root, 'site/index.html'), 'utf8');
+  assert.match(html, /data-button="mobility"[^>]+aria-label="Duck; tap, then quickly press Light or Heavy for a low attack; press a direction with Duck to dodge"/);
+  assert.match(html, /<span>DUCK<\/span>/);
+  assert.match(html, /Tap Duck, then quickly Light or Heavy for a low attack\./);
+  assert.match(html, /Direction \+ Duck dodges\./);
+  assert.doesNotMatch(html, /Jump \/ Dodge|Jump or dodge/);
+});
+
 test('all compiled relative ES-module imports resolve', async () => {
   const jsRoot = path.join(root, 'site/js');
   const files = (await walk(jsRoot)).filter((file) => file.endsWith('.js'));

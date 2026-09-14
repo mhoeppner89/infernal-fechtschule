@@ -1,0 +1,49 @@
+{
+  "source": "/Users/mhoeppner/.codex/generated_images/01a054c3-baa3-7b12-a076-23465ca4c92a/exec-90ee93b1-2665-46b2-b454-cc908de5380e.png",
+  "frameCount": 4,
+  "canvas": [
+    640,
+    640
+  ],
+  "padding": 20,
+  "sharedScale": 0.8875739644970414,
+  "sourceBounds": [
+    [
+      12,
+      59,
+      430,
+      683
+    ],
+    [
+      450,
+      282,
+      1126,
+      660
+    ],
+    [
+      1130,
+      90,
+      1600,
+      684
+    ],
+    [
+      1600,
+      147,
+      2056,
+      685
+    ]
+  ],
+  "repeatedFrames": [
+    {
+      "destination": 4,
+      "source": 1
+    }
+  ],
+  "runtimeWebp": {
+    "size": [
+      384,
+      384
+    ],
+    "quality": 90
+  }
+}

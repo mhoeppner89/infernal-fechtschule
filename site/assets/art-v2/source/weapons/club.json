@@ -1,0 +1,9 @@
+{
+  "id": "club-v2",
+  "kind": "club",
+  "length": 94,
+  "shaftWidth": 11,
+  "headWidth": 23,
+  "attachment": "frontWrist",
+  "palette": { "wood": "#87582f", "light": "#ba7a3c", "dark": "#402d22", "band": "#858d88" }
+}

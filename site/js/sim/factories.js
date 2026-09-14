@@ -91,6 +91,7 @@ function createActor(config) {
         deathTimer: 0,
         flashTimer: 0,
         comboCount: 0,
+        reactionZone: null,
         scoreValue: config.scoreValue
     };
 }

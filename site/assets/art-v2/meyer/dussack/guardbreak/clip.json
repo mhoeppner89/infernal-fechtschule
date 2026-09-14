@@ -1,0 +1,529 @@
+{
+  "actor": "meyer",
+  "canvas": [
+    384,
+    384
+  ],
+  "footAnchor": [
+    192,
+    350
+  ],
+  "frames": [
+    {
+      "alphaBBox": [
+        84,
+        92,
+        306,
+        351
+      ],
+      "cue": "contact",
+      "file": "meyer/dussack/guardbreak/01.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 4,
+      "landmarks": {
+        "chest": [
+          185.378,
+          188.981
+        ],
+        "frontAnkle": [
+          206.539,
+          339.888
+        ],
+        "frontElbow": [
+          251.061,
+          203.828
+        ],
+        "frontHip": [
+          205.361,
+          240.53
+        ],
+        "frontKnee": [
+          216.065,
+          290.885
+        ],
+        "frontShoulder": [
+          212.582,
+          186.697
+        ],
+        "frontWrist": [
+          288.894,
+          191.536
+        ],
+        "head": [
+          182.114,
+          150.118
+        ],
+        "neck": [
+          183.615,
+          167.995
+        ],
+        "pelvis": [
+          189.816,
+          241.835
+        ],
+        "rearAnkle": [
+          172.257,
+          342.98
+        ],
+        "rearElbow": [
+          120.0,
+          209.066
+        ],
+        "rearHip": [
+          174.271,
+          243.14
+        ],
+        "rearKnee": [
+          164.448,
+          293.675
+        ],
+        "rearShoulder": [
+          158.173,
+          191.265
+        ],
+        "rearWrist": [
+          94.43,
+          239.539
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "083fdb8eb24e0638fb2c64f564923f45c68cd18f6fe43b01899c1d0802bba92a"
+    },
+    {
+      "alphaBBox": [
+        68,
+        92,
+        288,
+        351
+      ],
+      "cue": "contact",
+      "file": "meyer/dussack/guardbreak/02.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 5,
+      "landmarks": {
+        "chest": [
+          168.383,
+          187.861
+        ],
+        "frontAnkle": [
+          200.212,
+          333.231
+        ],
+        "frontElbow": [
+          232.929,
+          196.883
+        ],
+        "frontHip": [
+          199.033,
+          233.873
+        ],
+        "frontKnee": [
+          209.737,
+          284.228
+        ],
+        "frontShoulder": [
+          194.45,
+          179.751
+        ],
+        "frontWrist": [
+          270.762,
+          184.59
+        ],
+        "head": [
+          156.798,
+          150.621
+        ],
+        "neck": [
+          162.127,
+          167.751
+        ],
+        "pelvis": [
+          184.138,
+          238.507
+        ],
+        "rearAnkle": [
+          167.228,
+          342.98
+        ],
+        "rearElbow": [
+          104.141,
+          213.77
+        ],
+        "rearHip": [
+          169.242,
+          243.14
+        ],
+        "rearKnee": [
+          159.419,
+          293.675
+        ],
+        "rearShoulder": [
+          142.315,
+          195.97
+        ],
+        "rearWrist": [
+          78.571,
+          244.244
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "3700d4833eb47027d5de95cbd5e66350f031a27447610889279aef0839cf1154"
+    },
+    {
+      "alphaBBox": [
+        61,
+        94,
+        278,
+        351
+      ],
+      "cue": "recovery",
+      "file": "meyer/dussack/guardbreak/03.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 3,
+      "landmarks": {
+        "chest": [
+          159.507,
+          188.341
+        ],
+        "frontAnkle": [
+          196.509,
+          329.808
+        ],
+        "frontElbow": [
+          222.925,
+          194.369
+        ],
+        "frontHip": [
+          195.331,
+          230.45
+        ],
+        "frontKnee": [
+          206.035,
+          280.805
+        ],
+        "frontShoulder": [
+          184.446,
+          177.237
+        ],
+        "frontWrist": [
+          260.758,
+          182.076
+        ],
+        "head": [
+          143.644,
+          152.713
+        ],
+        "neck": [
+          150.941,
+          169.102
+        ],
+        "pelvis": [
+          181.08,
+          236.795
+        ],
+        "rearAnkle": [
+          164.815,
+          342.98
+        ],
+        "rearElbow": [
+          96.393,
+          217.245
+        ],
+        "rearHip": [
+          166.829,
+          243.14
+        ],
+        "rearKnee": [
+          157.006,
+          293.675
+        ],
+        "rearShoulder": [
+          134.567,
+          199.445
+        ],
+        "rearWrist": [
+          70.823,
+          247.719
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "d39cba922d413a85820106b3ced24fd1dd6d6364e33db6505e1b1e3071290599"
+    },
+    {
+      "alphaBBox": [
+        66,
+        93,
+        284,
+        351
+      ],
+      "cue": "recovery",
+      "file": "meyer/dussack/guardbreak/04.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 3,
+      "landmarks": {
+        "chest": [
+          165.183,
+          187.945
+        ],
+        "frontAnkle": [
+          198.912,
+          331.991
+        ],
+        "frontElbow": [
+          229.367,
+          195.883
+        ],
+        "frontHip": [
+          197.734,
+          232.633
+        ],
+        "frontKnee": [
+          208.438,
+          282.988
+        ],
+        "frontShoulder": [
+          190.889,
+          178.751
+        ],
+        "frontWrist": [
+          267.2,
+          183.59
+        ],
+        "head": [
+          152.05,
+          151.223
+        ],
+        "neck": [
+          158.091,
+          168.115
+        ],
+        "pelvis": [
+          183.046,
+          237.887
+        ],
+        "rearAnkle": [
+          166.343,
+          342.98
+        ],
+        "rearElbow": [
+          101.304,
+          214.939
+        ],
+        "rearHip": [
+          168.357,
+          243.14
+        ],
+        "rearKnee": [
+          158.534,
+          293.675
+        ],
+        "rearShoulder": [
+          139.478,
+          197.139
+        ],
+        "rearWrist": [
+          75.734,
+          245.413
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "df4951fcdc297f02db22450afdb440179530ec05d1facb2ae1d252b00da81f16"
+    },
+    {
+      "alphaBBox": [
+        76,
+        92,
+        296,
+        351
+      ],
+      "cue": "recovery",
+      "file": "meyer/dussack/guardbreak/05.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 5,
+      "landmarks": {
+        "chest": [
+          176.166,
+          188.053
+        ],
+        "frontAnkle": [
+          203.222,
+          336.267
+        ],
+        "frontElbow": [
+          241.394,
+          199.733
+        ],
+        "frontHip": [
+          202.044,
+          236.909
+        ],
+        "frontKnee": [
+          212.747,
+          287.265
+        ],
+        "frontShoulder": [
+          202.916,
+          182.601
+        ],
+        "frontWrist": [
+          279.227,
+          187.44
+        ],
+        "head": [
+          168.377,
+          149.839
+        ],
+        "neck": [
+          171.96,
+          167.418
+        ],
+        "pelvis": [
+          186.758,
+          240.025
+        ],
+        "rearAnkle": [
+          169.459,
+          342.98
+        ],
+        "rearElbow": [
+          111.242,
+          211.306
+        ],
+        "rearHip": [
+          171.473,
+          243.14
+        ],
+        "rearKnee": [
+          161.65,
+          293.675
+        ],
+        "rearShoulder": [
+          149.416,
+          193.506
+        ],
+        "rearWrist": [
+          85.672,
+          241.779
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "5bccac960687f2a2af4c4a91888d95c471948dbab0fe37da42d3e72ecd532209"
+    },
+    {
+      "alphaBBox": [
+        83,
+        92,
+        304,
+        351
+      ],
+      "cue": "recovery",
+      "file": "meyer/dussack/guardbreak/06.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 5,
+      "landmarks": {
+        "chest": [
+          183.726,
+          188.76
+        ],
+        "frontAnkle": [
+          205.963,
+          339.237
+        ],
+        "frontElbow": [
+          249.355,
+          203.038
+        ],
+        "frontHip": [
+          204.785,
+          239.879
+        ],
+        "frontKnee": [
+          215.488,
+          290.234
+        ],
+        "frontShoulder": [
+          210.876,
+          185.907
+        ],
+        "frontWrist": [
+          287.188,
+          190.746
+        ],
+        "head": [
+          179.649,
+          149.974
+        ],
+        "neck": [
+          181.524,
+          167.816
+        ],
+        "pelvis": [
+          189.27,
+          241.51
+        ],
+        "rearAnkle": [
+          171.742,
+          342.98
+        ],
+        "rearElbow": [
+          118.402,
+          209.415
+        ],
+        "rearHip": [
+          173.755,
+          243.14
+        ],
+        "rearKnee": [
+          163.933,
+          293.675
+        ],
+        "rearShoulder": [
+          156.575,
+          191.614
+        ],
+        "rearWrist": [
+          92.832,
+          239.888
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "f44d46f26563d21c744b1d082feb981ac94dc7983f69ff877b8ab35065f5f05d"
+    }
+  ],
+  "id": "guardbreak",
+  "kind": "state",
+  "playback": "once",
+  "rasterScale": 0.78,
+  "rootScale": 1.0,
+  "weapon": "dussack"
+}

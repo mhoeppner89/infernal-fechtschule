@@ -1,0 +1,36 @@
+{
+  "source": "/private/tmp/dussack-dead-grid-rgba.png",
+  "frameCount": 4,
+  "canvas": [
+    640,
+    640
+  ],
+  "padding": 20,
+  "sharedScale": 1.125703564727955,
+  "sourceBounds": [
+    [
+      54,
+      64,
+      467,
+      500
+    ],
+    [
+      762,
+      165,
+      1172,
+      490
+    ],
+    [
+      41,
+      831,
+      492,
+      1114
+    ],
+    [
+      674,
+      982,
+      1207,
+      1136
+    ]
+  ]
+}

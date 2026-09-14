@@ -1,11 +1,14 @@
 export type Team = 'players' | 'enemies';
 export type Weapon = 'longsword' | 'dussack';
+export type HitZone = 'head' | 'torso' | 'legs';
+export const GAME_SNAPSHOT_VERSION = 2 as const;
 export type ActorState =
   | 'idle'
   | 'move'
   | 'block'
   | 'attack'
   | 'dodge'
+  | 'crouch'
   | 'jump'
   | 'switch'
   | 'hitstun'
@@ -56,6 +59,9 @@ export interface AttackDefinition {
   label: string;
   owner: 'player' | Archetype;
   weapon?: Weapon;
+  hitZone: HitZone;
+  /** Keeps the attacker below head-height for the full move. */
+  crouchedPosture?: boolean;
   startup: number;
   active: number;
   recovery: number;
@@ -91,6 +97,7 @@ export interface AttackRuntime {
   blocked: boolean;
   queuedAction: ActionName | null;
   activeCuePlayed: boolean;
+  signatureShown: boolean;
 }
 
 export interface Actor {
@@ -135,6 +142,7 @@ export interface Actor {
   deathTimer: number;
   flashTimer: number;
   comboCount: number;
+  reactionZone: HitZone | null;
   scoreValue: number;
 }
 
@@ -167,19 +175,24 @@ export interface ActorSnapshot {
   state: ActorState;
   stateElapsed: number;
   stateDuration: number;
+  stateMoveX: number;
+  stateMoveZ: number;
   weapon: Weapon;
+  desiredWeapon: Weapon;
   attackId: string | null;
   attackElapsed: number;
+  reactionZone: HitZone | null;
   invulnerable: number;
   openingTimer: number;
   provokeTimer: number;
   counterWindow: number;
   flashTimer: number;
   comboCount: number;
+  deathTimer: number;
 }
 
 export interface GameSnapshot {
-  version: 1;
+  version: typeof GAME_SNAPSHOT_VERSION;
   tick: number;
   time: number;
   phase: GamePhase;
@@ -199,6 +212,7 @@ export type GameEventType =
   | 'heavy-hit'
   | 'blocked'
   | 'parry'
+  | 'interception'
   | 'guardbreak'
   | 'death'
   | 'signature'
@@ -219,6 +233,10 @@ export interface GameEvent {
   amount?: number;
   text?: string;
   attackId?: string;
+  hitZone?: HitZone;
+  /** True when the struck or blocking target was below normal head-height at contact. */
+  targetCrouched?: boolean;
+  impact?: 'flesh' | 'armor';
   upgrades?: UpgradeId[];
 }
 

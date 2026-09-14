@@ -1,0 +1,36 @@
+{
+  "source": "/private/tmp/meyer-hitstun-alpha.png",
+  "frameCount": 4,
+  "canvas": [
+    640,
+    640
+  ],
+  "padding": 18,
+  "sharedScale": 0.9648562300319489,
+  "sourceBounds": [
+    [
+      31,
+      81,
+      598,
+      661
+    ],
+    [
+      534,
+      91,
+      1062,
+      658
+    ],
+    [
+      1070,
+      39,
+      1624,
+      665
+    ],
+    [
+      1593,
+      199,
+      2153,
+      659
+    ]
+  ]
+}

@@ -1,0 +1,531 @@
+{
+  "actor": "meyer",
+  "canvas": [
+    384,
+    384
+  ],
+  "footAnchor": [
+    192,
+    350
+  ],
+  "frames": [
+    {
+      "alphaBBox": [
+        137,
+        93,
+        260,
+        351
+      ],
+      "cue": "neutral",
+      "file": "meyer/dussack/ds_h/01.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 4,
+      "landmarks": {
+        "chest": [
+          192.0,
+          190.1
+        ],
+        "frontAnkle": [
+          208.778,
+          342.498
+        ],
+        "frontElbow": [
+          233.706,
+          229.68
+        ],
+        "frontHip": [
+          207.6,
+          243.14
+        ],
+        "frontKnee": [
+          218.303,
+          293.495
+        ],
+        "frontShoulder": [
+          219.3,
+          190.1
+        ],
+        "frontWrist": [
+          220.755,
+          267.293
+        ],
+        "head": [
+          192.0,
+          151.1
+        ],
+        "neck": [
+          192.0,
+          169.04
+        ],
+        "pelvis": [
+          192.0,
+          243.14
+        ],
+        "rearAnkle": [
+          174.386,
+          342.98
+        ],
+        "rearElbow": [
+          151.684,
+          230.159
+        ],
+        "rearHip": [
+          176.4,
+          243.14
+        ],
+        "rearKnee": [
+          166.577,
+          293.675
+        ],
+        "rearShoulder": [
+          164.7,
+          190.1
+        ],
+        "rearWrist": [
+          170.97,
+          264.951
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "e7d6fd4dfb8a6f3c73ef6ca0188b05763235a76687c381f8f474a45f99e4b343"
+    },
+    {
+      "alphaBBox": [
+        133,
+        63,
+        283,
+        351
+      ],
+      "cue": "anticipation",
+      "file": "meyer/dussack/ds_h/02.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 5,
+      "landmarks": {
+        "chest": [
+          178.378,
+          188.446
+        ],
+        "frontAnkle": [
+          202.386,
+          338.156
+        ],
+        "frontElbow": [
+          243.586,
+          166.845
+        ],
+        "frontHip": [
+          201.208,
+          238.798
+        ],
+        "frontKnee": [
+          211.911,
+          289.153
+        ],
+        "frontShoulder": [
+          205.413,
+          184.646
+        ],
+        "frontWrist": [
+          266.403,
+          134.26
+        ],
+        "head": [
+          172.951,
+          149.825
+        ],
+        "neck": [
+          175.447,
+          167.59
+        ],
+        "pelvis": [
+          185.76,
+          240.969
+        ],
+        "rearAnkle": [
+          168.298,
+          342.98
+        ],
+        "rearElbow": [
+          192.544,
+          201.002
+        ],
+        "rearHip": [
+          170.312,
+          243.14
+        ],
+        "rearKnee": [
+          160.489,
+          293.675
+        ],
+        "rearShoulder": [
+          151.344,
+          192.245
+        ],
+        "rearWrist": [
+          228.596,
+          184.19
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "83cbdcc5137eb46e1418b94001c84d207fcaf5725fc172ec10bc67758a60d1bd"
+    },
+    {
+      "alphaBBox": [
+        84,
+        97,
+        328,
+        351
+      ],
+      "cue": "contact",
+      "file": "meyer/dussack/ds_h/03.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 3,
+      "landmarks": {
+        "chest": [
+          142.188,
+          193.52
+        ],
+        "frontAnkle": [
+          147.814,
+          342.98
+        ],
+        "frontElbow": [
+          210.908,
+          196.258
+        ],
+        "frontHip": [
+          146.419,
+          248.644
+        ],
+        "frontKnee": [
+          165.704,
+          296.376
+        ],
+        "frontShoulder": [
+          168.891,
+          199.196
+        ],
+        "frontWrist": [
+          247.792,
+          211.16
+        ],
+        "head": [
+          150.296,
+          155.372
+        ],
+        "neck": [
+          146.566,
+          172.92
+        ],
+        "pelvis": [
+          131.16,
+          245.401
+        ],
+        "rearAnkle": [
+          112.09,
+          340.472
+        ],
+        "rearElbow": [
+          153.013,
+          206.966
+        ],
+        "rearHip": [
+          115.901,
+          242.157
+        ],
+        "rearKnee": [
+          101.711,
+          291.643
+        ],
+        "rearShoulder": [
+          115.484,
+          187.844
+        ],
+        "rearWrist": [
+          192.642,
+          210.433
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "f569f903b0cf7bb72807bed173ee2c15e3e08f9a69a3a0ad382c9a858d292f09"
+    },
+    {
+      "alphaBBox": [
+        93,
+        95,
+        328,
+        351
+      ],
+      "cue": "overshoot",
+      "file": "meyer/dussack/ds_h/04.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 3,
+      "landmarks": {
+        "chest": [
+          158.124,
+          188.703
+        ],
+        "frontAnkle": [
+          152.938,
+          342.98
+        ],
+        "frontElbow": [
+          223.313,
+          212.386
+        ],
+        "frontHip": [
+          151.76,
+          243.622
+        ],
+        "frontKnee": [
+          162.463,
+          293.977
+        ],
+        "frontShoulder": [
+          183.254,
+          199.37
+        ],
+        "frontWrist": [
+          252.875,
+          239.004
+        ],
+        "head": [
+          173.363,
+          152.803
+        ],
+        "neck": [
+          166.353,
+          169.317
+        ],
+        "pelvis": [
+          137.4,
+          237.527
+        ],
+        "rearAnkle": [
+          121.026,
+          331.271
+        ],
+        "rearElbow": [
+          164.296,
+          206.22
+        ],
+        "rearHip": [
+          123.04,
+          231.431
+        ],
+        "rearKnee": [
+          113.217,
+          281.965
+        ],
+        "rearShoulder": [
+          132.995,
+          178.036
+        ],
+        "rearWrist": [
+          200.637,
+          222.4
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "3fd5a93fe430e529ea2030c509e9b22f3f6669da8a6d5914a4819d0e63d235f7"
+    },
+    {
+      "alphaBBox": [
+        141,
+        92,
+        317,
+        351
+      ],
+      "cue": "recovery",
+      "file": "meyer/dussack/ds_h/05.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 5,
+      "landmarks": {
+        "chest": [
+          195.659,
+          188.69
+        ],
+        "frontAnkle": [
+          203.086,
+          342.98
+        ],
+        "frontElbow": [
+          242.973,
+          230.222
+        ],
+        "frontHip": [
+          201.908,
+          243.622
+        ],
+        "frontKnee": [
+          212.611,
+          293.977
+        ],
+        "frontShoulder": [
+          222.553,
+          193.384
+        ],
+        "frontWrist": [
+          248.509,
+          269.615
+        ],
+        "head": [
+          202.364,
+          150.271
+        ],
+        "neck": [
+          199.28,
+          167.943
+        ],
+        "pelvis": [
+          186.54,
+          240.94
+        ],
+        "rearAnkle": [
+          169.159,
+          338.098
+        ],
+        "rearElbow": [
+          169.501,
+          226.11
+        ],
+        "rearHip": [
+          171.172,
+          238.258
+        ],
+        "rearKnee": [
+          161.349,
+          288.792
+        ],
+        "rearShoulder": [
+          168.766,
+          183.996
+        ],
+        "rearWrist": [
+          187.56,
+          261.554
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "b47df90999a20f289029edf7c0eb6ef954ae5ada51d27cb74101596f90d3bb68"
+    },
+    {
+      "alphaBBox": [
+        137,
+        93,
+        260,
+        351
+      ],
+      "cue": "neutral",
+      "file": "meyer/dussack/ds_h/06.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 5,
+      "landmarks": {
+        "chest": [
+          192.0,
+          190.1
+        ],
+        "frontAnkle": [
+          208.778,
+          342.498
+        ],
+        "frontElbow": [
+          233.706,
+          229.68
+        ],
+        "frontHip": [
+          207.6,
+          243.14
+        ],
+        "frontKnee": [
+          218.303,
+          293.495
+        ],
+        "frontShoulder": [
+          219.3,
+          190.1
+        ],
+        "frontWrist": [
+          220.755,
+          267.293
+        ],
+        "head": [
+          192.0,
+          151.1
+        ],
+        "neck": [
+          192.0,
+          169.04
+        ],
+        "pelvis": [
+          192.0,
+          243.14
+        ],
+        "rearAnkle": [
+          174.386,
+          342.98
+        ],
+        "rearElbow": [
+          151.684,
+          230.159
+        ],
+        "rearHip": [
+          176.4,
+          243.14
+        ],
+        "rearKnee": [
+          166.577,
+          293.675
+        ],
+        "rearShoulder": [
+          164.7,
+          190.1
+        ],
+        "rearWrist": [
+          170.97,
+          264.951
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "e7d6fd4dfb8a6f3c73ef6ca0188b05763235a76687c381f8f474a45f99e4b343"
+    }
+  ],
+  "heavy": true,
+  "id": "ds_h",
+  "kind": "attack",
+  "playback": "once",
+  "rasterScale": 0.78,
+  "rootScale": 1.0,
+  "weapon": "dussack",
+  "zone": "head"
+}

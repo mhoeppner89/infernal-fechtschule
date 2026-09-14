@@ -470,12 +470,17 @@ button:disabled {
 
 .combo-count {
   position: absolute;
-  top: 32%;
-  right: 7%;
+  top: calc(var(--safe-top) + 52px);
+  right: calc(var(--safe-right) + 46px);
+  min-width: 110px;
+  padding: 4px 10px;
   color: #f0d88f;
+  background: rgba(31, 21, 18, 0.76);
+  border: 1px solid rgba(231, 197, 116, 0.28);
   font-family: Georgia, "Times New Roman", serif;
-  font-size: clamp(1.1rem, 2.2vw, 2rem);
+  font-size: clamp(0.92rem, 1.7vw, 1.45rem);
   font-weight: 900;
+  text-align: center;
   text-shadow: 0 3px 0 #2b1a16, 0 0 12px rgba(221, 175, 83, 0.4);
 }
 
@@ -585,7 +590,7 @@ button:disabled {
   border-color: rgba(208, 104, 85, 0.64);
 }
 
-.action-button.mobility {
+.action-button.duck {
   left: 37%;
   top: 0;
   border-color: rgba(119, 178, 193, 0.62);
@@ -609,15 +614,18 @@ button:disabled {
 .banner {
   position: absolute;
   z-index: 14;
-  top: 25%;
+  top: calc(var(--safe-top) + 74px);
   left: 50%;
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: min(760px, 78vw);
-  padding: 14px 24px;
+  width: min(520px, 62vw);
+  min-height: 50px;
+  padding: 6px 16px;
   color: #f4e7c9;
-  background: linear-gradient(90deg, transparent, rgba(23, 16, 14, 0.85) 16%, rgba(23, 16, 14, 0.9) 84%, transparent);
+  background: linear-gradient(90deg, transparent, rgba(23, 16, 14, 0.48) 24%, rgba(23, 16, 14, 0.55) 76%, transparent);
+  border-top: 1px solid rgba(231, 204, 146, 0.12);
+  border-bottom: 1px solid rgba(231, 204, 146, 0.12);
   text-align: center;
   transform: translateX(-50%);
   animation: banner-in 260ms ease both;
@@ -625,12 +633,12 @@ button:disabled {
 }
 
 .banner.is-leaving {
-  animation: banner-out 340ms ease both;
+  animation: banner-out 160ms ease both;
 }
 
 .banner span {
   font-family: Georgia, "Times New Roman", serif;
-  font-size: clamp(1.25rem, 3vw, 2.4rem);
+  font-size: clamp(0.92rem, 1.8vw, 1.28rem);
   font-weight: 900;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -638,9 +646,9 @@ button:disabled {
 
 .banner small {
   max-width: 66ch;
-  margin-top: 4px;
+  margin-top: 2px;
   color: #d1bf9e;
-  font-size: clamp(0.65rem, 1.3vw, 0.88rem);
+  font-size: clamp(0.56rem, 0.9vw, 0.7rem);
 }
 
 @keyframes banner-in {
@@ -929,6 +937,131 @@ button:disabled {
   .pause-panel,
   .network-panel {
     padding: 18px 24px;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 480px) {
+  :root {
+    --safe-top: max(7px, env(safe-area-inset-top));
+    --safe-right: max(7px, env(safe-area-inset-right));
+    --safe-bottom: max(7px, env(safe-area-inset-bottom));
+    --safe-left: max(7px, env(safe-area-inset-left));
+  }
+
+  .player-hud {
+    width: min(245px, 29vw);
+    padding: 6px 8px;
+  }
+
+  .hud-heading {
+    gap: 6px;
+    margin-bottom: 3px;
+  }
+
+  .hud-heading strong {
+    font-size: 0.78rem;
+  }
+
+  .hud-heading span {
+    font-size: 0.54rem;
+  }
+
+  .bar-row {
+    grid-template-columns: 36px 1fr 48px;
+    gap: 5px;
+    margin-top: 3px;
+    font-size: 0.5rem;
+  }
+
+  .bar {
+    height: 8px;
+  }
+
+  .wave-hud {
+    min-width: min(300px, 36vw);
+    padding: 5px 10px 6px;
+  }
+
+  .wave-hud span,
+  .meta-hud span {
+    font-size: 0.48rem;
+  }
+
+  .wave-hud strong {
+    font-size: 0.72rem;
+  }
+
+  .meta-hud {
+    right: calc(var(--safe-right) + 36px);
+    min-width: 82px;
+    padding: 5px 8px;
+  }
+
+  .meta-hud strong {
+    font-size: 0.86rem;
+  }
+
+  .pause-button {
+    width: 30px;
+    height: 30px;
+  }
+
+  .combo-count {
+    top: calc(var(--safe-top) + 39px);
+    right: calc(var(--safe-right) + 36px);
+    min-width: 82px;
+    padding: 2px 6px;
+    font-size: 0.82rem;
+  }
+
+  .doctrine {
+    top: calc(var(--safe-top) + 67px);
+    gap: 3px;
+    font-size: 0.46rem;
+  }
+
+  .doctrine span {
+    padding: 3px 5px;
+  }
+
+  .joystick {
+    left: calc(var(--safe-left) + 6px);
+    bottom: calc(var(--safe-bottom) + 7px);
+    width: 82px;
+    height: 82px;
+  }
+
+  .joystick-knob {
+    width: 38px;
+    height: 38px;
+    margin: -19px;
+  }
+
+  .action-cluster {
+    right: calc(var(--safe-right) + 6px);
+    bottom: calc(var(--safe-bottom) + 5px);
+    width: 176px;
+    height: 132px;
+  }
+
+  .action-button {
+    width: 52px;
+    height: 52px;
+  }
+
+  .switch-button {
+    width: 43px;
+    height: 43px;
+  }
+
+  .action-button b,
+  .switch-button b {
+    font-size: 0.92rem;
+  }
+
+  .action-button span,
+  .switch-button span {
+    font-size: 0.38rem;
   }
 }
 

@@ -6,13 +6,19 @@ export class TouchControls {
   moveZ = 0;
 
   private readonly held = new Set<TouchButton>();
+  // Pointer taps can begin and end between two animation frames on a phone.
+  // Latch the down edge until InputHub samples it so short Duck -> Attack
+  // sequences are not lost at high refresh rates.
+  private readonly pressed = new Set<TouchButton>();
   private joystickPointer: number | null = null;
   private joystickOrigin = { x: 0, y: 0 };
   private readonly joystickZone: HTMLElement | null;
   private readonly joystickKnob: HTMLElement | null;
+  private readonly onPressed: (button: TouchButton) => void;
 
-  constructor(root: HTMLElement) {
+  constructor(root: HTMLElement, onPressed: (button: TouchButton) => void = () => undefined) {
     this.enabled = window.matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
+    this.onPressed = onPressed;
     this.joystickZone = root.querySelector<HTMLElement>('[data-control="joystick"]');
     this.joystickKnob = root.querySelector<HTMLElement>('[data-control="joystick-knob"]');
     this.bindJoystick();
@@ -23,8 +29,13 @@ export class TouchControls {
     return this.held.has(button);
   }
 
+  consumePressed(button: TouchButton): boolean {
+    return this.pressed.delete(button);
+  }
+
   reset(): void {
     this.held.clear();
+    this.pressed.clear();
     this.moveX = 0;
     this.moveZ = 0;
     this.joystickPointer = null;
@@ -38,6 +49,10 @@ export class TouchControls {
       const press = (event: PointerEvent): void => {
         event.preventDefault();
         element.setPointerCapture?.(event.pointerId);
+        if (!this.held.has(button)) {
+          this.pressed.add(button);
+          this.onPressed(button);
+        }
         this.held.add(button);
         element.classList.add('is-held');
       };

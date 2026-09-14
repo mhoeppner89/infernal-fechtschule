@@ -1,0 +1,529 @@
+{
+  "actor": "wretch",
+  "canvas": [
+    384,
+    384
+  ],
+  "footAnchor": [
+    192,
+    350
+  ],
+  "frames": [
+    {
+      "alphaBBox": [
+        150,
+        143,
+        255,
+        351
+      ],
+      "cue": "neutral",
+      "file": "wretch/claws/idle/01.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 4,
+      "landmarks": {
+        "chest": [
+          200.669,
+          196.929
+        ],
+        "frontAnkle": [
+          207.905,
+          342.98
+        ],
+        "frontElbow": [
+          240.725,
+          237.312
+        ],
+        "frontHip": [
+          205.827,
+          248.529
+        ],
+        "frontKnee": [
+          220.422,
+          296.268
+        ],
+        "frontShoulder": [
+          222.945,
+          200.857
+        ],
+        "frontWrist": [
+          222.261,
+          275.17
+        ],
+        "head": [
+          206.514,
+          163.776
+        ],
+        "neck": [
+          203.648,
+          180.03
+        ],
+        "pelvis": [
+          192.0,
+          246.091
+        ],
+        "rearAnkle": [
+          174.457,
+          338.512
+        ],
+        "rearElbow": [
+          163.198,
+          230.608
+        ],
+        "rearHip": [
+          178.173,
+          243.653
+        ],
+        "rearKnee": [
+          163.578,
+          291.392
+        ],
+        "rearShoulder": [
+          178.392,
+          193.002
+        ],
+        "rearWrist": [
+          177.604,
+          270.188
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "12ff7ecebf53048bffddd6d2172b632fd6d940b159274c80d511713b24cce500"
+    },
+    {
+      "alphaBBox": [
+        151,
+        143,
+        257,
+        351
+      ],
+      "cue": "neutral",
+      "file": "wretch/claws/idle/02.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 5,
+      "landmarks": {
+        "chest": [
+          202.868,
+          196.82
+        ],
+        "frontAnkle": [
+          208.856,
+          342.98
+        ],
+        "frontElbow": [
+          242.823,
+          237.74
+        ],
+        "frontHip": [
+          206.777,
+          248.529
+        ],
+        "frontKnee": [
+          221.372,
+          296.268
+        ],
+        "frontShoulder": [
+          225.043,
+          201.285
+        ],
+        "frontWrist": [
+          224.359,
+          275.598
+        ],
+        "head": [
+          209.514,
+          163.818
+        ],
+        "neck": [
+          206.256,
+          179.998
+        ],
+        "pelvis": [
+          193.013,
+          245.757
+        ],
+        "rearAnkle": [
+          175.533,
+          337.845
+        ],
+        "rearElbow": [
+          165.499,
+          229.961
+        ],
+        "rearHip": [
+          179.25,
+          242.986
+        ],
+        "rearKnee": [
+          164.654,
+          290.725
+        ],
+        "rearShoulder": [
+          180.693,
+          192.354
+        ],
+        "rearWrist": [
+          179.905,
+          269.541
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "73e26fbae6f2887e2112cb5c5c0bcaf4b2cb0863eda021f3b03685c86c073d11"
+    },
+    {
+      "alphaBBox": [
+        151,
+        143,
+        257,
+        351
+      ],
+      "cue": "neutral",
+      "file": "wretch/claws/idle/03.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 3,
+      "landmarks": {
+        "chest": [
+          202.868,
+          196.82
+        ],
+        "frontAnkle": [
+          208.856,
+          342.98
+        ],
+        "frontElbow": [
+          242.823,
+          237.74
+        ],
+        "frontHip": [
+          206.777,
+          248.529
+        ],
+        "frontKnee": [
+          221.372,
+          296.268
+        ],
+        "frontShoulder": [
+          225.043,
+          201.285
+        ],
+        "frontWrist": [
+          224.359,
+          275.598
+        ],
+        "head": [
+          209.514,
+          163.818
+        ],
+        "neck": [
+          206.256,
+          179.998
+        ],
+        "pelvis": [
+          193.013,
+          245.757
+        ],
+        "rearAnkle": [
+          175.533,
+          337.845
+        ],
+        "rearElbow": [
+          165.499,
+          229.961
+        ],
+        "rearHip": [
+          179.25,
+          242.986
+        ],
+        "rearKnee": [
+          164.654,
+          290.725
+        ],
+        "rearShoulder": [
+          180.693,
+          192.354
+        ],
+        "rearWrist": [
+          179.905,
+          269.541
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "73e26fbae6f2887e2112cb5c5c0bcaf4b2cb0863eda021f3b03685c86c073d11"
+    },
+    {
+      "alphaBBox": [
+        150,
+        143,
+        255,
+        351
+      ],
+      "cue": "neutral",
+      "file": "wretch/claws/idle/04.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 3,
+      "landmarks": {
+        "chest": [
+          200.669,
+          196.929
+        ],
+        "frontAnkle": [
+          207.905,
+          342.98
+        ],
+        "frontElbow": [
+          240.725,
+          237.312
+        ],
+        "frontHip": [
+          205.827,
+          248.529
+        ],
+        "frontKnee": [
+          220.422,
+          296.268
+        ],
+        "frontShoulder": [
+          222.945,
+          200.857
+        ],
+        "frontWrist": [
+          222.261,
+          275.17
+        ],
+        "head": [
+          206.514,
+          163.776
+        ],
+        "neck": [
+          203.648,
+          180.03
+        ],
+        "pelvis": [
+          192.0,
+          246.091
+        ],
+        "rearAnkle": [
+          174.457,
+          338.512
+        ],
+        "rearElbow": [
+          163.198,
+          230.608
+        ],
+        "rearHip": [
+          178.173,
+          243.653
+        ],
+        "rearKnee": [
+          163.578,
+          291.392
+        ],
+        "rearShoulder": [
+          178.392,
+          193.002
+        ],
+        "rearWrist": [
+          177.604,
+          270.188
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "12ff7ecebf53048bffddd6d2172b632fd6d940b159274c80d511713b24cce500"
+    },
+    {
+      "alphaBBox": [
+        148,
+        143,
+        252,
+        351
+      ],
+      "cue": "neutral",
+      "file": "wretch/claws/idle/05.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 5,
+      "landmarks": {
+        "chest": [
+          198.464,
+          197.069
+        ],
+        "frontAnkle": [
+          206.947,
+          342.98
+        ],
+        "frontElbow": [
+          238.609,
+          236.912
+        ],
+        "frontHip": [
+          204.868,
+          248.529
+        ],
+        "frontKnee": [
+          219.464,
+          296.268
+        ],
+        "frontShoulder": [
+          220.829,
+          200.457
+        ],
+        "frontWrist": [
+          220.145,
+          274.77
+        ],
+        "head": [
+          203.506,
+          163.784
+        ],
+        "neck": [
+          201.034,
+          180.103
+        ],
+        "pelvis": [
+          190.987,
+          246.426
+        ],
+        "rearAnkle": [
+          173.389,
+          339.182
+        ],
+        "rearElbow": [
+          160.905,
+          231.288
+        ],
+        "rearHip": [
+          177.105,
+          244.323
+        ],
+        "rearKnee": [
+          162.51,
+          292.062
+        ],
+        "rearShoulder": [
+          176.099,
+          193.681
+        ],
+        "rearWrist": [
+          175.311,
+          270.868
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "a99f41b7101151512e81ebc3d93d5d82ef627c07b5def93fc4271911a3293416"
+    },
+    {
+      "alphaBBox": [
+        148,
+        143,
+        252,
+        351
+      ],
+      "cue": "neutral",
+      "file": "wretch/claws/idle/06.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 5,
+      "landmarks": {
+        "chest": [
+          198.464,
+          197.069
+        ],
+        "frontAnkle": [
+          206.947,
+          342.98
+        ],
+        "frontElbow": [
+          238.609,
+          236.912
+        ],
+        "frontHip": [
+          204.868,
+          248.529
+        ],
+        "frontKnee": [
+          219.464,
+          296.268
+        ],
+        "frontShoulder": [
+          220.829,
+          200.457
+        ],
+        "frontWrist": [
+          220.145,
+          274.77
+        ],
+        "head": [
+          203.506,
+          163.784
+        ],
+        "neck": [
+          201.034,
+          180.103
+        ],
+        "pelvis": [
+          190.987,
+          246.426
+        ],
+        "rearAnkle": [
+          173.389,
+          339.182
+        ],
+        "rearElbow": [
+          160.905,
+          231.288
+        ],
+        "rearHip": [
+          177.105,
+          244.323
+        ],
+        "rearKnee": [
+          162.51,
+          292.062
+        ],
+        "rearShoulder": [
+          176.099,
+          193.681
+        ],
+        "rearWrist": [
+          175.311,
+          270.868
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "a99f41b7101151512e81ebc3d93d5d82ef627c07b5def93fc4271911a3293416"
+    }
+  ],
+  "id": "idle",
+  "kind": "state",
+  "playback": "loop",
+  "rasterScale": 0.78,
+  "rootScale": 1.0,
+  "weapon": "claws"
+}

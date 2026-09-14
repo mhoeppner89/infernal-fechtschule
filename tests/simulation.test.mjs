@@ -90,8 +90,30 @@ test('snapshots are JSON serializable for the WebRTC replica client', () => {
   const snapshot = world.snapshot();
   const encoded = JSON.stringify(snapshot);
   const decoded = JSON.parse(encoded);
-  assert.equal(decoded.version, 1);
+  assert.equal(decoded.version, 2);
   assert.equal(decoded.actors.filter((actor) => actor.team === 'players').length, 2);
+});
+
+test('continuous movement animation clocks reset on entry and advance while moving', () => {
+  const world = new GameWorld({ playerCount: 1, seed: 417, skipCountdown: true });
+  advance(world, 0.2);
+
+  const player = world.actors.find((actor) => actor.team === 'players');
+  assert.ok(player);
+  assert.equal(player.state, 'idle');
+  world.step(1 / 60, [{ ...NEUTRAL_INPUT, moveX: 1 }]);
+  assert.equal(player.state, 'move');
+  assert.equal(player.stateElapsed, 0);
+  world.step(1 / 60, [{ ...NEUTRAL_INPUT, moveX: 1 }]);
+  assert.ok(player.stateElapsed > 0);
+
+  advance(world, 0.5);
+  const enemy = world.actors.find((actor) => actor.team === 'enemies' && actor.state === 'move');
+  assert.ok(enemy);
+  const elapsed = enemy.stateElapsed;
+  world.step(1 / 60, [NEUTRAL_INPUT]);
+  assert.equal(enemy.state, 'move');
+  assert.ok(enemy.stateElapsed > elapsed);
 });
 
 test('the same seed and input log produce identical snapshots', () => {

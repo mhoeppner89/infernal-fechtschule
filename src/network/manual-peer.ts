@@ -1,4 +1,4 @@
-import { isPeerMessage, type PeerMessage } from './protocol.js';
+import { isPeerMessage, PEER_PROTOCOL_VERSION, type PeerMessage } from './protocol.js';
 
 const RTC_CONFIGURATION: RTCConfiguration = {
   iceServers: [
@@ -87,7 +87,7 @@ export class ManualPeerSession {
     channel.binaryType = 'arraybuffer';
     channel.onopen = () => {
       this.onStatus('Peer connected.');
-      this.send({ type: 'hello', protocol: 1 });
+      this.send({ type: 'hello', protocol: PEER_PROTOCOL_VERSION });
       this.onOpen();
     };
     channel.onclose = () => {

@@ -1,0 +1,529 @@
+{
+  "actor": "thug",
+  "canvas": [
+    384,
+    384
+  ],
+  "footAnchor": [
+    192,
+    350
+  ],
+  "frames": [
+    {
+      "alphaBBox": [
+        144,
+        129,
+        272,
+        351
+      ],
+      "cue": "neutral",
+      "file": "thug/club/move/01.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 4,
+      "landmarks": {
+        "chest": [
+          200.262,
+          200.984
+        ],
+        "frontAnkle": [
+          210.779,
+          342.98
+        ],
+        "frontElbow": [
+          240.417,
+          244.37
+        ],
+        "frontHip": [
+          208.899,
+          250.821
+        ],
+        "frontKnee": [
+          217.978,
+          297.527
+        ],
+        "frontShoulder": [
+          229.452,
+          206.131
+        ],
+        "frontWrist": [
+          230.727,
+          280.534
+        ],
+        "head": [
+          206.753,
+          164.174
+        ],
+        "neck": [
+          203.513,
+          182.548
+        ],
+        "pelvis": [
+          192.0,
+          247.841
+        ],
+        "rearAnkle": [
+          171.63,
+          337.244
+        ],
+        "rearElbow": [
+          162.124,
+          234.597
+        ],
+        "rearHip": [
+          175.101,
+          244.861
+        ],
+        "rearKnee": [
+          166.022,
+          291.567
+        ],
+        "rearShoulder": [
+          171.072,
+          195.837
+        ],
+        "rearWrist": [
+          174.929,
+          269.779
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "2e5961c2cb9a8881d905a4f2cb550b4f462bca669b87ab4fc64b7fb1c4665a3e"
+    },
+    {
+      "alphaBBox": [
+        138,
+        137,
+        270,
+        351
+      ],
+      "cue": "neutral",
+      "file": "thug/club/move/02.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 5,
+      "landmarks": {
+        "chest": [
+          201.613,
+          208.573
+        ],
+        "frontAnkle": [
+          218.732,
+          342.98
+        ],
+        "frontElbow": [
+          237.253,
+          252.974
+        ],
+        "frontHip": [
+          210.25,
+          258.41
+        ],
+        "frontKnee": [
+          234.078,
+          299.594
+        ],
+        "frontShoulder": [
+          230.803,
+          213.72
+        ],
+        "frontWrist": [
+          224.593,
+          288.209
+        ],
+        "head": [
+          208.104,
+          171.764
+        ],
+        "neck": [
+          204.864,
+          190.138
+        ],
+        "pelvis": [
+          193.351,
+          255.431
+        ],
+        "rearAnkle": [
+          166.446,
+          337.53
+        ],
+        "rearElbow": [
+          169.353,
+          243.088
+        ],
+        "rearHip": [
+          176.452,
+          252.451
+        ],
+        "rearKnee": [
+          152.624,
+          293.634
+        ],
+        "rearShoulder": [
+          172.423,
+          203.426
+        ],
+        "rearWrist": [
+          185.599,
+          276.82
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "420ec6e3d77d58b7ea33261ebb6c6d1f63885ea0095d762c07ef0a187fffaf59"
+    },
+    {
+      "alphaBBox": [
+        135,
+        137,
+        267,
+        351
+      ],
+      "cue": "neutral",
+      "file": "thug/club/move/03.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 3,
+      "landmarks": {
+        "chest": [
+          198.911,
+          208.573
+        ],
+        "frontAnkle": [
+          216.03,
+          342.98
+        ],
+        "frontElbow": [
+          234.551,
+          252.974
+        ],
+        "frontHip": [
+          207.548,
+          258.41
+        ],
+        "frontKnee": [
+          231.376,
+          299.594
+        ],
+        "frontShoulder": [
+          228.101,
+          213.72
+        ],
+        "frontWrist": [
+          221.891,
+          288.209
+        ],
+        "head": [
+          205.402,
+          171.764
+        ],
+        "neck": [
+          202.162,
+          190.138
+        ],
+        "pelvis": [
+          190.649,
+          255.431
+        ],
+        "rearAnkle": [
+          163.744,
+          337.53
+        ],
+        "rearElbow": [
+          166.651,
+          243.088
+        ],
+        "rearHip": [
+          173.75,
+          252.451
+        ],
+        "rearKnee": [
+          149.922,
+          293.634
+        ],
+        "rearShoulder": [
+          169.721,
+          203.426
+        ],
+        "rearWrist": [
+          182.897,
+          276.82
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "e5e63c1eaf15263389193686007042fe04e57b09abb16326550b1717b2c67d5c"
+    },
+    {
+      "alphaBBox": [
+        144,
+        129,
+        272,
+        351
+      ],
+      "cue": "neutral",
+      "file": "thug/club/move/04.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 3,
+      "landmarks": {
+        "chest": [
+          200.262,
+          200.984
+        ],
+        "frontAnkle": [
+          210.779,
+          342.98
+        ],
+        "frontElbow": [
+          240.417,
+          244.37
+        ],
+        "frontHip": [
+          208.899,
+          250.821
+        ],
+        "frontKnee": [
+          217.978,
+          297.527
+        ],
+        "frontShoulder": [
+          229.452,
+          206.131
+        ],
+        "frontWrist": [
+          230.727,
+          280.534
+        ],
+        "head": [
+          206.753,
+          164.174
+        ],
+        "neck": [
+          203.513,
+          182.548
+        ],
+        "pelvis": [
+          192.0,
+          247.841
+        ],
+        "rearAnkle": [
+          171.63,
+          337.244
+        ],
+        "rearElbow": [
+          162.124,
+          234.597
+        ],
+        "rearHip": [
+          175.101,
+          244.861
+        ],
+        "rearKnee": [
+          166.022,
+          291.567
+        ],
+        "rearShoulder": [
+          171.072,
+          195.837
+        ],
+        "rearWrist": [
+          174.929,
+          269.779
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "2e5961c2cb9a8881d905a4f2cb550b4f462bca669b87ab4fc64b7fb1c4665a3e"
+    },
+    {
+      "alphaBBox": [
+        143,
+        128,
+        277,
+        351
+      ],
+      "cue": "neutral",
+      "file": "thug/club/move/05.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 5,
+      "landmarks": {
+        "chest": [
+          201.613,
+          200.028
+        ],
+        "frontAnkle": [
+          204.773,
+          342.98
+        ],
+        "frontElbow": [
+          246.134,
+          241.881
+        ],
+        "frontHip": [
+          210.25,
+          249.864
+        ],
+        "frontKnee": [
+          203.585,
+          296.975
+        ],
+        "frontShoulder": [
+          230.803,
+          205.174
+        ],
+        "frontWrist": [
+          239.48,
+          278.725
+        ],
+        "head": [
+          208.104,
+          163.218
+        ],
+        "neck": [
+          204.864,
+          181.592
+        ],
+        "pelvis": [
+          193.351,
+          246.885
+        ],
+        "rearAnkle": [
+          180.324,
+          336.951
+        ],
+        "rearElbow": [
+          157.796,
+          231.874
+        ],
+        "rearHip": [
+          176.452,
+          243.905
+        ],
+        "rearKnee": [
+          183.117,
+          291.016
+        ],
+        "rearShoulder": [
+          172.423,
+          194.881
+        ],
+        "rearWrist": [
+          167.034,
+          268.156
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "607293ad687427e71bd7a2b8c89371f95a650778c2f9cbebd1dd8cb6346532ce"
+    },
+    {
+      "alphaBBox": [
+        141,
+        128,
+        275,
+        351
+      ],
+      "cue": "neutral",
+      "file": "thug/club/move/06.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 5,
+      "landmarks": {
+        "chest": [
+          198.911,
+          200.028
+        ],
+        "frontAnkle": [
+          202.071,
+          342.98
+        ],
+        "frontElbow": [
+          243.432,
+          241.881
+        ],
+        "frontHip": [
+          207.548,
+          249.864
+        ],
+        "frontKnee": [
+          200.883,
+          296.975
+        ],
+        "frontShoulder": [
+          228.101,
+          205.174
+        ],
+        "frontWrist": [
+          236.778,
+          278.725
+        ],
+        "head": [
+          205.402,
+          163.218
+        ],
+        "neck": [
+          202.162,
+          181.592
+        ],
+        "pelvis": [
+          190.649,
+          246.885
+        ],
+        "rearAnkle": [
+          177.622,
+          336.951
+        ],
+        "rearElbow": [
+          155.094,
+          231.874
+        ],
+        "rearHip": [
+          173.75,
+          243.905
+        ],
+        "rearKnee": [
+          180.415,
+          291.016
+        ],
+        "rearShoulder": [
+          169.721,
+          194.881
+        ],
+        "rearWrist": [
+          164.332,
+          268.156
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "3dd0a7afced298d2447dc8f76adf68cac51896c79f95b820ecffe95922f5a9ad"
+    }
+  ],
+  "id": "move",
+  "kind": "state",
+  "playback": "loop",
+  "rasterScale": 0.78,
+  "rootScale": 1.0,
+  "weapon": "club"
+}

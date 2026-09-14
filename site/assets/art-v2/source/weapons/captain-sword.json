@@ -1,0 +1,22 @@
+{
+  "id": "captain-sword-v2",
+  "kind": "captain-sword",
+  "length": 96,
+  "gripLength": 16,
+  "guardWidth": 30,
+  "bladeWidth": 9,
+  "pommelRadius": 7,
+  "attachment": "frontWrist",
+  "palette": {
+    "blade": "#cdd3d0",
+    "edge": "#eef2ee",
+    "guard": "#8a7a45",
+    "grip": "#4a3428",
+    "dark": "#2b211c",
+    "shield": "#6d3a2b",
+    "shieldLight": "#8c5238",
+    "shieldDark": "#43241a",
+    "boss": "#9ea6a2",
+    "accent": "#d8a83c"
+  }
+}

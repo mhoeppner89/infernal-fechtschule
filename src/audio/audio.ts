@@ -23,12 +23,22 @@ export class AudioEngine {
         this.tone(150, 95, 0.07, 'sawtooth', 0.05);
         break;
       case 'hit':
-        this.noise(0.055, 0.12);
-        this.tone(92, 58, 0.08, 'square', 0.04);
+        if (event.impact === 'armor') {
+          this.tone(980, 370, 0.09, 'square', 0.055);
+          this.tone(1480, 720, 0.06, 'triangle', 0.03, 0.012);
+        } else {
+          this.noise(0.055, 0.12);
+          this.tone(92, 58, 0.08, 'square', 0.04);
+        }
         break;
       case 'heavy-hit':
-        this.noise(0.09, 0.2);
-        this.tone(78, 42, 0.14, 'sawtooth', 0.08);
+        if (event.impact === 'armor') {
+          this.noise(0.045, 0.08);
+          this.tone(760, 180, 0.15, 'square', 0.085);
+        } else {
+          this.noise(0.09, 0.2);
+          this.tone(78, 42, 0.14, 'sawtooth', 0.08);
+        }
         break;
       case 'blocked':
         this.tone(820, 410, 0.08, 'square', 0.045);
@@ -36,6 +46,10 @@ export class AudioEngine {
       case 'parry':
         this.tone(1320, 660, 0.16, 'triangle', 0.095);
         this.tone(1760, 980, 0.11, 'sine', 0.045, 0.025);
+        break;
+      case 'interception':
+        this.tone(1080, 540, 0.11, 'square', 0.065);
+        this.tone(620, 930, 0.1, 'triangle', 0.035, 0.018);
         break;
       case 'guardbreak':
         this.noise(0.16, 0.22);

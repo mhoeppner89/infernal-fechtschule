@@ -15,6 +15,14 @@ const roots = [
   'js'
 ];
 
+function shouldPrecache(relativePath) {
+  const normalized = relativePath.replaceAll(path.sep, '/');
+  if (!normalized.startsWith('assets/art/')) return true;
+  // Runtime sprites are optimized WebP files. Keep editable PNG strips,
+  // previews, seeds, and normalization metadata out of the offline payload.
+  return !normalized.endsWith('.png') && !normalized.endsWith('/normalization.json');
+}
+
 async function walk(relativePath) {
   const absolutePath = path.join(site, relativePath);
   const entries = await readdir(absolutePath, { withFileTypes: true });
@@ -22,7 +30,7 @@ async function walk(relativePath) {
   for (const entry of entries) {
     const child = path.posix.join(relativePath.replaceAll(path.sep, '/'), entry.name);
     if (entry.isDirectory()) files.push(...await walk(child));
-    else if (!entry.name.endsWith('.map')) files.push(child);
+    else if (!entry.name.endsWith('.map') && shouldPrecache(child)) files.push(child);
   }
   return files;
 }

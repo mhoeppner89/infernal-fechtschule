@@ -1,0 +1,36 @@
+{
+  "source": "/private/tmp/dussack-counter-rgba.png",
+  "frameCount": 4,
+  "canvas": [
+    640,
+    640
+  ],
+  "padding": 20,
+  "sharedScale": 1.0909090909090908,
+  "sourceBounds": [
+    [
+      16,
+      203,
+      353,
+      722
+    ],
+    [
+      429,
+      214,
+      851,
+      723
+    ],
+    [
+      803,
+      338,
+      1353,
+      723
+    ],
+    [
+      1320,
+      315,
+      1765,
+      725
+    ]
+  ]
+}

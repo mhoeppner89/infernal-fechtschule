@@ -1,0 +1,11 @@
+{
+  "id": "longsword-v2",
+  "kind": "longsword",
+  "length": 132,
+  "bladeWidth": 7,
+  "guardWidth": 34,
+  "gripLength": 24,
+  "pommelRadius": 6,
+  "attachment": "frontWrist",
+  "palette": { "blade": "#d8deda", "edge": "#f5f0d6", "dark": "#6b7374", "grip": "#4c3027", "guard": "#c39b3d" }
+}

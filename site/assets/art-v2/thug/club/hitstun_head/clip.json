@@ -1,0 +1,529 @@
+{
+  "actor": "thug",
+  "canvas": [
+    384,
+    384
+  ],
+  "footAnchor": [
+    192,
+    350
+  ],
+  "frames": [
+    {
+      "alphaBBox": [
+        97,
+        130,
+        235,
+        351
+      ],
+      "cue": "contact",
+      "file": "thug/club/hitstun_head/01.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 4,
+      "landmarks": {
+        "chest": [
+          178.628,
+          201.853
+        ],
+        "frontAnkle": [
+          206.589,
+          336.039
+        ],
+        "frontElbow": [
+          187.823,
+          230.597
+        ],
+        "frontHip": [
+          204.627,
+          245.239
+        ],
+        "frontKnee": [
+          216.942,
+          291.198
+        ],
+        "frontShoulder": [
+          207.713,
+          196.147
+        ],
+        "frontWrist": [
+          205.4,
+          263.655
+        ],
+        "head": [
+          171.432,
+          165.175
+        ],
+        "neck": [
+          175.024,
+          183.483
+        ],
+        "pelvis": [
+          187.788,
+          248.543
+        ],
+        "rearAnkle": [
+          167.415,
+          342.98
+        ],
+        "rearElbow": [
+          115.092,
+          227.45
+        ],
+        "rearHip": [
+          170.949,
+          251.847
+        ],
+        "rearKnee": [
+          158.634,
+          297.806
+        ],
+        "rearShoulder": [
+          149.542,
+          207.56
+        ],
+        "rearWrist": [
+          109.881,
+          264.525
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "be3057113158c004da74893af73771fc9e1bc41313dad16c1ac2a37d06860cad"
+    },
+    {
+      "alphaBBox": [
+        80,
+        136,
+        228,
+        351
+      ],
+      "cue": "recovery",
+      "file": "thug/club/hitstun_head/02.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 5,
+      "landmarks": {
+        "chest": [
+          157.426,
+          202.403
+        ],
+        "frontAnkle": [
+          199.155,
+          324.459
+        ],
+        "frontElbow": [
+          162.673,
+          221.147
+        ],
+        "frontHip": [
+          197.193,
+          233.66
+        ],
+        "frontKnee": [
+          209.507,
+          279.619
+        ],
+        "frontShoulder": [
+          182.563,
+          186.696
+        ],
+        "frontWrist": [
+          180.25,
+          254.204
+        ],
+        "head": [
+          137.619,
+          170.705
+        ],
+        "neck": [
+          147.506,
+          186.528
+        ],
+        "pelvis": [
+          182.64,
+          242.753
+        ],
+        "rearAnkle": [
+          164.554,
+          342.98
+        ],
+        "rearElbow": [
+          97.84,
+          238.0
+        ],
+        "rearHip": [
+          168.087,
+          251.847
+        ],
+        "rearKnee": [
+          155.773,
+          297.806
+        ],
+        "rearShoulder": [
+          132.29,
+          218.11
+        ],
+        "rearWrist": [
+          92.629,
+          275.076
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "fc049f656439306a2306f34a69e171ada427bdab539a93a0976589ae44afdc7f"
+    },
+    {
+      "alphaBBox": [
+        84,
+        133,
+        230,
+        351
+      ],
+      "cue": "recovery",
+      "file": "thug/club/hitstun_head/03.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 3,
+      "landmarks": {
+        "chest": [
+          163.34,
+          201.552
+        ],
+        "frontAnkle": [
+          201.534,
+          327.644
+        ],
+        "frontElbow": [
+          170.108,
+          223.047
+        ],
+        "frontHip": [
+          199.571,
+          236.845
+        ],
+        "frontKnee": [
+          211.886,
+          282.804
+        ],
+        "frontShoulder": [
+          189.998,
+          188.596
+        ],
+        "frontWrist": [
+          187.685,
+          256.104
+        ],
+        "head": [
+          147.001,
+          167.935
+        ],
+        "neck": [
+          155.157,
+          184.715
+        ],
+        "pelvis": [
+          184.138,
+          244.346
+        ],
+        "rearAnkle": [
+          165.17,
+          342.98
+        ],
+        "rearElbow": [
+          102.231,
+          234.398
+        ],
+        "rearHip": [
+          168.704,
+          251.847
+        ],
+        "rearKnee": [
+          156.389,
+          297.806
+        ],
+        "rearShoulder": [
+          136.681,
+          214.508
+        ],
+        "rearWrist": [
+          97.02,
+          271.474
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "1d5556b8c2c3da76693f204b67dc45eef3886196b1dcdbee87d3888b85fd2e24"
+    },
+    {
+      "alphaBBox": [
+        93,
+        131,
+        234,
+        351
+      ],
+      "cue": "recovery",
+      "file": "thug/club/hitstun_head/04.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 3,
+      "landmarks": {
+        "chest": [
+          174.219,
+          201.426
+        ],
+        "frontAnkle": [
+          205.274,
+          333.601
+        ],
+        "frontElbow": [
+          182.922,
+          228.066
+        ],
+        "frontHip": [
+          203.312,
+          242.802
+        ],
+        "frontKnee": [
+          215.626,
+          288.761
+        ],
+        "frontShoulder": [
+          202.812,
+          193.615
+        ],
+        "frontWrist": [
+          200.499,
+          261.123
+        ],
+        "head": [
+          164.369,
+          165.37
+        ],
+        "neck": [
+          169.286,
+          183.368
+        ],
+        "pelvis": [
+          186.758,
+          247.324
+        ],
+        "rearAnkle": [
+          166.671,
+          342.98
+        ],
+        "rearElbow": [
+          111.177,
+          229.128
+        ],
+        "rearHip": [
+          170.205,
+          251.847
+        ],
+        "rearKnee": [
+          157.89,
+          297.806
+        ],
+        "rearShoulder": [
+          145.627,
+          209.238
+        ],
+        "rearWrist": [
+          105.966,
+          266.203
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "44ad309b4188ea7866312daed6631a80697d78cb0d286efd22d21d9900498cf5"
+    },
+    {
+      "alphaBBox": [
+        105,
+        131,
+        237,
+        351
+      ],
+      "cue": "recovery",
+      "file": "thug/club/hitstun_head/05.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 5,
+      "landmarks": {
+        "chest": [
+          187.164,
+          203.403
+        ],
+        "frontAnkle": [
+          208.851,
+          340.778
+        ],
+        "frontElbow": [
+          196.87,
+          236.241
+        ],
+        "frontHip": [
+          206.888,
+          249.979
+        ],
+        "frontKnee": [
+          219.203,
+          295.938
+        ],
+        "frontShoulder": [
+          216.76,
+          201.79
+        ],
+        "frontWrist": [
+          214.447,
+          269.298
+        ],
+        "head": [
+          185.13,
+          166.081
+        ],
+        "neck": [
+          186.145,
+          184.711
+        ],
+        "pelvis": [
+          189.754,
+          250.913
+        ],
+        "rearAnkle": [
+          169.085,
+          342.98
+        ],
+        "rearElbow": [
+          123.117,
+          224.907
+        ],
+        "rearHip": [
+          172.619,
+          251.847
+        ],
+        "rearKnee": [
+          160.304,
+          297.806
+        ],
+        "rearShoulder": [
+          157.568,
+          205.017
+        ],
+        "rearWrist": [
+          117.907,
+          261.982
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "997d0324a6e9bb393cb84bb4bb3069b2cf3c890b4e19a6bf42dcbedbbdce398e"
+    },
+    {
+      "alphaBBox": [
+        115,
+        131,
+        241,
+        351
+      ],
+      "cue": "recovery",
+      "file": "thug/club/hitstun_head/06.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 5,
+      "landmarks": {
+        "chest": [
+          196.973,
+          203.068
+        ],
+        "frontAnkle": [
+          211.028,
+          342.98
+        ],
+        "frontElbow": [
+          206.561,
+          240.616
+        ],
+        "frontHip": [
+          209.066,
+          252.181
+        ],
+        "frontKnee": [
+          221.381,
+          298.139
+        ],
+        "frontShoulder": [
+          226.451,
+          206.166
+        ],
+        "frontWrist": [
+          224.138,
+          273.674
+        ],
+        "head": [
+          200.88,
+          165.895
+        ],
+        "neck": [
+          198.93,
+          184.45
+        ],
+        "pelvis": [
+          192.0,
+          250.387
+        ],
+        "rearAnkle": [
+          171.4,
+          339.727
+        ],
+        "rearElbow": [
+          133.045,
+          219.859
+        ],
+        "rearHip": [
+          174.934,
+          248.593
+        ],
+        "rearKnee": [
+          162.619,
+          294.552
+        ],
+        "rearShoulder": [
+          167.496,
+          199.969
+        ],
+        "rearWrist": [
+          127.835,
+          256.935
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "29b4da035aef071daee1c192ff1dd91a9b8d04254f9b557908c472f1cb3a1c87"
+    }
+  ],
+  "id": "hitstun_head",
+  "kind": "state",
+  "playback": "once",
+  "rasterScale": 0.78,
+  "rootScale": 1.0,
+  "weapon": "club"
+}

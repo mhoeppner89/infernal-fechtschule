@@ -1,17 +1,21 @@
-import { attackDuration, getAttack, isAttackActive, resolveAirAttack, resolveDodgeAttack, resolvePlayerAttack, resolveSwitchAttack, withUpgradeEffects } from './attacks.js';
+import { attackDuration, getAttack, isHitZoneExposed, isAttackActive, resolveCrouchAttack, resolveDodgeAttack, resolvePlayerAttack, resolveSwitchAttack, withUpgradeEffects } from './attacks.js';
 import { createEnemy, createPlayer } from './factories.js';
 import { clamp, damp, normalize2 } from './math.js';
 import { Rng } from './rng.js';
 import { chooseSoftTarget } from './targeting.js';
 import { UPGRADE_OFFERS } from './upgrades.js';
 import { WAVES } from './waves.js';
-import { NEUTRAL_INPUT } from './types.js';
+import { GAME_SNAPSHOT_VERSION, NEUTRAL_INPUT } from './types.js';
 export const ARENA = Object.freeze({
     minX: 92,
     maxX: 1188,
     minZ: 248,
     maxZ: 612
 });
+export const CROUCH_DURATION_SECONDS = 0.48;
+export const CROUCH_ATTACK_WINDOW_SECONDS = 0.36;
+const MOVE_INPUT_DEADZONE = 0.1;
+const DODGE_INPUT_DEADZONE = 0.15;
 export class GameWorld {
     actors = [];
     upgrades = new Set();
@@ -33,6 +37,7 @@ export class GameWorld {
     permissionTimer = 0;
     clearTimer = 0;
     hitStop = 0;
+    pendingPlayerEdges = [];
     waveResolved = false;
     upgradeOfferIndex = 0;
     constructor(options) {
@@ -41,6 +46,7 @@ export class GameWorld {
         const centreX = 400;
         for (let index = 0; index < options.playerCount; index += 1) {
             this.actors.push(createPlayer(this.nextActorId++, index, centreX - index * 64, 420 + index * 54));
+            this.pendingPlayerEdges.push({ ...NEUTRAL_INPUT });
         }
         this.phase = 'countdown';
         this.waveTitle = 'Meyer Crosses the Alps';
@@ -59,6 +65,7 @@ export class GameWorld {
         if (this.phase !== 'wave')
             return;
         if (this.hitStop > 0) {
+            this.bufferPlayerEdges(inputs);
             this.hitStop -= safeDt;
             return;
         }
@@ -68,7 +75,8 @@ export class GameWorld {
         this.updateActorTimers(safeDt);
         const players = this.playerActors();
         for (const player of players) {
-            const input = inputs[player.playerIndex ?? 0] ?? NEUTRAL_INPUT;
+            const playerIndex = player.playerIndex ?? 0;
+            const input = this.consumePlayerInput(playerIndex, inputs[playerIndex] ?? NEUTRAL_INPUT);
             this.updatePlayer(player, input, safeDt);
         }
         for (const actor of this.actors) {
@@ -98,7 +106,7 @@ export class GameWorld {
     }
     snapshot() {
         return {
-            version: 1,
+            version: GAME_SNAPSHOT_VERSION,
             tick: this.tick,
             time: this.time,
             phase: this.phase,
@@ -133,15 +141,20 @@ export class GameWorld {
             state: actor.state,
             stateElapsed: actor.stateElapsed,
             stateDuration: actor.stateDuration,
+            stateMoveX: actor.stateMoveX,
+            stateMoveZ: actor.stateMoveZ,
             weapon: actor.weapon,
+            desiredWeapon: actor.desiredWeapon,
             attackId: actor.attack?.id ?? null,
             attackElapsed: actor.attack?.elapsed ?? 0,
+            reactionZone: actor.reactionZone,
             invulnerable: actor.invulnerable,
             openingTimer: actor.openingTimer,
             provokeTimer: actor.provokeTimer,
             counterWindow: actor.counterWindow,
             flashTimer: actor.flashTimer,
-            comboCount: actor.comboCount
+            comboCount: actor.comboCount,
+            deathTimer: actor.deathTimer
         };
     }
     updateActorTimers(dt) {
@@ -162,8 +175,10 @@ export class GameWorld {
                 const rate = actor.team === 'players' ? 18 : 11;
                 actor.guard = Math.min(actor.maxGuard, actor.guard + rate * dt);
             }
-            if (actor.state === 'dead')
+            if (actor.state === 'dead') {
                 actor.deathTimer += dt;
+                actor.stateElapsed = actor.deathTimer;
+            }
         }
     }
     updatePlayer(actor, input, dt) {
@@ -220,11 +235,14 @@ export class GameWorld {
                 this.enterNeutral(actor);
             return;
         }
-        if (actor.state === 'jump') {
+        if (actor.state === 'crouch') {
             actor.stateElapsed += dt;
-            this.moveActor(actor, input.moveX, input.moveZ, 0.58, dt);
-            if (input.lightPressed && actor.stateElapsed > 0.08) {
-                this.startAttack(actor, resolveAirAttack(actor.weapon));
+            actor.vx = 0;
+            actor.vz = 0;
+            if ((input.lightPressed || input.heavyPressed) &&
+                actor.stateElapsed <= CROUCH_ATTACK_WINDOW_SECONDS) {
+                const action = input.lightPressed ? 'light' : 'heavy';
+                this.startAttack(actor, resolveCrouchAttack(actor.weapon, action));
                 return;
             }
             if (actor.stateElapsed >= actor.stateDuration)
@@ -246,19 +264,30 @@ export class GameWorld {
             return;
         }
         if (input.mobilityPressed) {
-            const direction = normalize2(input.moveX, input.moveZ);
-            if (Math.hypot(direction.x, direction.y) > 0.15)
+            const rawMagnitude = Math.hypot(input.moveX, input.moveZ);
+            const direction = rawMagnitude > DODGE_INPUT_DEADZONE
+                ? normalize2(input.moveX, input.moveZ)
+                : { x: 0, y: 0 };
+            if (rawMagnitude > DODGE_INPUT_DEADZONE)
                 this.startDodge(actor, direction.x, direction.y);
-            else
-                this.startJump(actor);
+            else if (input.lightPressed || input.heavyPressed) {
+                const action = input.lightPressed ? 'light' : 'heavy';
+                this.startAttack(actor, resolveCrouchAttack(actor.weapon, action));
+            }
+            else {
+                this.startCrouch(actor);
+            }
             return;
         }
         if (input.guardHeld) {
             actor.state = 'block';
             actor.stateElapsed = 0;
-            actor.stateDuration = Number.POSITIVE_INFINITY;
+            // Zero means an input-held state with no predetermined end. Keeping this
+            // finite also preserves the snapshot over JSON for the replica client.
+            actor.stateDuration = 0;
             actor.vx = 0;
             actor.vz = 0;
+            actor.reactionZone = null;
             return;
         }
         if (input.lightPressed || input.heavyPressed) {
@@ -270,8 +299,7 @@ export class GameWorld {
             return;
         }
         this.moveActor(actor, input.moveX, input.moveZ, 1, dt);
-        actor.state = Math.hypot(input.moveX, input.moveZ) > 0.1 ? 'move' : 'idle';
-        actor.stateElapsed += dt;
+        this.updateContinuousState(actor, Math.hypot(input.moveX, input.moveZ) > MOVE_INPUT_DEADZONE ? 'move' : 'idle', dt);
     }
     updatePlayerAttack(actor, input, dt) {
         const runtime = actor.attack;
@@ -313,7 +341,8 @@ export class GameWorld {
             actor.attack = null;
             actor.state = 'block';
             actor.stateElapsed = 0;
-            actor.stateDuration = Number.POSITIVE_INFINITY;
+            actor.stateDuration = 0;
+            actor.reactionZone = null;
             return;
         }
         if (runtime.elapsed < attackDuration(definition))
@@ -381,13 +410,18 @@ export class GameWorld {
                 actor.state = 'block';
                 actor.stateElapsed = 0;
                 actor.stateDuration = this.rng.range(0.36, 0.68);
+                actor.reactionZone = null;
                 actor.parryWindow = this.rng.next() < 0.25 ? 0.13 : 0;
                 return;
             }
         }
         if (actor.attackPermission && actor.aiCooldown <= 0) {
             if (actor.archetype === 'thug' && forward < 67 && depth < 35) {
-                this.startAttack(actor, 'thug_overhead', target);
+                const roll = this.rng.next();
+                const attackId = target.state === 'crouch'
+                    ? (roll < 0.58 ? 'thug_low' : 'thug_body')
+                    : (roll < 0.4 ? 'thug_overhead' : roll < 0.72 ? 'thug_body' : 'thug_low');
+                this.startAttack(actor, attackId, target);
                 actor.aiCooldown = this.rng.range(0.65, 1.1);
                 return;
             }
@@ -423,7 +457,7 @@ export class GameWorld {
         const move = normalize2(desiredX - actor.x, desiredZ - actor.z);
         const speedScale = actor.attackPermission ? 1 : 0.72;
         this.moveActor(actor, move.x, move.y, speedScale, dt);
-        actor.state = 'move';
+        this.updateContinuousState(actor, 'move', dt);
     }
     updateBossAI(actor, target, dt) {
         const healthRatio = actor.health / actor.maxHealth;
@@ -453,7 +487,7 @@ export class GameWorld {
         const move = normalize2(dx, dz);
         const preferred = distance > 105 ? 1 : 0.25;
         this.moveActor(actor, move.x, move.y, preferred, dt);
-        actor.state = 'move';
+        this.updateContinuousState(actor, 'move', dt);
     }
     updateEnemyAttack(actor, dt) {
         const runtime = actor.attack;
@@ -490,7 +524,14 @@ export class GameWorld {
                 continue;
             if (!runtime.activeCuePlayed) {
                 runtime.activeCuePlayed = true;
-                this.emit({ type: 'attack', actorId: attacker.id, x: attacker.x, z: attacker.z, attackId: definition.id });
+                this.emit({
+                    type: 'attack',
+                    actorId: attacker.id,
+                    x: attacker.x,
+                    z: attacker.z,
+                    attackId: definition.id,
+                    hitZone: definition.hitZone
+                });
             }
             let targetsHit = 0;
             for (const target of this.actors) {
@@ -518,14 +559,19 @@ export class GameWorld {
     attackIntersects(attacker, target, definition) {
         const dx = target.x - attacker.x;
         const dz = target.z - attacker.z;
+        let intersects;
         if (definition.arc === 'radial') {
             const radius = Math.max(definition.reach, definition.depth) + target.radius;
-            return Math.hypot(dx, dz) <= radius;
+            intersects = Math.hypot(dx, dz) <= radius;
         }
-        const forward = dx * attacker.facing;
-        return (forward >= definition.minForward - target.radius &&
-            forward <= definition.reach + target.radius &&
-            Math.abs(dz) <= definition.depth + target.radius * 0.72);
+        else {
+            const forward = dx * attacker.facing;
+            intersects = (forward >= definition.minForward - target.radius &&
+                forward <= definition.reach + target.radius &&
+                Math.abs(dz) <= definition.depth + target.radius * 0.72);
+        }
+        const targetPosture = this.hasCrouchedPosture(target) ? 'crouch' : target.state;
+        return intersects && isHitZoneExposed(targetPosture, definition.hitZone);
     }
     tryParryOrDeflect(attacker, target, definition) {
         if (definition.parryable === false)
@@ -533,7 +579,8 @@ export class GameWorld {
         const fromFront = (attacker.x - target.x) * target.facing >= -18;
         if (!fromFront)
             return false;
-        let deflected = target.parryWindow > 0;
+        const timedParry = target.parryWindow > 0;
+        let deflected = timedParry;
         if (!deflected && target.attack) {
             const targetDef = getAttack(target.attack.id);
             if (targetDef.deflectStart !== undefined &&
@@ -549,6 +596,7 @@ export class GameWorld {
         attacker.state = 'hitstun';
         attacker.stateElapsed = 0;
         attacker.stateDuration = attacker.archetype === 'grotesque' ? 0.24 : 0.52;
+        attacker.reactionZone = definition.hitZone;
         attacker.vx = -attacker.facing * 58;
         attacker.vz = 0;
         target.counterWindow = 1.05;
@@ -556,7 +604,15 @@ export class GameWorld {
         target.provokeTimer = 0;
         target.flashTimer = 0.08;
         this.hitStop = Math.max(this.hitStop, 0.075);
-        this.emit({ type: 'parry', actorId: target.id, targetId: attacker.id, x: target.x, z: target.z, text: 'TAKE' });
+        this.emit({
+            type: timedParry ? 'parry' : 'interception',
+            actorId: target.id,
+            targetId: attacker.id,
+            x: target.x,
+            z: target.z,
+            text: 'TAKE',
+            hitZone: definition.hitZone
+        });
         return true;
     }
     tryBlock(attacker, target, definition) {
@@ -565,6 +621,7 @@ export class GameWorld {
         const fromFront = (attacker.x - target.x) * target.facing >= -14;
         if (!fromFront)
             return false;
+        const targetCrouched = this.hasCrouchedPosture(target);
         target.guard -= definition.guardDamage;
         target.guardRegenDelay = 1.55;
         target.flashTimer = 0.06;
@@ -575,15 +632,34 @@ export class GameWorld {
         this.clampActor(target);
         if (target.guard <= 0) {
             target.guard = 0;
+            target.reactionZone = definition.hitZone;
             target.state = 'guardbreak';
             target.stateElapsed = 0;
             target.stateDuration = target.archetype === 'grotesque' ? 0.48 : 0.9;
             target.attack = null;
-            this.emit({ type: 'guardbreak', actorId: attacker.id, targetId: target.id, x: target.x, z: target.z, text: 'GUARD BROKEN' });
+            this.emit({
+                type: 'guardbreak',
+                actorId: attacker.id,
+                targetId: target.id,
+                x: target.x,
+                z: target.z,
+                text: 'GUARD BROKEN',
+                hitZone: definition.hitZone,
+                targetCrouched
+            });
             this.hitStop = Math.max(this.hitStop, 0.085);
         }
         else {
-            this.emit({ type: 'blocked', actorId: attacker.id, targetId: target.id, x: target.x, z: target.z, amount: definition.guardDamage });
+            this.emit({
+                type: 'blocked',
+                actorId: attacker.id,
+                targetId: target.id,
+                x: target.x,
+                z: target.z,
+                amount: definition.guardDamage,
+                hitZone: definition.hitZone,
+                targetCrouched
+            });
             this.hitStop = Math.max(this.hitStop, definition.heavy ? 0.045 : 0.025);
         }
         return true;
@@ -601,7 +677,8 @@ export class GameWorld {
         }
         let damage = definition.damage * multiplier;
         let appliedHitstun = definition.hitstun;
-        if (target.armor > 0) {
+        const absorbedByArmor = target.armor > 0;
+        if (absorbedByArmor) {
             const armorPressure = definition.guardDamage * (definition.heavy ? 1.05 : 0.42) * (thirdIntention ? 1.65 : 1);
             target.armor = Math.max(0, target.armor - armorPressure);
             damage *= definition.heavy || thirdIntention ? 0.66 : 0.28;
@@ -612,9 +689,11 @@ export class GameWorld {
             appliedHitstun = definition.heavy ? Math.min(appliedHitstun, 0.2) : 0.055;
         }
         const roundedDamage = Math.max(1, Math.round(damage));
+        const targetCrouched = this.hasCrouchedPosture(target);
         target.health = Math.max(0, target.health - roundedDamage);
         target.guardRegenDelay = 1.25;
         target.flashTimer = 0.1;
+        target.reactionZone = definition.hitZone;
         target.attack = null;
         target.vx = attacker.facing * definition.knockback;
         target.vz += Math.sign(target.z - attacker.z || 1) * definition.knockback * 0.18;
@@ -627,15 +706,25 @@ export class GameWorld {
             target.deathTimer = 0;
             target.vx = attacker.facing * definition.knockback * 1.2;
             this.score += target.scoreValue;
-            this.emit({ type: 'death', actorId: attacker.id, targetId: target.id, x: target.x, z: target.z, amount: roundedDamage });
+            this.emit({
+                type: 'death',
+                actorId: attacker.id,
+                targetId: target.id,
+                x: target.x,
+                z: target.z,
+                amount: roundedDamage,
+                hitZone: definition.hitZone,
+                targetCrouched
+            });
         }
         else {
             target.state = 'hitstun';
             target.stateElapsed = 0;
             target.stateDuration = appliedHitstun;
         }
-        if (definition.signature) {
+        if (definition.signature && !attacker.attack.signatureShown) {
             this.emit({ type: 'signature', actorId: attacker.id, targetId: target.id, x: attacker.x, z: attacker.z, text: thirdIntention ? 'PROVOKE · TAKE · HIT' : definition.signature });
+            attacker.attack.signatureShown = true;
         }
         const hitEvent = {
             type: definition.heavy ? 'heavy-hit' : 'hit',
@@ -644,7 +733,10 @@ export class GameWorld {
             x: target.x,
             z: target.z,
             amount: roundedDamage,
-            attackId: definition.id
+            attackId: definition.id,
+            hitZone: definition.hitZone,
+            targetCrouched,
+            impact: absorbedByArmor ? 'armor' : 'flesh'
         };
         if (thirdIntention)
             hitEvent.text = 'HIT';
@@ -670,13 +762,15 @@ export class GameWorld {
             hitConfirmed: false,
             blocked: false,
             queuedAction: null,
-            activeCuePlayed: false
+            activeCuePlayed: false,
+            signatureShown: false
         };
         actor.state = 'attack';
         actor.stateElapsed = 0;
         actor.stateDuration = attackDuration(definition);
         actor.vx = 0;
         actor.vz = 0;
+        actor.reactionZone = null;
     }
     startDodge(actor, moveX, moveZ) {
         actor.state = 'dodge';
@@ -685,15 +779,17 @@ export class GameWorld {
         actor.stateMoveX = moveX;
         actor.stateMoveZ = moveZ;
         actor.invulnerable = 0.18;
+        actor.reactionZone = null;
         if (Math.abs(moveX) > 0.15)
             actor.facing = moveX >= 0 ? 1 : -1;
     }
-    startJump(actor) {
-        actor.state = 'jump';
+    startCrouch(actor) {
+        actor.state = 'crouch';
         actor.stateElapsed = 0;
-        actor.stateDuration = 0.62;
+        actor.stateDuration = CROUCH_DURATION_SECONDS;
         actor.vx = 0;
         actor.vz = 0;
+        actor.reactionZone = null;
     }
     startSwitch(actor, fromHit) {
         actor.desiredWeapon = actor.weapon === 'longsword' ? 'dussack' : 'longsword';
@@ -704,6 +800,7 @@ export class GameWorld {
         actor.stateMoveZ = 0;
         actor.attack = null;
         actor.comboCount = fromHit ? actor.comboCount : 0;
+        actor.reactionZone = null;
     }
     enterNeutral(actor) {
         actor.state = 'idle';
@@ -712,9 +809,21 @@ export class GameWorld {
         actor.vx = 0;
         actor.vz = 0;
         actor.attack = null;
+        actor.reactionZone = null;
+    }
+    updateContinuousState(actor, state, dt) {
+        if (actor.state === state)
+            actor.stateElapsed += dt;
+        else
+            actor.stateElapsed = 0;
+        actor.state = state;
+        actor.stateDuration = 0;
+        actor.reactionZone = null;
     }
     moveActor(actor, moveX, moveZ, scale, dt) {
-        const normalized = normalize2(moveX, moveZ);
+        const normalized = Math.hypot(moveX, moveZ) > MOVE_INPUT_DEADZONE
+            ? normalize2(moveX, moveZ)
+            : { x: 0, y: 0 };
         const targetVx = normalized.x * actor.speedX * scale;
         const targetVz = normalized.y * actor.speedZ * scale;
         actor.vx = damp(actor.vx, targetVx, 16, dt);
@@ -724,6 +833,64 @@ export class GameWorld {
         if (Math.abs(normalized.x) > 0.12)
             actor.facing = normalized.x >= 0 ? 1 : -1;
         this.clampActor(actor);
+    }
+    hasCrouchedPosture(actor) {
+        if (actor.state === 'crouch')
+            return true;
+        if (actor.state !== 'attack' || !actor.attack)
+            return false;
+        return getAttack(actor.attack.id).crouchedPosture === true;
+    }
+    bufferPlayerEdges(inputs) {
+        for (let index = 0; index < this.playerCount; index += 1) {
+            const pending = this.pendingPlayerEdges[index];
+            if (pending)
+                this.mergePlayerEdges(pending, inputs[index] ?? NEUTRAL_INPUT);
+        }
+    }
+    consumePlayerInput(playerIndex, current) {
+        const pending = this.pendingPlayerEdges[playerIndex];
+        if (!pending)
+            return { ...current };
+        this.mergePlayerEdges(pending, current);
+        const actor = this.actors.find((candidate) => candidate.playerIndex === playerIndex);
+        if (actor && (actor.state === 'hitstun' || actor.state === 'guardbreak')) {
+            // Reaction states cannot act this step; keep edges queued so the press
+            // fires on recovery instead of being consumed and silently dropped.
+            return { ...current };
+        }
+        const useMobilityEdgeAxes = pending.mobilityPressed;
+        const merged = {
+            ...current,
+            moveX: useMobilityEdgeAxes ? pending.moveX : current.moveX,
+            moveZ: useMobilityEdgeAxes ? pending.moveZ : current.moveZ,
+            lightPressed: pending.lightPressed,
+            heavyPressed: pending.heavyPressed,
+            mobilityPressed: pending.mobilityPressed,
+            switchPressed: pending.switchPressed,
+            guardPressed: pending.guardPressed
+        };
+        pending.lightPressed = false;
+        pending.heavyPressed = false;
+        pending.mobilityPressed = false;
+        pending.switchPressed = false;
+        pending.guardPressed = false;
+        pending.moveX = 0;
+        pending.moveZ = 0;
+        return merged;
+    }
+    mergePlayerEdges(target, source) {
+        const mobilityAlreadyPending = target.mobilityPressed;
+        const attackAlreadyPending = target.lightPressed || target.heavyPressed;
+        target.lightPressed ||= source.lightPressed;
+        target.heavyPressed ||= source.heavyPressed;
+        if (!attackAlreadyPending && source.mobilityPressed && !mobilityAlreadyPending) {
+            target.mobilityPressed = true;
+            target.moveX = source.moveX;
+            target.moveZ = source.moveZ;
+        }
+        target.switchPressed ||= source.switchPressed;
+        target.guardPressed ||= source.guardPressed;
     }
     clampActor(actor) {
         actor.x = clamp(actor.x, ARENA.minX + actor.radius, ARENA.maxX - actor.radius);

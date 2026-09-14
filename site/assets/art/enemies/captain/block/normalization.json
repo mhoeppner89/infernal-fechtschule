@@ -1,0 +1,36 @@
+{
+  "source": "/Users/mhoeppner/.codex/generated_images/01a054c3-baa3-7b12-a076-23465ca4c92a/exec-a3600af0-aedb-4f3a-a61f-627cd01a083d.png",
+  "frameCount": 4,
+  "canvas": [
+    640,
+    640
+  ],
+  "padding": 18,
+  "sharedScale": 0.8591749644381224,
+  "sourceBounds": [
+    [
+      8,
+      8,
+      598,
+      705
+    ],
+    [
+      579,
+      59,
+      1132,
+      702
+    ],
+    [
+      1136,
+      64,
+      1652,
+      698
+    ],
+    [
+      1642,
+      0,
+      2172,
+      703
+    ]
+  ]
+}

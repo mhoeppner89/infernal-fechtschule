@@ -1,0 +1,531 @@
+{
+  "actor": "grotesque",
+  "canvas": [
+    384,
+    384
+  ],
+  "footAnchor": [
+    192,
+    350
+  ],
+  "frames": [
+    {
+      "alphaBBox": [
+        128,
+        94,
+        300,
+        351
+      ],
+      "cue": "neutral",
+      "file": "grotesque/claws/boss_sweep/01.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 4,
+      "landmarks": {
+        "chest": [
+          213.211,
+          160.888
+        ],
+        "frontAnkle": [
+          218.95,
+          342.98
+        ],
+        "frontElbow": [
+          281.376,
+          218.885
+        ],
+        "frontHip": [
+          213.513,
+          233.159
+        ],
+        "frontKnee": [
+          236.304,
+          289.569
+        ],
+        "frontShoulder": [
+          253.269,
+          173.904
+        ],
+        "frontWrist": [
+          254.923,
+          261.219
+        ],
+        "head": [
+          226.13,
+          121.127
+        ],
+        "neck": [
+          219.478,
+          141.601
+        ],
+        "pelvis": [
+          192.0,
+          226.169
+        ],
+        "rearAnkle": [
+          163.176,
+          329.573
+        ],
+        "rearElbow": [
+          148.252,
+          194.704
+        ],
+        "rearHip": [
+          170.487,
+          219.179
+        ],
+        "rearKnee": [
+          147.696,
+          275.589
+        ],
+        "rearShoulder": [
+          173.152,
+          147.873
+        ],
+        "rearWrist": [
+          162.011,
+          242.69
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "7df38914a9c7ca9c7cad37defcda6d649ef220ad9afd55f04ab0aa0ad515981b"
+    },
+    {
+      "alphaBBox": [
+        93,
+        111,
+        248,
+        351
+      ],
+      "cue": "anticipation",
+      "file": "grotesque/claws/boss_sweep/02.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 5,
+      "landmarks": {
+        "chest": [
+          183.838,
+          180.244
+        ],
+        "frontAnkle": [
+          199.947,
+          340.726
+        ],
+        "frontElbow": [
+          206.944,
+          230.496
+        ],
+        "frontHip": [
+          205.257,
+          249.268
+        ],
+        "frontKnee": [
+          166.149,
+          295.874
+        ],
+        "frontShoulder": [
+          225.952,
+          180.979
+        ],
+        "frontWrist": [
+          225.644,
+          276.781
+        ],
+        "head": [
+          184.568,
+          138.442
+        ],
+        "neck": [
+          184.192,
+          159.967
+        ],
+        "pelvis": [
+          182.64,
+          248.873
+        ],
+        "rearAnkle": [
+          166.076,
+          342.98
+        ],
+        "rearElbow": [
+          110.548,
+          222.419
+        ],
+        "rearHip": [
+          160.023,
+          248.479
+        ],
+        "rearKnee": [
+          197.48,
+          296.421
+        ],
+        "rearShoulder": [
+          141.724,
+          179.509
+        ],
+        "rearWrist": [
+          110.548,
+          272.339
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "c802eb73299ded6883942ebd92babb054199ee1082e687a49e2f4be9d24a826a"
+    },
+    {
+      "alphaBBox": [
+        72,
+        115,
+        333,
+        351
+      ],
+      "cue": "contact",
+      "file": "grotesque/claws/boss_sweep/03.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 3,
+      "landmarks": {
+        "chest": [
+          162.322,
+          180.095
+        ],
+        "frontAnkle": [
+          146.005,
+          342.98
+        ],
+        "frontElbow": [
+          250.001,
+          216.485
+        ],
+        "frontHip": [
+          151.315,
+          251.522
+        ],
+        "frontKnee": [
+          112.207,
+          298.129
+        ],
+        "frontShoulder": [
+          199.851,
+          199.217
+        ],
+        "frontWrist": [
+          289.339,
+          247.219
+        ],
+        "head": [
+          181.302,
+          142.843
+        ],
+        "neck": [
+          171.529,
+          162.025
+        ],
+        "pelvis": [
+          131.16,
+          241.253
+        ],
+        "rearAnkle": [
+          117.058,
+          325.485
+        ],
+        "rearElbow": [
+          162.946,
+          197.817
+        ],
+        "rearHip": [
+          111.005,
+          230.984
+        ],
+        "rearKnee": [
+          148.462,
+          278.927
+        ],
+        "rearShoulder": [
+          124.793,
+          160.972
+        ],
+        "rearWrist": [
+          184.83,
+          242.685
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "0d53b2929f915d7813dbd92be167d67ce6d7e78157843c113ceb5710a7695ed8"
+    },
+    {
+      "alphaBBox": [
+        79,
+        121,
+        333,
+        351
+      ],
+      "cue": "overshoot",
+      "file": "grotesque/claws/boss_sweep/04.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 3,
+      "landmarks": {
+        "chest": [
+          176.186,
+          182.696
+        ],
+        "frontAnkle": [
+          148.831,
+          342.98
+        ],
+        "frontElbow": [
+          253.709,
+          237.876
+        ],
+        "frontHip": [
+          154.14,
+          251.522
+        ],
+        "frontKnee": [
+          115.033,
+          298.129
+        ],
+        "frontShoulder": [
+          210.261,
+          207.453
+        ],
+        "frontWrist": [
+          283.051,
+          278.262
+        ],
+        "head": [
+          200.76,
+          148.872
+        ],
+        "neck": [
+          188.106,
+          166.289
+        ],
+        "pelvis": [
+          135.84,
+          238.227
+        ],
+        "rearAnkle": [
+          123.593,
+          319.432
+        ],
+        "rearElbow": [
+          168.63,
+          203.872
+        ],
+        "rearHip": [
+          117.54,
+          224.931
+        ],
+        "rearKnee": [
+          154.997,
+          272.874
+        ],
+        "rearShoulder": [
+          142.11,
+          157.938
+        ],
+        "rearWrist": [
+          179.009,
+          252.701
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "c4105c1901b783def8158f6f513b5d13abf61574e2058bdea83c0c827e44f9bb"
+    },
+    {
+      "alphaBBox": [
+        122,
+        94,
+        298,
+        351
+      ],
+      "cue": "recovery",
+      "file": "grotesque/claws/boss_sweep/05.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 5,
+      "landmarks": {
+        "chest": [
+          207.751,
+          160.888
+        ],
+        "frontAnkle": [
+          213.49,
+          342.98
+        ],
+        "frontElbow": [
+          273.524,
+          220.294
+        ],
+        "frontHip": [
+          208.053,
+          233.159
+        ],
+        "frontKnee": [
+          230.844,
+          289.569
+        ],
+        "frontShoulder": [
+          247.809,
+          173.904
+        ],
+        "frontWrist": [
+          280.471,
+          269.728
+        ],
+        "head": [
+          220.67,
+          121.127
+        ],
+        "neck": [
+          214.018,
+          141.601
+        ],
+        "pelvis": [
+          186.54,
+          226.169
+        ],
+        "rearAnkle": [
+          157.716,
+          329.573
+        ],
+        "rearElbow": [
+          168.618,
+          200.904
+        ],
+        "rearHip": [
+          165.027,
+          219.179
+        ],
+        "rearKnee": [
+          142.236,
+          275.589
+        ],
+        "rearShoulder": [
+          167.692,
+          147.873
+        ],
+        "rearWrist": [
+          191.281,
+          245.383
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "d00f885bb7e5e4d22219b12da26958368753f1e8b41b92dbc2d4f813e6a1d364"
+    },
+    {
+      "alphaBBox": [
+        128,
+        94,
+        300,
+        351
+      ],
+      "cue": "neutral",
+      "file": "grotesque/claws/boss_sweep/06.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 5,
+      "landmarks": {
+        "chest": [
+          213.211,
+          160.888
+        ],
+        "frontAnkle": [
+          218.95,
+          342.98
+        ],
+        "frontElbow": [
+          281.376,
+          218.885
+        ],
+        "frontHip": [
+          213.513,
+          233.159
+        ],
+        "frontKnee": [
+          236.304,
+          289.569
+        ],
+        "frontShoulder": [
+          253.269,
+          173.904
+        ],
+        "frontWrist": [
+          254.923,
+          261.219
+        ],
+        "head": [
+          226.13,
+          121.127
+        ],
+        "neck": [
+          219.478,
+          141.601
+        ],
+        "pelvis": [
+          192.0,
+          226.169
+        ],
+        "rearAnkle": [
+          163.176,
+          329.573
+        ],
+        "rearElbow": [
+          148.252,
+          194.704
+        ],
+        "rearHip": [
+          170.487,
+          219.179
+        ],
+        "rearKnee": [
+          147.696,
+          275.589
+        ],
+        "rearShoulder": [
+          173.152,
+          147.873
+        ],
+        "rearWrist": [
+          162.011,
+          242.69
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "7df38914a9c7ca9c7cad37defcda6d649ef220ad9afd55f04ab0aa0ad515981b"
+    }
+  ],
+  "heavy": true,
+  "id": "boss_sweep",
+  "kind": "attack",
+  "playback": "once",
+  "rasterScale": 0.78,
+  "rootScale": 1.0,
+  "weapon": "claws",
+  "zone": "legs"
+}

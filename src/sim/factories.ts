@@ -128,6 +128,7 @@ function createActor(config: ActorConfig): Actor {
     deathTimer: 0,
     flashTimer: 0,
     comboCount: 0,
+    reactionZone: null,
     scoreValue: config.scoreValue
   };
 }

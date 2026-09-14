@@ -1,0 +1,35 @@
+{
+  "id": "spear-v2",
+  "design": "Town-gate spear soldier in a slate-blue waffenrock over mail sleeves, steel kettle hat, leather vambraces, and mud-brown boots",
+  "canvas": [384, 384],
+  "rootScale": 1.0,
+  "rasterScale": 0.78,
+  "footAnchor": [192, 350],
+  "proportions": {
+    "torso": 70,
+    "neck": 26,
+    "headRadius": 24,
+    "shoulderWidth": 66,
+    "hipWidth": 40,
+    "upperArm": 54,
+    "forearm": 50,
+    "thigh": 68,
+    "shin": 66
+  },
+  "palette": {
+    "ink": "#1e1a20",
+    "skin": "#c08a5e",
+    "skinLight": "#dba97c",
+    "hair": "#33261d",
+    "waffenrock": "#4a5578",
+    "waffenrockDark": "#333c58",
+    "clothLight": "#cfc4a6",
+    "mail": "#8d9498",
+    "mailDark": "#5f676c",
+    "hose": "#5a4a3a",
+    "leather": "#4f3a2a",
+    "accent": "#93312e",
+    "steel": "#c3c9c6",
+    "steelDark": "#6d7576"
+  }
+}

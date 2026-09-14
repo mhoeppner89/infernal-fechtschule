@@ -1,0 +1,531 @@
+{
+  "actor": "meyer",
+  "canvas": [
+    384,
+    384
+  ],
+  "footAnchor": [
+    192,
+    350
+  ],
+  "frames": [
+    {
+      "alphaBBox": [
+        137,
+        93,
+        273,
+        351
+      ],
+      "cue": "neutral",
+      "file": "meyer/longsword/ls_dodge_l/01.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 4,
+      "landmarks": {
+        "chest": [
+          192.0,
+          190.1
+        ],
+        "frontAnkle": [
+          208.778,
+          342.498
+        ],
+        "frontElbow": [
+          233.706,
+          229.68
+        ],
+        "frontHip": [
+          207.6,
+          243.14
+        ],
+        "frontKnee": [
+          218.303,
+          293.495
+        ],
+        "frontShoulder": [
+          219.3,
+          190.1
+        ],
+        "frontWrist": [
+          220.755,
+          267.293
+        ],
+        "head": [
+          192.0,
+          151.1
+        ],
+        "neck": [
+          192.0,
+          169.04
+        ],
+        "pelvis": [
+          192.0,
+          243.14
+        ],
+        "rearAnkle": [
+          174.386,
+          342.98
+        ],
+        "rearElbow": [
+          151.684,
+          230.159
+        ],
+        "rearHip": [
+          176.4,
+          243.14
+        ],
+        "rearKnee": [
+          166.577,
+          293.675
+        ],
+        "rearShoulder": [
+          164.7,
+          190.1
+        ],
+        "rearWrist": [
+          170.97,
+          264.951
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "ce2cb3404178112252f6d231e157e3ade212c117c18b253b984eab610f02b306"
+    },
+    {
+      "alphaBBox": [
+        46,
+        92,
+        231,
+        351
+      ],
+      "cue": "anticipation",
+      "file": "meyer/longsword/ls_dodge_l/02.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 5,
+      "landmarks": {
+        "chest": [
+          178.378,
+          188.446
+        ],
+        "frontAnkle": [
+          202.386,
+          338.156
+        ],
+        "frontElbow": [
+          181.254,
+          219.149
+        ],
+        "frontHip": [
+          201.208,
+          238.798
+        ],
+        "frontKnee": [
+          211.911,
+          289.153
+        ],
+        "frontShoulder": [
+          205.413,
+          184.646
+        ],
+        "frontWrist": [
+          145.5,
+          236.587
+        ],
+        "head": [
+          172.951,
+          149.825
+        ],
+        "neck": [
+          175.447,
+          167.59
+        ],
+        "pelvis": [
+          185.76,
+          240.969
+        ],
+        "rearAnkle": [
+          168.298,
+          342.98
+        ],
+        "rearElbow": [
+          118.153,
+          218.177
+        ],
+        "rearHip": [
+          170.312,
+          243.14
+        ],
+        "rearKnee": [
+          160.489,
+          293.675
+        ],
+        "rearShoulder": [
+          151.344,
+          192.245
+        ],
+        "rearWrist": [
+          100.715,
+          253.931
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "3203ea9292de2e1afeb5dc49f62e6350cc46d302d14b3dd47f7b4df3dcbe5589"
+    },
+    {
+      "alphaBBox": [
+        103,
+        93,
+        376,
+        351
+      ],
+      "cue": "contact",
+      "file": "meyer/longsword/ls_dodge_l/03.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 3,
+      "landmarks": {
+        "chest": [
+          162.815,
+          188.337
+        ],
+        "frontAnkle": [
+          164.369,
+          342.98
+        ],
+        "frontElbow": [
+          230.659,
+          202.451
+        ],
+        "frontHip": [
+          163.191,
+          243.622
+        ],
+        "frontKnee": [
+          173.894,
+          293.977
+        ],
+        "frontShoulder": [
+          189.057,
+          195.862
+        ],
+        "frontWrist": [
+          269.57,
+          210.722
+        ],
+        "head": [
+          173.565,
+          150.848
+        ],
+        "neck": [
+          168.62,
+          168.093
+        ],
+        "pelvis": [
+          148.195,
+          239.322
+        ],
+        "rearAnkle": [
+          131.186,
+          334.862
+        ],
+        "rearElbow": [
+          169.764,
+          206.744
+        ],
+        "rearHip": [
+          133.2,
+          235.022
+        ],
+        "rearKnee": [
+          123.377,
+          285.556
+        ],
+        "rearShoulder": [
+          136.573,
+          180.812
+        ],
+        "rearWrist": [
+          204.887,
+          225.419
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "57f47814f920d518bf468d724ec819305d09759a94921d064a14697f2cd75491"
+    },
+    {
+      "alphaBBox": [
+        107,
+        95,
+        369,
+        351
+      ],
+      "cue": "overshoot",
+      "file": "meyer/longsword/ls_dodge_l/04.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 3,
+      "landmarks": {
+        "chest": [
+          173.98,
+          188.959
+        ],
+        "frontAnkle": [
+          166.881,
+          342.98
+        ],
+        "frontElbow": [
+          237.494,
+          216.954
+        ],
+        "frontHip": [
+          165.703,
+          243.622
+        ],
+        "frontKnee": [
+          176.406,
+          293.977
+        ],
+        "frontShoulder": [
+          198.723,
+          200.496
+        ],
+        "frontWrist": [
+          268.841,
+          241.445
+        ],
+        "head": [
+          190.463,
+          153.613
+        ],
+        "neck": [
+          182.881,
+          169.872
+        ],
+        "pelvis": [
+          151.565,
+          237.029
+        ],
+        "rearAnkle": [
+          135.413,
+          330.276
+        ],
+        "rearElbow": [
+          173.397,
+          211.924
+        ],
+        "rearHip": [
+          137.426,
+          230.436
+        ],
+        "rearKnee": [
+          127.604,
+          280.971
+        ],
+        "rearShoulder": [
+          149.238,
+          177.421
+        ],
+        "rearWrist": [
+          202.96,
+          238.542
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "03ffb654f577dc560c4601d1fc17a7b2c4b19e732f354b499f101fba843136cf"
+    },
+    {
+      "alphaBBox": [
+        143,
+        92,
+        346,
+        351
+      ],
+      "cue": "recovery",
+      "file": "meyer/longsword/ls_dodge_l/05.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 5,
+      "landmarks": {
+        "chest": [
+          194.386,
+          189.102
+        ],
+        "frontAnkle": [
+          204.736,
+          342.98
+        ],
+        "frontElbow": [
+          241.912,
+          229.192
+        ],
+        "frontHip": [
+          203.558,
+          243.622
+        ],
+        "frontKnee": [
+          214.261,
+          293.977
+        ],
+        "frontShoulder": [
+          221.491,
+          192.353
+        ],
+        "frontWrist": [
+          247.448,
+          268.585
+        ],
+        "head": [
+          199.031,
+          150.379
+        ],
+        "neck": [
+          196.894,
+          168.192
+        ],
+        "pelvis": [
+          188.069,
+          241.764
+        ],
+        "rearAnkle": [
+          170.566,
+          339.746
+        ],
+        "rearElbow": [
+          168.015,
+          227.964
+        ],
+        "rearHip": [
+          172.58,
+          239.906
+        ],
+        "rearKnee": [
+          162.757,
+          290.44
+        ],
+        "rearShoulder": [
+          167.28,
+          185.85
+        ],
+        "rearWrist": [
+          186.075,
+          263.408
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "a553c9aa1b453fd56a99b55320c99cb2f98086498b8c9d3d9e122479b7bb7705"
+    },
+    {
+      "alphaBBox": [
+        137,
+        93,
+        273,
+        351
+      ],
+      "cue": "neutral",
+      "file": "meyer/longsword/ls_dodge_l/06.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 5,
+      "landmarks": {
+        "chest": [
+          192.0,
+          190.1
+        ],
+        "frontAnkle": [
+          208.778,
+          342.498
+        ],
+        "frontElbow": [
+          233.706,
+          229.68
+        ],
+        "frontHip": [
+          207.6,
+          243.14
+        ],
+        "frontKnee": [
+          218.303,
+          293.495
+        ],
+        "frontShoulder": [
+          219.3,
+          190.1
+        ],
+        "frontWrist": [
+          220.755,
+          267.293
+        ],
+        "head": [
+          192.0,
+          151.1
+        ],
+        "neck": [
+          192.0,
+          169.04
+        ],
+        "pelvis": [
+          192.0,
+          243.14
+        ],
+        "rearAnkle": [
+          174.386,
+          342.98
+        ],
+        "rearElbow": [
+          151.684,
+          230.159
+        ],
+        "rearHip": [
+          176.4,
+          243.14
+        ],
+        "rearKnee": [
+          166.577,
+          293.675
+        ],
+        "rearShoulder": [
+          164.7,
+          190.1
+        ],
+        "rearWrist": [
+          170.97,
+          264.951
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "ce2cb3404178112252f6d231e157e3ade212c117c18b253b984eab610f02b306"
+    }
+  ],
+  "heavy": false,
+  "id": "ls_dodge_l",
+  "kind": "attack",
+  "playback": "once",
+  "rasterScale": 0.78,
+  "rootScale": 1.0,
+  "weapon": "longsword",
+  "zone": "torso"
+}

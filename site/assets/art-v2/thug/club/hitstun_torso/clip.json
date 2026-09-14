@@ -1,0 +1,529 @@
+{
+  "actor": "thug",
+  "canvas": [
+    384,
+    384
+  ],
+  "footAnchor": [
+    192,
+    350
+  ],
+  "frames": [
+    {
+      "alphaBBox": [
+        97,
+        131,
+        236,
+        351
+      ],
+      "cue": "contact",
+      "file": "thug/club/hitstun_torso/01.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 4,
+      "landmarks": {
+        "chest": [
+          183.595,
+          202.734
+        ],
+        "frontAnkle": [
+          207.596,
+          339.059
+        ],
+        "frontElbow": [
+          191.992,
+          233.371
+        ],
+        "frontHip": [
+          205.634,
+          248.259
+        ],
+        "frontKnee": [
+          217.949,
+          294.218
+        ],
+        "frontShoulder": [
+          213.072,
+          199.635
+        ],
+        "frontWrist": [
+          161.323,
+          254.846
+        ],
+        "head": [
+          179.688,
+          165.561
+        ],
+        "neck": [
+          181.638,
+          184.116
+        ],
+        "pelvis": [
+          188.568,
+          250.053
+        ],
+        "rearAnkle": [
+          167.968,
+          342.98
+        ],
+        "rearElbow": [
+          124.555,
+          232.45
+        ],
+        "rearHip": [
+          171.502,
+          251.847
+        ],
+        "rearKnee": [
+          159.187,
+          297.806
+        ],
+        "rearShoulder": [
+          154.117,
+          205.832
+        ],
+        "rearWrist": [
+          108.142,
+          266.101
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "fb8a31e02d3a8132dcaf063243313f29b283af4c323a2e48975c3d23a6b4aa2a"
+    },
+    {
+      "alphaBBox": [
+        80,
+        132,
+        230,
+        351
+      ],
+      "cue": "recovery",
+      "file": "thug/club/hitstun_torso/02.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 5,
+      "landmarks": {
+        "chest": [
+          164.067,
+          201.401
+        ],
+        "frontAnkle": [
+          201.059,
+          328.687
+        ],
+        "frontElbow": [
+          170.065,
+          223.08
+        ],
+        "frontHip": [
+          199.096,
+          237.888
+        ],
+        "frontKnee": [
+          211.411,
+          283.846
+        ],
+        "frontShoulder": [
+          191.145,
+          189.345
+        ],
+        "frontWrist": [
+          139.396,
+          244.555
+        ],
+        "head": [
+          148.865,
+          167.255
+        ],
+        "neck": [
+          156.453,
+          184.299
+        ],
+        "pelvis": [
+          183.42,
+          244.867
+        ],
+        "rearAnkle": [
+          164.21,
+          342.98
+        ],
+        "rearElbow": [
+          107.428,
+          240.074
+        ],
+        "rearHip": [
+          167.744,
+          251.847
+        ],
+        "rearKnee": [
+          155.429,
+          297.806
+        ],
+        "rearShoulder": [
+          136.99,
+          213.456
+        ],
+        "rearWrist": [
+          91.015,
+          273.725
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "0399f60ff1374cf98553f91f7ae4a7d8a27f4b12ac9428e918a9d08df42a5936"
+    },
+    {
+      "alphaBBox": [
+        84,
+        131,
+        232,
+        351
+      ],
+      "cue": "recovery",
+      "file": "thug/club/hitstun_torso/03.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 3,
+      "landmarks": {
+        "chest": [
+          169.788,
+          201.279
+        ],
+        "frontAnkle": [
+          203.19,
+          331.699
+        ],
+        "frontElbow": [
+          176.8,
+          225.56
+        ],
+        "frontHip": [
+          201.228,
+          240.9
+        ],
+        "frontKnee": [
+          213.543,
+          286.859
+        ],
+        "frontShoulder": [
+          197.88,
+          191.825
+        ],
+        "frontWrist": [
+          146.131,
+          247.035
+        ],
+        "head": [
+          157.866,
+          165.853
+        ],
+        "neck": [
+          163.817,
+          183.536
+        ],
+        "pelvis": [
+          184.964,
+          246.373
+        ],
+        "rearAnkle": [
+          165.167,
+          342.98
+        ],
+        "rearElbow": [
+          112.134,
+          237.351
+        ],
+        "rearHip": [
+          168.701,
+          251.847
+        ],
+        "rearKnee": [
+          156.386,
+          297.806
+        ],
+        "rearShoulder": [
+          141.696,
+          210.733
+        ],
+        "rearWrist": [
+          95.722,
+          271.001
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "6bc8c4e1135c238ab1bece288bb8a24ba267b1d5dd5352e4547b0f2f0170df90"
+    },
+    {
+      "alphaBBox": [
+        92,
+        130,
+        235,
+        351
+      ],
+      "cue": "recovery",
+      "file": "thug/club/hitstun_torso/04.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 3,
+      "landmarks": {
+        "chest": [
+          178.28,
+          201.894
+        ],
+        "frontAnkle": [
+          206.014,
+          336.215
+        ],
+        "frontElbow": [
+          186.314,
+          230.075
+        ],
+        "frontHip": [
+          204.051,
+          245.416
+        ],
+        "frontKnee": [
+          216.366,
+          291.375
+        ],
+        "frontShoulder": [
+          207.395,
+          196.34
+        ],
+        "frontWrist": [
+          155.645,
+          251.55
+        ],
+        "head": [
+          171.276,
+          165.179
+        ],
+        "neck": [
+          174.772,
+          183.506
+        ],
+        "pelvis": [
+          187.195,
+          248.631
+        ],
+        "rearAnkle": [
+          166.806,
+          342.98
+        ],
+        "rearElbow": [
+          119.602,
+          234.066
+        ],
+        "rearHip": [
+          170.339,
+          251.847
+        ],
+        "rearKnee": [
+          158.025,
+          297.806
+        ],
+        "rearShoulder": [
+          149.165,
+          207.448
+        ],
+        "rearWrist": [
+          103.19,
+          267.717
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "60fd555efc6e58e8b477336799d36375c3338b02f3d652d3961334456c5fe25e"
+    },
+    {
+      "alphaBBox": [
+        102,
+        132,
+        237,
+        351
+      ],
+      "cue": "recovery",
+      "file": "thug/club/hitstun_torso/05.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 5,
+      "landmarks": {
+        "chest": [
+          188.61,
+          203.834
+        ],
+        "frontAnkle": [
+          208.971,
+          341.748
+        ],
+        "frontElbow": [
+          197.159,
+          236.793
+        ],
+        "frontHip": [
+          207.009,
+          250.948
+        ],
+        "frontKnee": [
+          219.324,
+          296.907
+        ],
+        "frontShoulder": [
+          218.239,
+          203.058
+        ],
+        "frontWrist": [
+          166.49,
+          258.268
+        ],
+        "head": [
+          187.631,
+          166.469
+        ],
+        "neck": [
+          188.119,
+          185.12
+        ],
+        "pelvis": [
+          189.855,
+          251.398
+        ],
+        "rearAnkle": [
+          169.167,
+          342.98
+        ],
+        "rearElbow": [
+          129.417,
+          231.228
+        ],
+        "rearHip": [
+          172.701,
+          251.847
+        ],
+        "rearKnee": [
+          160.386,
+          297.806
+        ],
+        "rearShoulder": [
+          158.98,
+          204.61
+        ],
+        "rearWrist": [
+          113.005,
+          264.879
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "dc96e1652492aa91b179e83c7c6f3a8ea5c047e6194b16a9fcbf08aa9a32b254"
+    },
+    {
+      "alphaBBox": [
+        110,
+        131,
+        241,
+        351
+      ],
+      "cue": "recovery",
+      "file": "thug/club/hitstun_torso/06.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 5,
+      "landmarks": {
+        "chest": [
+          196.973,
+          203.068
+        ],
+        "frontAnkle": [
+          211.028,
+          342.98
+        ],
+        "frontElbow": [
+          205.371,
+          239.901
+        ],
+        "frontHip": [
+          209.066,
+          252.181
+        ],
+        "frontKnee": [
+          221.381,
+          298.139
+        ],
+        "frontShoulder": [
+          226.451,
+          206.166
+        ],
+        "frontWrist": [
+          174.702,
+          261.376
+        ],
+        "head": [
+          200.88,
+          165.895
+        ],
+        "neck": [
+          198.93,
+          184.45
+        ],
+        "pelvis": [
+          192.0,
+          250.387
+        ],
+        "rearAnkle": [
+          171.4,
+          339.727
+        ],
+        "rearElbow": [
+          137.934,
+          226.587
+        ],
+        "rearHip": [
+          174.934,
+          248.593
+        ],
+        "rearKnee": [
+          162.619,
+          294.552
+        ],
+        "rearShoulder": [
+          167.496,
+          199.969
+        ],
+        "rearWrist": [
+          121.521,
+          260.238
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "aaf201b2326418212c04527ace60d81dcf1e2fda39aefce14746a6895d6a5278"
+    }
+  ],
+  "id": "hitstun_torso",
+  "kind": "state",
+  "playback": "once",
+  "rasterScale": 0.78,
+  "rootScale": 1.0,
+  "weapon": "club"
+}

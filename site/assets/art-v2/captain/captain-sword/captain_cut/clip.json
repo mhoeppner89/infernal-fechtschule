@@ -1,0 +1,531 @@
+{
+  "actor": "captain",
+  "canvas": [
+    384,
+    384
+  ],
+  "footAnchor": [
+    192,
+    350
+  ],
+  "frames": [
+    {
+      "alphaBBox": [
+        143,
+        97,
+        287,
+        351
+      ],
+      "cue": "neutral",
+      "file": "captain/captain-sword/captain_cut/01.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 4,
+      "landmarks": {
+        "chest": [
+          196.895,
+          184.855
+        ],
+        "frontAnkle": [
+          211.501,
+          342.98
+        ],
+        "frontElbow": [
+          245.742,
+          227.478
+        ],
+        "frontHip": [
+          209.095,
+          242.297
+        ],
+        "frontKnee": [
+          221.026,
+          293.977
+        ],
+        "frontShoulder": [
+          227.976,
+          187.574
+        ],
+        "frontWrist": [
+          234.562,
+          266.466
+        ],
+        "head": [
+          200.226,
+          146.78
+        ],
+        "neck": [
+          198.662,
+          164.652
+        ],
+        "pelvis": [
+          192.0,
+          240.801
+        ],
+        "rearAnkle": [
+          170.783,
+          340.291
+        ],
+        "rearElbow": [
+          158.228,
+          225.152
+        ],
+        "rearHip": [
+          174.905,
+          239.305
+        ],
+        "rearKnee": [
+          162.974,
+          290.986
+        ],
+        "rearShoulder": [
+          165.813,
+          182.135
+        ],
+        "rearWrist": [
+          178.508,
+          260.278
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "aa53b397dda21d985d88ba6c8f56122c0680689ff348a6187878f75896d36b05"
+    },
+    {
+      "alphaBBox": [
+        133,
+        51,
+        284,
+        351
+      ],
+      "cue": "anticipation",
+      "file": "captain/captain-sword/captain_cut/02.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 5,
+      "landmarks": {
+        "chest": [
+          177.944,
+          183.992
+        ],
+        "frontAnkle": [
+          205.159,
+          337.901
+        ],
+        "frontElbow": [
+          248.428,
+          161.19
+        ],
+        "frontHip": [
+          202.753,
+          237.218
+        ],
+        "frontKnee": [
+          214.684,
+          288.898
+        ],
+        "frontShoulder": [
+          208.84,
+          179.65
+        ],
+        "frontWrist": [
+          271.692,
+          127.965
+        ],
+        "head": [
+          172.625,
+          146.144
+        ],
+        "neck": [
+          175.122,
+          163.91
+        ],
+        "pelvis": [
+          185.76,
+          239.606
+        ],
+        "rearAnkle": [
+          164.645,
+          342.98
+        ],
+        "rearElbow": [
+          189.773,
+          197.416
+        ],
+        "rearHip": [
+          168.767,
+          241.994
+        ],
+        "rearKnee": [
+          156.836,
+          293.675
+        ],
+        "rearShoulder": [
+          147.048,
+          188.335
+        ],
+        "rearWrist": [
+          226.533,
+          180.275
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "50ca09ea2ca0df53be71c4431fce7f43b46ee1c9865184d622417cfd665823ab"
+    },
+    {
+      "alphaBBox": [
+        82,
+        101,
+        328,
+        351
+      ],
+      "cue": "contact",
+      "file": "captain/captain-sword/captain_cut/03.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 3,
+      "landmarks": {
+        "chest": [
+          142.836,
+          188.697
+        ],
+        "frontAnkle": [
+          149.924,
+          342.98
+        ],
+        "frontElbow": [
+          216.928,
+          192.137
+        ],
+        "frontHip": [
+          147.945,
+          247.198
+        ],
+        "frontKnee": [
+          167.814,
+          296.376
+        ],
+        "frontShoulder": [
+          173.355,
+          195.184
+        ],
+        "frontWrist": [
+          254.535,
+          207.331
+        ],
+        "head": [
+          150.783,
+          151.312
+        ],
+        "neck": [
+          147.053,
+          168.86
+        ],
+        "pelvis": [
+          131.16,
+          243.63
+        ],
+        "rearAnkle": [
+          110.134,
+          339.877
+        ],
+        "rearElbow": [
+          151.237,
+          202.041
+        ],
+        "rearHip": [
+          114.375,
+          240.062
+        ],
+        "rearKnee": [
+          99.755,
+          291.048
+        ],
+        "rearShoulder": [
+          112.318,
+          182.21
+        ],
+        "rearWrist": [
+          191.643,
+          205.576
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "c451f15f9a8e3602e752f8e54960fd045537307c550f2b78b28911697210321c"
+    },
+    {
+      "alphaBBox": [
+        89,
+        99,
+        335,
+        351
+      ],
+      "cue": "overshoot",
+      "file": "captain/captain-sword/captain_cut/04.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 3,
+      "landmarks": {
+        "chest": [
+          159.343,
+          183.896
+        ],
+        "frontAnkle": [
+          155.602,
+          342.98
+        ],
+        "frontElbow": [
+          229.605,
+          209.585
+        ],
+        "frontHip": [
+          153.196,
+          242.297
+        ],
+        "frontKnee": [
+          165.127,
+          293.977
+        ],
+        "frontShoulder": [
+          188.063,
+          196.087
+        ],
+        "frontWrist": [
+          259.747,
+          236.725
+        ],
+        "head": [
+          174.277,
+          148.714
+        ],
+        "neck": [
+          167.267,
+          165.228
+        ],
+        "pelvis": [
+          137.4,
+          235.592
+        ],
+        "rearAnkle": [
+          117.482,
+          329.873
+        ],
+        "rearElbow": [
+          163.084,
+          200.933
+        ],
+        "rearHip": [
+          121.604,
+          228.887
+        ],
+        "rearKnee": [
+          109.673,
+          280.567
+        ],
+        "rearShoulder": [
+          130.624,
+          171.705
+        ],
+        "rearWrist": [
+          200.138,
+          217.43
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "42e45316cf37633ab9d930b57fe0c433ca5af6de82d52b3c023ddaed7a5d34ca"
+    },
+    {
+      "alphaBBox": [
+        138,
+        96,
+        329,
+        351
+      ],
+      "cue": "recovery",
+      "file": "captain/captain-sword/captain_cut/05.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 5,
+      "landmarks": {
+        "chest": [
+          198.36,
+          183.783
+        ],
+        "frontAnkle": [
+          205.722,
+          342.98
+        ],
+        "frontElbow": [
+          250.038,
+          228.553
+        ],
+        "frontHip": [
+          203.316,
+          242.297
+        ],
+        "frontKnee": [
+          215.247,
+          293.977
+        ],
+        "frontShoulder": [
+          228.861,
+          190.35
+        ],
+        "frontWrist": [
+          255.683,
+          268.718
+        ],
+        "head": [
+          206.404,
+          146.419
+        ],
+        "neck": [
+          202.628,
+          163.957
+        ],
+        "pelvis": [
+          186.54,
+          238.685
+        ],
+        "rearAnkle": [
+          165.642,
+          336.059
+        ],
+        "rearElbow": [
+          168.621,
+          220.89
+        ],
+        "rearHip": [
+          169.764,
+          235.073
+        ],
+        "rearKnee": [
+          157.833,
+          286.754
+        ],
+        "rearShoulder": [
+          167.859,
+          177.216
+        ],
+        "rearWrist": [
+          187.035,
+          257.029
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "ebcc26d8e39f398bb33c7aa72592cc3b31f1883ebbc81569fbb0d8887ce6e032"
+    },
+    {
+      "alphaBBox": [
+        143,
+        97,
+        287,
+        351
+      ],
+      "cue": "neutral",
+      "file": "captain/captain-sword/captain_cut/06.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 5,
+      "landmarks": {
+        "chest": [
+          196.895,
+          184.855
+        ],
+        "frontAnkle": [
+          211.501,
+          342.98
+        ],
+        "frontElbow": [
+          245.742,
+          227.478
+        ],
+        "frontHip": [
+          209.095,
+          242.297
+        ],
+        "frontKnee": [
+          221.026,
+          293.977
+        ],
+        "frontShoulder": [
+          227.976,
+          187.574
+        ],
+        "frontWrist": [
+          234.562,
+          266.466
+        ],
+        "head": [
+          200.226,
+          146.78
+        ],
+        "neck": [
+          198.662,
+          164.652
+        ],
+        "pelvis": [
+          192.0,
+          240.801
+        ],
+        "rearAnkle": [
+          170.783,
+          340.291
+        ],
+        "rearElbow": [
+          158.228,
+          225.152
+        ],
+        "rearHip": [
+          174.905,
+          239.305
+        ],
+        "rearKnee": [
+          162.974,
+          290.986
+        ],
+        "rearShoulder": [
+          165.813,
+          182.135
+        ],
+        "rearWrist": [
+          178.508,
+          260.278
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "aa53b397dda21d985d88ba6c8f56122c0680689ff348a6187878f75896d36b05"
+    }
+  ],
+  "heavy": true,
+  "id": "captain_cut",
+  "kind": "attack",
+  "playback": "once",
+  "rasterScale": 0.78,
+  "rootScale": 1.0,
+  "weapon": "captain-sword",
+  "zone": "head"
+}

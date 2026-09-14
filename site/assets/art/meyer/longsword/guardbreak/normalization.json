@@ -1,0 +1,36 @@
+{
+  "source": "/private/tmp/meyer-guardbreak-alpha.png",
+  "frameCount": 4,
+  "canvas": [
+    640,
+    640
+  ],
+  "padding": 18,
+  "sharedScale": 0.8715728715728716,
+  "sourceBounds": [
+    [
+      2,
+      203,
+      444,
+      782
+    ],
+    [
+      444,
+      90,
+      876,
+      783
+    ],
+    [
+      876,
+      207,
+      1311,
+      780
+    ],
+    [
+      1316,
+      237,
+      1751,
+      783
+    ]
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "source": "/private/tmp/dussack-lh-grid-rgba.png",
+  "frameCount": 4,
+  "canvas": [
+    640,
+    640
+  ],
+  "padding": 20,
+  "sharedScale": 1.0,
+  "sourceBounds": [
+    [
+      63,
+      55,
+      489,
+      573
+    ],
+    [
+      631,
+      141,
+      1220,
+      571
+    ],
+    [
+      27,
+      759,
+      627,
+      1164
+    ],
+    [
+      716,
+      809,
+      1155,
+      1158
+    ]
+  ]
+}

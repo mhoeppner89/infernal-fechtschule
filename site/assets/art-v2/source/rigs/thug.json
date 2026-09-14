@@ -1,0 +1,34 @@
+{
+  "id": "thug-v2",
+  "design": "compact mercenary bruiser in a patched brown jerkin over rolled cream sleeves, charcoal hose, ochre sash, brown cap, work boots, and leather gloves",
+  "canvas": [384, 384],
+  "rootScale": 1.0,
+  "rasterScale": 0.78,
+  "footAnchor": [192, 350],
+  "proportions": {
+    "torso": 61,
+    "neck": 24,
+    "headRadius": 26,
+    "shoulderWidth": 76,
+    "hipWidth": 44,
+    "upperArm": 51,
+    "forearm": 48,
+    "thigh": 61,
+    "shin": 59
+  },
+  "palette": {
+    "ink": "#211b18",
+    "skin": "#b97852",
+    "skinLight": "#d89a6b",
+    "hair": "#2d2520",
+    "tunic": "#e0d1ae",
+    "tunicDark": "#9d8c70",
+    "brigandine": "#70462f",
+    "hose": "#4c4a46",
+    "leather": "#493328",
+    "accent": "#bd8731",
+    "metal": "#9ea6a2",
+    "wood": "#80532d",
+    "woodLight": "#b47a3b"
+  }
+}

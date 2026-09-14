@@ -9,9 +9,13 @@ if (!(canvas instanceof HTMLCanvasElement) || !(controls instanceof HTMLElement)
 const controller = new GameController(canvas, controls);
 
 Object.assign(window, {
+  advanceTime: (milliseconds: number) => controller.advanceTime(milliseconds),
+  render_game_to_text: () => controller.renderGameToText(),
   __FECHTSCHULE__: {
     controller,
-    snapshot: () => controller.getSnapshot()
+    snapshot: () => controller.getSnapshot(),
+    advanceTime: (milliseconds: number) => controller.advanceTime(milliseconds),
+    renderGameToText: () => controller.renderGameToText()
   }
 });
 

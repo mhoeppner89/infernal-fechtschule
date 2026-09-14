@@ -1,0 +1,36 @@
+{
+  "source": "/private/tmp/dussack-switch-rgba.png",
+  "frameCount": 4,
+  "canvas": [
+    640,
+    640
+  ],
+  "padding": 20,
+  "sharedScale": 0.9983361064891847,
+  "sourceBounds": [
+    [
+      45,
+      98,
+      457,
+      699
+    ],
+    [
+      488,
+      95,
+      940,
+      694
+    ],
+    [
+      966,
+      97,
+      1473,
+      685
+    ],
+    [
+      1499,
+      96,
+      1973,
+      682
+    ]
+  ]
+}

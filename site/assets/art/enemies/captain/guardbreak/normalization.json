@@ -1,0 +1,36 @@
+{
+  "source": "/private/tmp/captain-guardbreak-alpha.png",
+  "frameCount": 4,
+  "canvas": [
+    640,
+    640
+  ],
+  "padding": 18,
+  "sharedScale": 0.9633173843700159,
+  "sourceBounds": [
+    [
+      18,
+      275,
+      382,
+      743
+    ],
+    [
+      431,
+      119,
+      921,
+      746
+    ],
+    [
+      921,
+      279,
+      1379,
+      741
+    ],
+    [
+      1387,
+      293,
+      1733,
+      746
+    ]
+  ]
+}

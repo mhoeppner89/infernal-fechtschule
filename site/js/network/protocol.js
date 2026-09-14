@@ -1,7 +1,10 @@
+import { GAME_SNAPSHOT_VERSION } from '../sim/types.js';
+export const PEER_PROTOCOL_VERSION = 2;
 const PHASES = new Set(['title', 'countdown', 'wave', 'upgrade', 'victory', 'defeat']);
 const TEAMS = new Set(['players', 'enemies']);
 const ARCHETYPES = new Set(['meyer', 'thug', 'spear', 'captain', 'wretch', 'grotesque']);
-const STATES = new Set(['idle', 'move', 'block', 'attack', 'dodge', 'jump', 'switch', 'hitstun', 'guardbreak', 'dead']);
+const STATES = new Set(['idle', 'move', 'block', 'attack', 'dodge', 'crouch', 'jump', 'switch', 'hitstun', 'guardbreak', 'dead']);
+const HIT_ZONES = new Set(['head', 'torso', 'legs']);
 const WEAPONS = new Set(['longsword', 'dussack']);
 const UPGRADES = new Set([
     'longsword-sweep',
@@ -16,7 +19,7 @@ export function isPeerMessage(value) {
         return false;
     switch (value.type) {
         case 'hello':
-            return value.protocol === 1;
+            return value.protocol === PEER_PROTOCOL_VERSION;
         case 'start':
             return isIntegerInRange(value.seed, 0, 0x7fffffff);
         case 'input':
@@ -50,7 +53,7 @@ function isInputFrame(value) {
 function isSnapshot(value) {
     if (!isRecord(value))
         return false;
-    if (value.version !== 1 || !isIntegerInRange(value.tick, 0, Number.MAX_SAFE_INTEGER))
+    if (value.version !== GAME_SNAPSHOT_VERSION || !isIntegerInRange(value.tick, 0, Number.MAX_SAFE_INTEGER))
         return false;
     if (!isFiniteNumber(value.time) || value.time < 0)
         return false;
@@ -83,12 +86,16 @@ function isActorSnapshot(value) {
         isFiniteNumber(value.armor) && isFiniteNumber(value.maxArmor) && value.maxArmor >= 0 &&
         typeof value.state === 'string' && STATES.has(value.state) &&
         isFiniteNumber(value.stateElapsed) && isFiniteNumber(value.stateDuration) &&
+        isAxis(value.stateMoveX) && isAxis(value.stateMoveZ) &&
         typeof value.weapon === 'string' && WEAPONS.has(value.weapon) &&
+        typeof value.desiredWeapon === 'string' && WEAPONS.has(value.desiredWeapon) &&
         (value.attackId === null || (typeof value.attackId === 'string' && value.attackId.length <= 64)) &&
         isFiniteNumber(value.attackElapsed) &&
         isFiniteNumber(value.invulnerable) && isFiniteNumber(value.openingTimer) &&
         isFiniteNumber(value.provokeTimer) && isFiniteNumber(value.counterWindow) &&
-        isFiniteNumber(value.flashTimer) && isIntegerInRange(value.comboCount, 0, 9999);
+        isFiniteNumber(value.flashTimer) && isIntegerInRange(value.comboCount, 0, 9999) &&
+        (value.reactionZone === null || (typeof value.reactionZone === 'string' && HIT_ZONES.has(value.reactionZone))) &&
+        isFiniteNumber(value.deathTimer) && value.deathTimer >= 0;
 }
 function isUpgradeArray(value) {
     return Array.isArray(value) && value.length <= UPGRADES.size && value.every((id) => typeof id === 'string' && UPGRADES.has(id));

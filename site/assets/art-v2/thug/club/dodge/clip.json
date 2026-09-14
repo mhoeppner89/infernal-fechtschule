@@ -1,0 +1,529 @@
+{
+  "actor": "thug",
+  "canvas": [
+    384,
+    384
+  ],
+  "footAnchor": [
+    192,
+    350
+  ],
+  "frames": [
+    {
+      "alphaBBox": [
+        150,
+        147,
+        332,
+        351
+      ],
+      "cue": "neutral",
+      "file": "thug/club/dodge/01.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 4,
+      "landmarks": {
+        "chest": [
+          196.973,
+          218.676
+        ],
+        "frontAnkle": [
+          206.169,
+          342.98
+        ],
+        "frontElbow": [
+          263.589,
+          236.03
+        ],
+        "frontHip": [
+          209.066,
+          267.789
+        ],
+        "frontKnee": [
+          179.773,
+          305.283
+        ],
+        "frontShoulder": [
+          226.451,
+          221.774
+        ],
+        "frontWrist": [
+          288.641,
+          263.853
+        ],
+        "head": [
+          200.88,
+          181.503
+        ],
+        "neck": [
+          198.93,
+          200.059
+        ],
+        "pelvis": [
+          192.0,
+          265.995
+        ],
+        "rearAnkle": [
+          177.838,
+          342.204
+        ],
+        "rearElbow": [
+          195.129,
+          244.193
+        ],
+        "rearHip": [
+          174.934,
+          264.202
+        ],
+        "rearKnee": [
+          202.225,
+          303.177
+        ],
+        "rearShoulder": [
+          167.496,
+          215.578
+        ],
+        "rearWrist": [
+          204.187,
+          280.521
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "e45a66ca82d0a2e5b7b1e90c85681341dd83efa520d43abaa3b63f6d6444042b"
+    },
+    {
+      "alphaBBox": [
+        134,
+        147,
+        349,
+        351
+      ],
+      "cue": "neutral",
+      "file": "thug/club/dodge/02.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 5,
+      "landmarks": {
+        "chest": [
+          191.503,
+          217.213
+        ],
+        "frontAnkle": [
+          188.016,
+          342.98
+        ],
+        "frontElbow": [
+          256.404,
+          241.849
+        ],
+        "frontHip": [
+          190.913,
+          267.789
+        ],
+        "frontKnee": [
+          161.62,
+          305.283
+        ],
+        "frontShoulder": [
+          219.266,
+          227.593
+        ],
+        "frontWrist": [
+          281.456,
+          269.672
+        ],
+        "head": [
+          204.593,
+          182.202
+        ],
+        "neck": [
+          198.059,
+          199.678
+        ],
+        "pelvis": [
+          174.84,
+          261.78
+        ],
+        "rearAnkle": [
+          161.671,
+          333.772
+        ],
+        "rearElbow": [
+          191.373,
+          235.448
+        ],
+        "rearHip": [
+          158.767,
+          255.77
+        ],
+        "rearKnee": [
+          186.057,
+          294.745
+        ],
+        "rearShoulder": [
+          163.74,
+          206.833
+        ],
+        "rearWrist": [
+          200.431,
+          271.776
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "ef283ac59391a02ad5ce5700b28965d1bc3812ce7a780d6f0899a0090037f129"
+    },
+    {
+      "alphaBBox": [
+        118,
+        154,
+        349,
+        351
+      ],
+      "cue": "neutral",
+      "file": "thug/club/dodge/03.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 3,
+      "landmarks": {
+        "chest": [
+          184.971,
+          218.971
+        ],
+        "frontAnkle": [
+          168.839,
+          342.98
+        ],
+        "frontElbow": [
+          246.388,
+          250.228
+        ],
+        "frontHip": [
+          171.737,
+          267.789
+        ],
+        "frontKnee": [
+          142.443,
+          305.283
+        ],
+        "frontShoulder": [
+          209.25,
+          235.972
+        ],
+        "frontWrist": [
+          271.441,
+          278.051
+        ],
+        "head": [
+          206.41,
+          188.353
+        ],
+        "neck": [
+          195.708,
+          203.637
+        ],
+        "pelvis": [
+          157.68,
+          257.946
+        ],
+        "rearAnkle": [
+          146.527,
+          326.106
+        ],
+        "rearElbow": [
+          188.325,
+          230.586
+        ],
+        "rearHip": [
+          143.623,
+          248.104
+        ],
+        "rearKnee": [
+          170.914,
+          287.079
+        ],
+        "rearShoulder": [
+          160.691,
+          201.97
+        ],
+        "rearWrist": [
+          197.382,
+          266.914
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "04227719976a017f6be105378dfdbee7ab0da9e705c7361be4d9fdc8fc12f8a0"
+    },
+    {
+      "alphaBBox": [
+        118,
+        154,
+        349,
+        351
+      ],
+      "cue": "neutral",
+      "file": "thug/club/dodge/04.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 3,
+      "landmarks": {
+        "chest": [
+          184.971,
+          218.971
+        ],
+        "frontAnkle": [
+          168.839,
+          342.98
+        ],
+        "frontElbow": [
+          246.388,
+          250.228
+        ],
+        "frontHip": [
+          171.737,
+          267.789
+        ],
+        "frontKnee": [
+          142.443,
+          305.283
+        ],
+        "frontShoulder": [
+          209.25,
+          235.972
+        ],
+        "frontWrist": [
+          271.441,
+          278.051
+        ],
+        "head": [
+          206.41,
+          188.353
+        ],
+        "neck": [
+          195.708,
+          203.637
+        ],
+        "pelvis": [
+          157.68,
+          257.946
+        ],
+        "rearAnkle": [
+          146.527,
+          326.106
+        ],
+        "rearElbow": [
+          188.325,
+          230.586
+        ],
+        "rearHip": [
+          143.623,
+          248.104
+        ],
+        "rearKnee": [
+          170.914,
+          287.079
+        ],
+        "rearShoulder": [
+          160.691,
+          201.97
+        ],
+        "rearWrist": [
+          197.382,
+          266.914
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "04227719976a017f6be105378dfdbee7ab0da9e705c7361be4d9fdc8fc12f8a0"
+    },
+    {
+      "alphaBBox": [
+        132,
+        148,
+        350,
+        351
+      ],
+      "cue": "neutral",
+      "file": "thug/club/dodge/05.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 5,
+      "landmarks": {
+        "chest": [
+          190.909,
+          217.244
+        ],
+        "frontAnkle": [
+          186.143,
+          342.98
+        ],
+        "frontElbow": [
+          255.539,
+          242.579
+        ],
+        "frontHip": [
+          189.04,
+          267.789
+        ],
+        "frontKnee": [
+          159.747,
+          305.283
+        ],
+        "frontShoulder": [
+          218.401,
+          228.323
+        ],
+        "frontWrist": [
+          280.591,
+          270.402
+        ],
+        "head": [
+          204.881,
+          182.576
+        ],
+        "neck": [
+          197.907,
+          199.881
+        ],
+        "pelvis": [
+          173.124,
+          261.375
+        ],
+        "rearAnkle": [
+          160.112,
+          332.963
+        ],
+        "rearElbow": [
+          191.051,
+          234.78
+        ],
+        "rearHip": [
+          157.208,
+          254.96
+        ],
+        "rearKnee": [
+          184.499,
+          293.936
+        ],
+        "rearShoulder": [
+          163.418,
+          206.164
+        ],
+        "rearWrist": [
+          200.109,
+          271.108
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "eeb25e5f3c41a0382fca6600fbeb196c2acf4405efd9455e5c3acab6bbb070e9"
+    },
+    {
+      "alphaBBox": [
+        150,
+        147,
+        332,
+        351
+      ],
+      "cue": "neutral",
+      "file": "thug/club/dodge/06.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 5,
+      "landmarks": {
+        "chest": [
+          196.973,
+          218.676
+        ],
+        "frontAnkle": [
+          206.169,
+          342.98
+        ],
+        "frontElbow": [
+          263.589,
+          236.03
+        ],
+        "frontHip": [
+          209.066,
+          267.789
+        ],
+        "frontKnee": [
+          179.773,
+          305.283
+        ],
+        "frontShoulder": [
+          226.451,
+          221.774
+        ],
+        "frontWrist": [
+          288.641,
+          263.853
+        ],
+        "head": [
+          200.88,
+          181.503
+        ],
+        "neck": [
+          198.93,
+          200.059
+        ],
+        "pelvis": [
+          192.0,
+          265.995
+        ],
+        "rearAnkle": [
+          177.838,
+          342.204
+        ],
+        "rearElbow": [
+          195.129,
+          244.193
+        ],
+        "rearHip": [
+          174.934,
+          264.202
+        ],
+        "rearKnee": [
+          202.225,
+          303.177
+        ],
+        "rearShoulder": [
+          167.496,
+          215.578
+        ],
+        "rearWrist": [
+          204.187,
+          280.521
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "e45a66ca82d0a2e5b7b1e90c85681341dd83efa520d43abaa3b63f6d6444042b"
+    }
+  ],
+  "id": "dodge",
+  "kind": "state",
+  "playback": "once",
+  "rasterScale": 0.78,
+  "rootScale": 1.0,
+  "weapon": "club"
+}

@@ -122,8 +122,8 @@ export class GameUI {
         this.banner.classList.remove('is-leaving');
         this.bannerTimeout = window.setTimeout(() => {
             this.banner.classList.add('is-leaving');
-            window.setTimeout(() => this.banner.classList.add('is-hidden'), 360);
-        }, 2100);
+            window.setTimeout(() => this.banner.classList.add('is-hidden'), 180);
+        }, 600);
     }
     showUpgrade(ids, interactive) {
         this.upgradeCards.replaceChildren();

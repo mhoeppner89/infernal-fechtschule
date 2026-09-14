@@ -1,0 +1,36 @@
+{
+  "source": "/private/tmp/dussack-guardbreak-rgba.png",
+  "frameCount": 4,
+  "canvas": [
+    640,
+    640
+  ],
+  "padding": 20,
+  "sharedScale": 1.0101010101010102,
+  "sourceBounds": [
+    [
+      26,
+      119,
+      482,
+      690
+    ],
+    [
+      499,
+      124,
+      1093,
+      684
+    ],
+    [
+      1067,
+      140,
+      1531,
+      684
+    ],
+    [
+      1561,
+      249,
+      1997,
+      687
+    ]
+  ]
+}

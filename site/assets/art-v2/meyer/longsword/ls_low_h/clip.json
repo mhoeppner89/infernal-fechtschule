@@ -1,0 +1,531 @@
+{
+  "actor": "meyer",
+  "canvas": [
+    384,
+    384
+  ],
+  "footAnchor": [
+    192,
+    350
+  ],
+  "frames": [
+    {
+      "alphaBBox": [
+        137,
+        93,
+        273,
+        351
+      ],
+      "cue": "neutral",
+      "file": "meyer/longsword/ls_low_h/01.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 4,
+      "landmarks": {
+        "chest": [
+          192.0,
+          190.1
+        ],
+        "frontAnkle": [
+          208.778,
+          342.498
+        ],
+        "frontElbow": [
+          233.706,
+          229.68
+        ],
+        "frontHip": [
+          207.6,
+          243.14
+        ],
+        "frontKnee": [
+          218.303,
+          293.495
+        ],
+        "frontShoulder": [
+          219.3,
+          190.1
+        ],
+        "frontWrist": [
+          220.755,
+          267.293
+        ],
+        "head": [
+          192.0,
+          151.1
+        ],
+        "neck": [
+          192.0,
+          169.04
+        ],
+        "pelvis": [
+          192.0,
+          243.14
+        ],
+        "rearAnkle": [
+          174.386,
+          342.98
+        ],
+        "rearElbow": [
+          151.684,
+          230.159
+        ],
+        "rearHip": [
+          176.4,
+          243.14
+        ],
+        "rearKnee": [
+          166.577,
+          293.675
+        ],
+        "rearShoulder": [
+          164.7,
+          190.1
+        ],
+        "rearWrist": [
+          170.97,
+          264.951
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "ce2cb3404178112252f6d231e157e3ade212c117c18b253b984eab610f02b306"
+    },
+    {
+      "alphaBBox": [
+        119,
+        106,
+        227,
+        351
+      ],
+      "cue": "anticipation",
+      "file": "meyer/longsword/ls_low_h/02.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 5,
+      "landmarks": {
+        "chest": [
+          183.566,
+          202.902
+        ],
+        "frontAnkle": [
+          194.432,
+          340.189
+        ],
+        "frontElbow": [
+          195.767,
+          242.701
+        ],
+        "frontHip": [
+          198.238,
+          256.206
+        ],
+        "frontKnee": [
+          167.978,
+          297.854
+        ],
+        "frontShoulder": [
+          210.862,
+          203.378
+        ],
+        "frontWrist": [
+          210.669,
+          279.584
+        ],
+        "head": [
+          184.246,
+          163.908
+        ],
+        "neck": [
+          183.933,
+          181.845
+        ],
+        "pelvis": [
+          182.64,
+          255.934
+        ],
+        "rearAnkle": [
+          170.121,
+          342.98
+        ],
+        "rearElbow": [
+          131.512,
+          236.501
+        ],
+        "rearHip": [
+          167.042,
+          255.661
+        ],
+        "rearKnee": [
+          194.323,
+          299.319
+        ],
+        "rearShoulder": [
+          156.27,
+          202.425
+        ],
+        "rearWrist": [
+          131.512,
+          276.281
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "4b7fed8bc4d02519e6885a05291ea81d3c7c9ceaec9697e2517f25e03455d82e"
+    },
+    {
+      "alphaBBox": [
+        92,
+        112,
+        353,
+        351
+      ],
+      "cue": "contact",
+      "file": "meyer/longsword/ls_low_h/03.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 3,
+      "landmarks": {
+        "chest": [
+          155.24,
+          204.656
+        ],
+        "frontAnkle": [
+          141.254,
+          342.98
+        ],
+        "frontElbow": [
+          219.389,
+          230.763
+        ],
+        "frontHip": [
+          145.06,
+          258.997
+        ],
+        "frontKnee": [
+          114.801,
+          300.645
+        ],
+        "frontShoulder": [
+          179.564,
+          217.05
+        ],
+        "frontWrist": [
+          250.736,
+          255.254
+        ],
+        "head": [
+          172.945,
+          169.907
+        ],
+        "neck": [
+          164.801,
+          185.891
+        ],
+        "pelvis": [
+          131.16,
+          251.915
+        ],
+        "rearAnkle": [
+          120.339,
+          332.151
+        ],
+        "rearElbow": [
+          161.214,
+          221.521
+        ],
+        "rearHip": [
+          117.26,
+          244.833
+        ],
+        "rearKnee": [
+          144.541,
+          288.49
+        ],
+        "rearShoulder": [
+          130.915,
+          192.262
+        ],
+        "rearWrist": [
+          178.652,
+          257.275
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "d1e3875ecf91023bbdde986f69c8e92d6fe17472972f53a62a751860711ac685"
+    },
+    {
+      "alphaBBox": [
+        98,
+        117,
+        335,
+        351
+      ],
+      "cue": "overshoot",
+      "file": "meyer/longsword/ls_low_h/04.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 3,
+      "landmarks": {
+        "chest": [
+          167.016,
+          206.918
+        ],
+        "frontAnkle": [
+          144.655,
+          342.98
+        ],
+        "frontElbow": [
+          223.605,
+          247.123
+        ],
+        "frontHip": [
+          148.461,
+          258.997
+        ],
+        "frontKnee": [
+          118.201,
+          300.645
+        ],
+        "frontShoulder": [
+          189.102,
+          222.964
+        ],
+        "frontWrist": [
+          246.987,
+          279.306
+        ],
+        "head": [
+          189.94,
+          175.366
+        ],
+        "neck": [
+          179.395,
+          189.88
+        ],
+        "pelvis": [
+          135.84,
+          249.828
+        ],
+        "rearAnkle": [
+          126.298,
+          327.977
+        ],
+        "rearElbow": [
+          165.99,
+          227.348
+        ],
+        "rearHip": [
+          123.219,
+          240.658
+        ],
+        "rearKnee": [
+          150.5,
+          284.316
+        ],
+        "rearShoulder": [
+          144.93,
+          190.871
+        ],
+        "rearWrist": [
+          174.261,
+          266.259
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "3b2fb2a2294fa2208cdb89091f317511a1b9fe209dc14cf72b243a6817958298"
+    },
+    {
+      "alphaBBox": [
+        141,
+        92,
+        334,
+        351
+      ],
+      "cue": "recovery",
+      "file": "meyer/longsword/ls_low_h/05.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 5,
+      "landmarks": {
+        "chest": [
+          195.659,
+          188.69
+        ],
+        "frontAnkle": [
+          203.086,
+          342.98
+        ],
+        "frontElbow": [
+          242.973,
+          230.222
+        ],
+        "frontHip": [
+          201.908,
+          243.622
+        ],
+        "frontKnee": [
+          212.611,
+          293.977
+        ],
+        "frontShoulder": [
+          222.553,
+          193.384
+        ],
+        "frontWrist": [
+          248.509,
+          269.615
+        ],
+        "head": [
+          202.364,
+          150.271
+        ],
+        "neck": [
+          199.28,
+          167.943
+        ],
+        "pelvis": [
+          186.54,
+          240.94
+        ],
+        "rearAnkle": [
+          169.159,
+          338.098
+        ],
+        "rearElbow": [
+          169.501,
+          226.11
+        ],
+        "rearHip": [
+          171.172,
+          238.258
+        ],
+        "rearKnee": [
+          161.349,
+          288.792
+        ],
+        "rearShoulder": [
+          168.766,
+          183.996
+        ],
+        "rearWrist": [
+          187.56,
+          261.554
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "45bfe843446266e0aa6f7299295e6206808f998ab594a64f04df8789459c93d1"
+    },
+    {
+      "alphaBBox": [
+        137,
+        93,
+        273,
+        351
+      ],
+      "cue": "neutral",
+      "file": "meyer/longsword/ls_low_h/06.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 5,
+      "landmarks": {
+        "chest": [
+          192.0,
+          190.1
+        ],
+        "frontAnkle": [
+          208.778,
+          342.498
+        ],
+        "frontElbow": [
+          233.706,
+          229.68
+        ],
+        "frontHip": [
+          207.6,
+          243.14
+        ],
+        "frontKnee": [
+          218.303,
+          293.495
+        ],
+        "frontShoulder": [
+          219.3,
+          190.1
+        ],
+        "frontWrist": [
+          220.755,
+          267.293
+        ],
+        "head": [
+          192.0,
+          151.1
+        ],
+        "neck": [
+          192.0,
+          169.04
+        ],
+        "pelvis": [
+          192.0,
+          243.14
+        ],
+        "rearAnkle": [
+          174.386,
+          342.98
+        ],
+        "rearElbow": [
+          151.684,
+          230.159
+        ],
+        "rearHip": [
+          176.4,
+          243.14
+        ],
+        "rearKnee": [
+          166.577,
+          293.675
+        ],
+        "rearShoulder": [
+          164.7,
+          190.1
+        ],
+        "rearWrist": [
+          170.97,
+          264.951
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "ce2cb3404178112252f6d231e157e3ade212c117c18b253b984eab610f02b306"
+    }
+  ],
+  "heavy": true,
+  "id": "ls_low_h",
+  "kind": "attack",
+  "playback": "once",
+  "rasterScale": 0.78,
+  "rootScale": 1.0,
+  "weapon": "longsword",
+  "zone": "legs"
+}

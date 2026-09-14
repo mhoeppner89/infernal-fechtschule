@@ -1,0 +1,33 @@
+{
+  "id": "wretch-v2",
+  "design": "Gaunt crypt wretch in ashen grey skin with rust-stained rag wrappings, broken chain collar, and blackened claws",
+  "canvas": [384, 384],
+  "rootScale": 1.0,
+  "rasterScale": 0.78,
+  "footAnchor": [192, 350],
+  "proportions": {
+    "torso": 64,
+    "neck": 22,
+    "headRadius": 23,
+    "shoulderWidth": 58,
+    "hipWidth": 36,
+    "upperArm": 52,
+    "forearm": 54,
+    "thigh": 64,
+    "shin": 62
+  },
+  "palette": {
+    "ink": "#191414",
+    "skin": "#9a8f85",
+    "skinLight": "#b8aea4",
+    "hair": "#241d1a",
+    "rag": "#5d5148",
+    "ragDark": "#413830",
+    "rust": "#8a4a2e",
+    "chain": "#7c7468",
+    "chainLight": "#a39a8b",
+    "claw": "#2e2622",
+    "accent": "#7a2f28",
+    "leather": "#3f2f26"
+  }
+}

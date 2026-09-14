@@ -1,0 +1,36 @@
+{
+  "source": "/private/tmp/grotesque-hitstun-alpha.png",
+  "frameCount": 4,
+  "canvas": [
+    640,
+    640
+  ],
+  "padding": 18,
+  "sharedScale": 1.1504761904761904,
+  "sourceBounds": [
+    [
+      55,
+      175,
+      455,
+      673
+    ],
+    [
+      500,
+      159,
+      943,
+      679
+    ],
+    [
+      935,
+      151,
+      1440,
+      676
+    ],
+    [
+      1462,
+      238,
+      1934,
+      662
+    ]
+  ]
+}

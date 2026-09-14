@@ -1,0 +1,35 @@
+{
+  "id": "captain-v2",
+  "design": "Armoured town captain in a blackened breastplate and pauldrons over a padded crimson doublet, open sallet with feather plume, mail skirt, and reinforced boots",
+  "canvas": [384, 384],
+  "rootScale": 1.0,
+  "rasterScale": 0.78,
+  "footAnchor": [192, 350],
+  "proportions": {
+    "torso": 72,
+    "neck": 26,
+    "headRadius": 25,
+    "shoulderWidth": 80,
+    "hipWidth": 44,
+    "upperArm": 56,
+    "forearm": 52,
+    "thigh": 68,
+    "shin": 64
+  },
+  "palette": {
+    "ink": "#1a1514",
+    "skin": "#c99265",
+    "skinLight": "#e4b283",
+    "hair": "#3a2a1e",
+    "plate": "#58514c",
+    "plateLight": "#8a827b",
+    "plateDark": "#322d2a",
+    "doublet": "#8c2432",
+    "clothLight": "#d8c6a4",
+    "mail": "#969da1",
+    "hose": "#463c33",
+    "leather": "#4a3428",
+    "accent": "#d8a83c",
+    "plume": "#b4552f"
+  }
+}

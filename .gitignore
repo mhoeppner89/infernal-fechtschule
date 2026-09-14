@@ -3,3 +3,5 @@ node_modules/
 *.log
 coverage/
 playtest-output/
+__pycache__/
+*.pyc

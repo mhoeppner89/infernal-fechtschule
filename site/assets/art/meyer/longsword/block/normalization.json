@@ -1,0 +1,36 @@
+{
+  "source": "/private/tmp/meyer-block-alpha.png",
+  "frameCount": 4,
+  "canvas": [
+    640,
+    640
+  ],
+  "padding": 18,
+  "sharedScale": 0.9041916167664671,
+  "sourceBounds": [
+    [
+      44,
+      14,
+      544,
+      682
+    ],
+    [
+      607,
+      95,
+      1100,
+      684
+    ],
+    [
+      1097,
+      75,
+      1576,
+      682
+    ],
+    [
+      1624,
+      19,
+      2133,
+      673
+    ]
+  ]
+}

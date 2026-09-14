@@ -49,7 +49,7 @@ npm start
 | Move | Tilt or virtual stick | WASD or arrow keys |
 | Light attack | **L** button | J or Z |
 | Heavy attack | **H** button | K or X |
-| Jump / directional dodge | **MOVE** button | L or C |
+| Duck / directional dodge | **MOVE** button | L or C |
 | Hold guard / timed parry | **GUARD** button | I, V, or Shift |
 | Switch weapon | **WEAPON** button | U or Space |
 | Pause | HUD pause button | Escape |
@@ -58,7 +58,8 @@ Useful routes:
 
 - Light → Light → Heavy
 - Heavy → Light → Heavy
-- Direction + Mobility → Light
+- Duck, then Light/Heavy for a low attack
+- Direction + Mobility → dodge → Light
 - Timed Guard → Heavy
 - Confirmed hit → Weapon switch
 

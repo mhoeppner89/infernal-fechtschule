@@ -1,0 +1,36 @@
+{
+  "source": "/private/tmp/dussack-jump-rgba.png",
+  "frameCount": 4,
+  "canvas": [
+    640,
+    640
+  ],
+  "padding": 20,
+  "sharedScale": 0.9174311926605505,
+  "sourceBounds": [
+    [
+      23,
+      383,
+      425,
+      758
+    ],
+    [
+      466,
+      61,
+      796,
+      715
+    ],
+    [
+      857,
+      51,
+      1385,
+      445
+    ],
+    [
+      1267,
+      377,
+      1747,
+      758
+    ]
+  ]
+}

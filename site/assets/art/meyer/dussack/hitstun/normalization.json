@@ -1,0 +1,36 @@
+{
+  "source": "/private/tmp/dussack-hitstun-grid-rgba.png",
+  "frameCount": 4,
+  "canvas": [
+    640,
+    640
+  ],
+  "padding": 20,
+  "sharedScale": 1.214574898785425,
+  "sourceBounds": [
+    [
+      41,
+      63,
+      516,
+      557
+    ],
+    [
+      735,
+      56,
+      1222,
+      549
+    ],
+    [
+      48,
+      744,
+      478,
+      1156
+    ],
+    [
+      783,
+      714,
+      1207,
+      1183
+    ]
+  ]
+}
