@@ -60,7 +60,7 @@ export class AudioEngine {
                 this.tone(310, 520, 0.11, 'triangle', 0.05);
                 break;
             case 'banner':
-            case 'upgrade-chosen':
+            case 'lesson-chosen':
                 this.tone(330, 440, 0.16, 'sine', 0.05);
                 break;
             case 'boss-phase':

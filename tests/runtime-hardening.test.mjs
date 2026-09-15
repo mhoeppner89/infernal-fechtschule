@@ -135,7 +135,7 @@ test('second-intention block snapshots stay finite and reaction zones clear on r
   const world = readyWorld(736);
   const player = world.actors[0];
   assert.ok(player);
-  world.upgrades.add('second-intention');
+  world.lessons.add('ls-provoker');
   armAttack(player, 'ls_h', null);
   player.attack.blocked = true;
   player.attack.elapsed = getAttack('ls_h').startup + getAttack('ls_h').active;

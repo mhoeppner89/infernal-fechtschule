@@ -11,10 +11,10 @@ v1 fallback paths.
 |---|---|---|---|
 | Meyer | 50 | `longsword/`, `dussack/` | full kit incl. zone reactions |
 | Thug | 14 | `club/` | idle, move, crouch, dodge, block, reactions, attacks |
-| Spear | 5 | `spear/` | idle, move, hitstun, dead, thrust |
-| Captain | 8 | `captain-sword/` | idle, move, block, hitstun, guardbreak, dead, cut, bash |
-| Wretch | 5 | `claws/` | idle, move, hitstun, dead, claw |
-| Grotesque | 7 | `claws/` | idle, move, hitstun, dead, sweep, leap, shock |
+| Spear | 8 | `spear/` | idle, move, reactions, hitstun, dead, thrust |
+| Captain | 11 | `captain-sword/` | idle, move, block, reactions, hitstun, guardbreak, dead, cut, bash |
+| Wretch | 8 | `claws/` | idle, move, reactions, hitstun, dead, claw |
+| Grotesque | 10 | `claws/` | idle, move, reactions, hitstun, dead, sweep, leap, shock |
 
 ## Contract
 
@@ -49,10 +49,12 @@ and compares every runtime-frame checksum.
 Every archetype uses one fixed display spec, not the v1 ink-mass calibration:
 `anchorX: 0.5`, `anchorY: 350 / 384`, `fixedScale: true`, and per-archetype
 drawn heights (188 Meyer, 174 thug, 181 spear, 196 captain, 162 wretch, 278
-grotesque in the 1280×720 logical renderer). The thug's generic `hitstun`
-folder is its torso-reaction fallback; the zone-specific folders are
-`hitstun_head`, `hitstun_torso`, and `hitstun_legs`. All other archetypes keep
-their generic hitstun for every zone.
+grotesque in the 1280×720 logical renderer). Every archetype carries authored
+head, torso, and legs zone-reaction folders (`hitstun_head`, `hitstun_torso`,
+`hitstun_legs`); the generic `hitstun` folder remains registered as the
+torso-reaction fallback (and equals the torso design by contract). Head
+reactions rear back with raised guard, and legs reactions crouch with a dipped
+head, so hit feedback reads differently from a body blow without color.
 
 The `dodge` clip is intentionally input-relative: the renderer can flip the
 same stable silhouette with actor facing while movement remains simulation-side.

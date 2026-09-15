@@ -157,6 +157,98 @@ Create and integrate a complete original art and animation pass for the existing
 
 - None for this goal. Continue with user playtesting of Meyer versus the club thug before extending the fixed-rig pipeline to the remaining NPCs.
 
+# Local test build on port 4174 (playtest refresh)
+
+- Rebuilt the workspace (1139 precache entries) and re-ran the regression suite: 41/41 tests pass.
+- Synced the current `site/` build into the installed app copy at
+  `~/Library/Application Support/InfernalFechtschule/app` (previous copy kept as
+  `site.prev-20260914-234252`), then reloaded the `com.infernal-fechtschule.serve`
+  launchd service so the durable port-4174 server now serves the current build
+  including the per-zone reactions.
+- End-to-end verification against the live launchd-served server: 56/56 checks
+  pass (gallery readiness 101 clips / 606 frames, all fifteen NPC zone-clip
+  resolutions, pixel-distinctness proofs, deterministic three-zone combat hits).
+- The game is registered in the thread Preview tab at `http://localhost:4174/`.
+
+# Next
+
+- None for this deployment. The launchd service keeps port 4174 alive across
+  sessions; workspace source remains the canonical copy.
+
+# Active goal: per-zone authored reactions for the full cast
+
+- Closed the documented follow-up: per-zone authored reactions extended from the
+  Meyer/thug pilot to the spearman, captain, wretch, and Bound Grotesque.
+- The fixed-rig generator already drew `hitstun_head`, `hitstun_torso`, and
+  `hitstun_legs` poses for every actor; only the thug declared them. Enabled
+  those states for the four remaining NPCs and regenerated the deterministic
+  set: 101 clips / 606 frames (spear 8, captain 11, wretch 8, grotesque 10),
+  same 384 px canvas, `[192,350]` foot anchor, root scale 1, zero ground drift,
+  worst safety margin 1 px.
+- `tools/validate-fixed-rig-art-v2.py --verify-rebuild` passes with a byte-
+  identical deterministic rebuild (606/606 checksums).
+- Registered the twelve new reaction variants for every NPC kit in the
+  animation manifest and removed the thug-only gate; the generic hitstun
+  remains a first-class fallback clip for every archetype. Runtime inventory:
+  101 ready clips, 606 frames, 1139 service-worker precache entries.
+- Updated the fixed-rig regression test: cast clip counts, per-archetype zone
+  resolution for all five NPCs, generic fallback, and captain guardbreak.
+- Added `tools/zone-reaction-verify.mjs`, a Playwright end-to-end check with a
+  cached-Chromium fallback: gallery readiness (101 clips / 606 frames), all
+  fifteen NPC zone-clip resolutions, evidence screenshots, a pixel-distinctness
+  proof (head/legs reactions differ from generic hitstun on 51–93% of union
+  pixels; torso shares the generic design by contract, as the thug already
+  did), and a deterministic sandbox combat proof (same model as
+  `three-zone-playtest.mjs`): `ls_l1`/`ls_l3`/`ls_low_l` each land on a passive
+  thug, which enters hitstun with the matching reaction zone and lost health.
+- Extended the generator's contact-zones preview sheet with all twelve NPC
+  zone-reaction contact poses for offline visual inspection.
+- Environment: the launchd service `com.infernal-fechtschule.serve` was serving
+  a stale installed copy on port 4174; booted out for this session (restorable
+  with `launchctl load ~/Library/LaunchAgents/com.infernal-fechtschule.serve.plist`).
+  Note `tools/serve.mjs` honors `PORT`, and this shell exports `PORT=0`, so
+  start it with an explicit `PORT=4174`.
+- Final build and regression suite pass: 41/41 tests.
+
+# Next
+
+- None for this goal. The workspace build is current; start the local server
+  with `PORT=4174 node tools/serve.mjs` for playtesting.
+
+# Active goal: scrolling single-player levels (Little Fighter 2 style)
+
+- Stages are now wide (wave definitions carry `stageWidth` 2360–2820 px, vs the
+  1096 px camera window): the player expands the world by marching east while
+  the camera follows, LF2 style.
+- Sim-side deterministic camera (`cameraX` in the snapshot, protocol v3):
+  follows the player with a soft window, clamped to stage bounds, never
+  retreats mid-wave, resets at each new wave's west edge.
+- Progressive spawns: group 0 appears at the wave start; later groups wait for
+  the player to reach their progress threshold on the stage (with a
+  field-clear fallback so there are no soft-locks), spawning around the
+  player's frontier.
+- Renderer: world-space translate for actors/particles/text, parallax
+  background (0.35×) that can never outrun its 1920 px source art, screen-fixed
+  vignette, and red LF2-style edge chevrons pointing at offscreen enemies.
+- Fixed a mid-stage seam: the playfield-darkening band and the stage-bound
+  rectangle were still camera-window-relative, so their edges drew a vertical
+  line one screen into every stage. Both are now world-space aware (the bounds
+  mark the stage's true extent and scroll away with the march; the vignette is
+  screen-fixed behind the camera translate).
+- Protocol bumped to v3 with camera validation; guest interpolation lerps
+  cameraX. New `tests/scrolling-stage.test.mjs` (camera ratchet, gating,
+  bounds clamps, player clamp) and `tools/scroll-stage-verify.mjs` (live march:
+  camera follow, monotonicity, offscreen pressure, phone overflow, zero
+  console errors; pixel measurements confirm the floor scrolls 1:1 and the sky
+  at ~0.35× parallax).
+- Final build and regression suite pass: 47/47 tests.
+
+# Next
+
+- None for this goal. Optional follow-up: per-stage background variety is
+  already handled by wave themes; could add stage-end set-pieces (gate,
+  castle approach) as visual landmarks mid-stage.
+
 # Active goal: fixed-rig v2 art for the whole cast
 
 - Extended the deterministic fixed-rig v2 pipeline from the Meyer/thug pilot to the spearman, captain, wretch, and Bound Grotesque.
@@ -173,3 +265,16 @@ Create and integrate a complete original art and animation pass for the existing
 # Next
 
 - None for this goal. Optional follow-ups: per-zone authored reactions for the captain/spear/grotesque, and committing the accumulated workspace work.
+
+# Active goal: denser progressive waves, combo-unlock lessons, grounded shadows
+
+- Expanded every level from 3–5 to 7 encounter waves (2820→3820 px scroll stages) with a per-wave `pressure` scalar that scales enemy health/guard and co-op padding, so difficulty climbs smoothly within and across levels.
+- Replaced post-level buff picks with a combo-unlock progression: players start with only the basic chain (ls\_l1 and the low poke) and learn the rest through lesson cards offered after waves 1 and 2. Each card lists its exact input routes (light/heavy chains, crouch entries); `isAttackUnlocked` gates every entry point, with two behavior-only lessons (guard counter, second-intention signature).
+- Protocol bumped to v4 (lessons in snapshot); tests and fixtures updated. `chooseUpgrade` is now `chooseLesson` end to end.
+- Fixed floating shadows: the old ellipse was a dim radial blob centered south of the feet, invisible on the dark art. The new contact shadow is a broad, near-solid LF2-style decal straddling the heel line (radius ~1.6× body, core alpha 0.74 fading at the rim, lift from `jumpOffset` for airborne states).
+- New `tools/lesson-flow-verify.mjs` proves the whole loop live on :4174 (11 checks): zero starting lessons, wide stage, wave-clear opens the card overlay with route lists, picking one resumes the next wave with the lesson registered and the basic chain firing. Its grounding check re-renders the same frozen frame with `drawShadow` monkey-patched off — the pixel diff isolates the shadow exactly, asserting 1000+ darkened pixels spanning the feet line.
+- Final build and regression suite pass: 47/47 tests, scroll-stage and zone-reaction probes still green against the deployed build.
+
+# Next
+
+- None for this goal. Optional follow-up: an additional lesson tier after the boss (dodge-cancels / air game) if the campaign grows a second act.

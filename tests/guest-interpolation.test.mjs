@@ -45,7 +45,7 @@ function actor(overrides = {}) {
 
 function snapshot(tick, time, actorSnapshot) {
   return {
-    version: 2,
+    version: 4,
     tick,
     time,
     phase: 'wave',
@@ -53,9 +53,11 @@ function snapshot(tick, time, actorSnapshot) {
     waveTitle: 'Roadside Ambush',
     score: 0,
     bossPhase: 0,
-    upgrades: [],
-    offeredUpgrades: [],
-    actors: [actorSnapshot]
+    lessons: [],
+    offeredLessons: [],
+    actors: [actorSnapshot],
+    cameraX: 0,
+    stageWidth: 1280
   };
 }
 

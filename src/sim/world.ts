@@ -6,14 +6,13 @@ import {
   resolveCrouchAttack,
   resolveDodgeAttack,
   resolvePlayerAttack,
-  resolveSwitchAttack,
-  withUpgradeEffects
+  resolveSwitchAttack
 } from './attacks.js';
 import { createEnemy, createPlayer } from './factories.js';
 import { clamp, damp, normalize2 } from './math.js';
 import { Rng } from './rng.js';
 import { chooseSoftTarget } from './targeting.js';
-import { UPGRADE_OFFERS } from './upgrades.js';
+import { LESSON_OFFERS } from './lessons.js';
 import { WAVES } from './waves.js';
 import type {
   Actor,
@@ -24,7 +23,7 @@ import type {
   GamePhase,
   GameSnapshot,
   InputFrame,
-  UpgradeId,
+  LessonId,
   WorldOptions
 } from './types.js';
 import { GAME_SNAPSHOT_VERSION, NEUTRAL_INPUT } from './types.js';
@@ -36,6 +35,32 @@ export const ARENA = Object.freeze({
   maxZ: 612
 });
 
+/**
+ * Camera window in world coordinates. Stages wider than this scroll as the
+ * player advances; the sim clamps the window to the current stage bounds.
+ */
+export const CAMERA = Object.freeze({
+  width: ARENA.maxX - ARENA.minX,
+  /** Furthest the player can pull the camera left from the world origin. */
+  margin: 72
+});
+
+/**
+ * Stage bounds for a wave. Waves wider than the camera window scroll; groups
+ * after the first stay dormant until the player has pushed through the
+ * previous group, so the fight travels across the stage (Little Fighter 2
+ * style) instead of everything rushing one fixed screen.
+ */
+export function stageBounds(stageWidth: number | undefined): { minX: number; maxX: number } {
+  if (!stageWidth || stageWidth <= CAMERA.width) {
+    return { minX: ARENA.minX, maxX: ARENA.maxX }; 
+  }
+  return {
+    minX: ARENA.minX - CAMERA.margin,
+    maxX: ARENA.minX - CAMERA.margin + stageWidth
+  }; 
+}
+
 export const CROUCH_DURATION_SECONDS = 0.48;
 export const CROUCH_ATTACK_WINDOW_SECONDS = 0.36;
 const MOVE_INPUT_DEADZONE = 0.1;
@@ -44,11 +69,16 @@ const DODGE_INPUT_DEADZONE = 0.15;
 interface SpawnEntry {
   at: number;
   archetype: Exclude<Archetype, 'meyer'>;
+  /** Authored cadence of the entry's group, used to re-stagger gated releases. */
+  interval: number;
+  /** Frontier (player x) that unlocks this entry; -Infinity for the opening group. */
+  threshold: number;
 }
 
 export class GameWorld {
   readonly actors: Actor[] = [];
-  readonly upgrades = new Set<UpgradeId>();
+  /** Lessons learned this run; each unlocks a set of chained attacks. */
+  readonly lessons = new Set<LessonId>();
 
   phase: GamePhase = 'title';
   waveIndex = -1;
@@ -57,7 +87,7 @@ export class GameWorld {
   bossPhase = 0;
   tick = 0;
   time = 0;
-  offeredUpgrades: UpgradeId[] = [];
+  offeredLessons: LessonId[] = [];
 
   private readonly rng: Rng;
   private readonly playerCount: 1 | 2;
@@ -71,7 +101,13 @@ export class GameWorld {
   private hitStop = 0;
   private readonly pendingPlayerEdges: InputFrame[] = [];
   private waveResolved = false;
-  private upgradeOfferIndex = 0;
+  private lessonOfferIndex = 0;
+ /** Health/guard/armor multiplier authored per wave for the difficulty ramp. */
+  private wavePressure = 1;
+  /** Left edge of the camera window in world coordinates (authoritative). */
+  cameraX: number = ARENA.minX;
+  /** Full world width of the current wave's stage. */
+  stageWidth: number = ARENA.maxX - ARENA.minX;
 
   constructor(options: WorldOptions) {
     this.playerCount = options.playerCount;
@@ -116,6 +152,7 @@ export class GameWorld {
     this.updateSpawns(safeDt);
     this.updatePermissions(safeDt);
     this.updateActorTimers(safeDt);
+    this.updateCamera();
 
     const players = this.playerActors();
     for (const player of players) {
@@ -135,11 +172,11 @@ export class GameWorld {
     this.checkDefeat();
   }
 
-  chooseUpgrade(id: UpgradeId): boolean {
-    if (this.phase !== 'upgrade' || !this.offeredUpgrades.includes(id)) return false;
-    this.upgrades.add(id);
-    this.offeredUpgrades = [];
-    this.emit({ type: 'upgrade-chosen', text: id });
+  chooseLesson(id: LessonId): boolean {
+    if (this.phase !== 'lesson' || !this.offeredLessons.includes(id)) return false;
+    this.lessons.add(id);
+    this.offeredLessons = [];
+    this.emit({ type: 'lesson-chosen', text: id });
     this.beginWave(this.waveIndex + 1);
     return true;
   }
@@ -162,9 +199,11 @@ export class GameWorld {
       waveTitle: this.waveTitle,
       score: this.score,
       bossPhase: this.bossPhase,
-      upgrades: [...this.upgrades],
-      offeredUpgrades: [...this.offeredUpgrades],
-      actors: this.actors.map((actor) => this.actorSnapshot(actor))
+      lessons: [...this.lessons],
+      offeredLessons: [...this.offeredLessons],
+      actors: this.actors.map((actor) => this.actorSnapshot(actor)),
+      cameraX: this.cameraX,
+      stageWidth: this.stageWidth
     };
   }
 
@@ -282,7 +321,7 @@ export class GameWorld {
       this.clampActor(actor);
       if (input.lightPressed && actor.stateElapsed > 0.045 && actor.stateElapsed < 0.22) {
         this.startAttack(actor, resolveDodgeAttack(actor.weapon));
-        if (actor.weapon === 'dussack' && this.upgrades.has('dussack-passing-step')) actor.invulnerable = 0.24;
+        if (actor.weapon === 'dussack' && this.lessons.has('ds-wheel')) actor.invulnerable = 0.24;
         return;
       }
       if (actor.stateElapsed >= actor.stateDuration) this.enterNeutral(actor);
@@ -298,7 +337,7 @@ export class GameWorld {
         actor.stateElapsed <= CROUCH_ATTACK_WINDOW_SECONDS
       ) {
         const action = input.lightPressed ? 'light' : 'heavy';
-        this.startAttack(actor, resolveCrouchAttack(actor.weapon, action));
+        this.startAttack(actor, resolveCrouchAttack(actor.weapon, action, this.lessons));
         return;
       }
       if (actor.stateElapsed >= actor.stateDuration) this.enterNeutral(actor);
@@ -328,7 +367,7 @@ export class GameWorld {
       if (rawMagnitude > DODGE_INPUT_DEADZONE) this.startDodge(actor, direction.x, direction.y);
       else if (input.lightPressed || input.heavyPressed) {
         const action = input.lightPressed ? 'light' : 'heavy';
-        this.startAttack(actor, resolveCrouchAttack(actor.weapon, action));
+        this.startAttack(actor, resolveCrouchAttack(actor.weapon, action, this.lessons));
       } else {
         this.startCrouch(actor);
       }
@@ -349,7 +388,7 @@ export class GameWorld {
 
     if (input.lightPressed || input.heavyPressed) {
       const action = input.lightPressed ? 'light' : 'heavy';
-      const id = resolvePlayerAttack(actor.weapon, action, null, actor.counterWindow > 0);
+      const id = resolvePlayerAttack(actor.weapon, action, null, actor.counterWindow > 0, this.lessons);
       if (action === 'heavy' && actor.counterWindow > 0) actor.counterWindow = 0;
       this.startAttack(actor, id);
       return;
@@ -369,7 +408,7 @@ export class GameWorld {
       this.enterNeutral(actor);
       return;
     }
-    const definition = withUpgradeEffects(getAttack(runtime.id), this.upgrades);
+    const definition = getAttack(runtime.id);
 
     runtime.elapsed += dt;
     actor.stateElapsed = runtime.elapsed;
@@ -399,7 +438,7 @@ export class GameWorld {
     if (
       runtime.blocked &&
       definition.provoke &&
-      this.upgrades.has('second-intention') &&
+      this.lessons.has('ls-provoker') &&
       input.guardHeld &&
       runtime.elapsed >= definition.startup + definition.active
     ) {
@@ -424,7 +463,7 @@ export class GameWorld {
     }
 
     if (queued === 'light' || queued === 'heavy') {
-      const next = resolvePlayerAttack(actor.weapon, queued, currentId, actor.counterWindow > 0);
+      const next = resolvePlayerAttack(actor.weapon, queued, currentId, actor.counterWindow > 0, this.lessons);
       if (queued === 'heavy' && actor.counterWindow > 0) actor.counterWindow = 0;
       this.startAttack(actor, next);
       return;
@@ -596,8 +635,7 @@ export class GameWorld {
     for (const attacker of this.actors) {
       const runtime = attacker.attack;
       if (!runtime || attacker.state !== 'attack') continue;
-      const base = getAttack(runtime.id);
-      const definition = attacker.team === 'players' ? withUpgradeEffects(base, this.upgrades) : base;
+      const definition = getAttack(runtime.id);
       if (!isAttackActive(definition, runtime.elapsed)) continue;
 
       if (!runtime.activeCuePlayed) {
@@ -751,7 +789,7 @@ export class GameWorld {
 
     if (attacker.team === 'players' && definition.heavy && attacker.openingTimer > 0) {
       multiplier = 1.52;
-      if (attacker.weapon === 'longsword' && this.upgrades.has('longsword-control')) multiplier = 1.78;
+      if (attacker.weapon === 'longsword' && this.lessons.has('ls-provoker')) multiplier = 1.78;
       attacker.openingTimer = 0;
       attacker.provokeTimer = 0;
       thirdIntention = true;
@@ -830,9 +868,7 @@ export class GameWorld {
   }
 
   private startAttack(actor: Actor, attackId: string, explicitTarget?: Actor): void {
-    const definition = actor.team === 'players'
-      ? withUpgradeEffects(getAttack(attackId), this.upgrades)
-      : getAttack(attackId);
+    const definition = getAttack(attackId);
     const target = explicitTarget ?? chooseSoftTarget(actor, this.actors, {
       maxForward: definition.reach + 74,
       maxDepth: Math.max(96, definition.depth + 68),
@@ -883,7 +919,7 @@ export class GameWorld {
     actor.desiredWeapon = actor.weapon === 'longsword' ? 'dussack' : 'longsword';
     actor.state = 'switch';
     actor.stateElapsed = 0;
-    actor.stateDuration = this.upgrades.has('quick-change') && fromHit ? 0.11 : fromHit ? 0.19 : 0.31;
+    actor.stateDuration = this.lessons.has('switch-flourish') && fromHit ? 0.11 : fromHit ? 0.19 : 0.31;
     actor.stateMoveX = fromHit ? 1 : 0;
     actor.stateMoveZ = 0;
     actor.attack = null;
@@ -982,7 +1018,18 @@ export class GameWorld {
   }
 
   private clampActor(actor: Actor): void {
-    actor.x = clamp(actor.x, ARENA.minX + actor.radius, ARENA.maxX - actor.radius);
+    const bounds = stageBounds(this.stageWidth);
+    const stageMinX = bounds.minX + actor.radius;
+    const stageMaxX = bounds.maxX - actor.radius;
+    if (actor.team === 'players') {
+      // Stages are wider than the camera window and the view never retreats,
+      // so the window edge is a hard boundary for the player's march east.
+      const viewMinX = this.cameraX + 46;
+      const viewMaxX = this.cameraX + CAMERA.width - 46;
+      actor.x = clamp(actor.x, Math.max(stageMinX, viewMinX), Math.min(stageMaxX, viewMaxX));
+    } else {
+      actor.x = clamp(actor.x, stageMinX, stageMaxX);
+    }
     actor.z = clamp(actor.z, ARENA.minZ + actor.radius * 0.35, ARENA.maxZ - actor.radius * 0.25);
   }
 
@@ -1047,10 +1094,46 @@ export class GameWorld {
 
   private updateSpawns(dt: number): void {
     this.spawnClock += dt;
-    while (this.spawnQueue.length > 0 && (this.spawnQueue[0]?.at ?? Number.POSITIVE_INFINITY) <= this.spawnClock) {
-      const entry = this.spawnQueue.shift();
-      if (entry) this.spawnEnemy(entry.archetype);
+    const schedule = this.spawnQueue;
+    const frontier = this.playerActors().reduce((max, player) => Math.max(max, player.x), 0);
+
+    while (schedule.length > 0) {
+      const entry = schedule[0];
+      if (!entry || entry.at > this.spawnClock) break;
+      // Later groups unlock when the player's march reaches their stage zone
+      // (the Little Fighter 2 progression feel) or, as a soft-lock safety, when
+      // the field is clear. The opening group always arrives on schedule.
+      if (
+        entry.threshold > Number.NEGATIVE_INFINITY &&
+        frontier < entry.threshold &&
+        this.actors.some((actor) => actor.team === 'enemies' && actor.state !== 'dead')
+      ) break;
+      schedule.shift();
+      this.spawnEnemy(entry.archetype);
+      // Keep the remainder of a released group trickling at its authored
+      // cadence even when their scheduled times elapsed behind the gate.
+      const follower = schedule[0];
+      if (follower && follower.at <= this.spawnClock) {
+        follower.at = this.spawnClock + entry.interval;
+      }
     }
+  }
+
+  /**
+   * Advances the authoritative camera window. The view ratchets forward with
+   * the player's push east and never retreats within a wave (Little Fighter 2
+   * style march), so each stage reveals itself progressively.
+   */
+  private updateCamera(): void {
+    const bounds = stageBounds(this.stageWidth);
+    const maxCameraX = bounds.maxX - CAMERA.width;
+    let target = bounds.minX;
+    for (const player of this.playerActors()) {
+      if (player.state === 'dead') continue;
+      target = Math.max(target, player.x - CAMERA.width * 0.5);
+    }
+    target = Math.min(target, maxCameraX);
+    this.cameraX = Math.max(this.cameraX, target);
   }
 
   private beginWave(index: number): void {
@@ -1069,17 +1152,32 @@ export class GameWorld {
     this.spawnQueue = [];
     this.clearTimer = 0;
     this.waveResolved = false;
-    this.offeredUpgrades = [];
+    this.offeredLessons = [];
     if (definition.boss) this.bossPhase = 1;
 
+    this.stageWidth = definition.stageWidth ?? ARENA.maxX - ARENA.minX;
+    this.cameraX = stageBounds(this.stageWidth).minX + CAMERA.margin;
+    this.wavePressure = definition.pressure ?? 1;
+
+    // Groups are spread across the scrollable span of the stage: group 0 opens
+    // the wave at the west end, and each later group unlocks once the player's
+    // march reaches its zone (or the field clears, so camping cannot stall the
+    // run). Ordering and cadence stay deterministic.
+    const scrollSpan = Math.max(1, this.stageWidth - CAMERA.width);
+    const groups = definition.groups;
     let at = 0.45;
-    for (const group of definition.groups) {
+    for (let groupIndex = 0; groupIndex < groups.length; groupIndex += 1) {
+      const group = groups[groupIndex];
+      if (!group) continue;
       let count = group.count;
       if (this.playerCount === 2 && group.archetype !== 'grotesque') {
         count += group.archetype === 'thug' ? 2 : 1;
       }
+      const threshold = groupIndex === 0
+        ? Number.NEGATIVE_INFINITY
+        : stageBounds(this.stageWidth).minX + (groupIndex / groups.length) * scrollSpan;
       for (let iteration = 0; iteration < count; iteration += 1) {
-        this.spawnQueue.push({ at, archetype: group.archetype });
+        this.spawnQueue.push({ at, archetype: group.archetype, interval: group.interval, threshold });
         at += group.interval;
       }
       at += 0.3;
@@ -1090,21 +1188,52 @@ export class GameWorld {
 
   private spawnEnemy(archetype: Exclude<Archetype, 'meyer'>): void {
     if (archetype === 'grotesque') {
-      const boss = createEnemy(this.nextActorId++, archetype, 940, 432);
+      // The bound thing erupts roughly one screen ahead of the player's frontier.
+      const player = this.playerActors()[0];
+      const bounds = stageBounds(this.stageWidth);
+      const bossX = player
+        ? Math.min(bounds.maxX - 220, player.x + 420)
+        : bounds.maxX - 420;
+      const boss = createEnemy(this.nextActorId++, archetype, bossX, 432);
+      this.applyPressure(boss);
       this.actors.push(boss);
       return;
     }
+    const bounds = stageBounds(this.stageWidth);
+    const player = this.playerActors()[0];
+    const frontier = player ? player.x : ARENA.minX + 300;
+    const cameraRight = this.cameraX + CAMERA.width;
     const fromRight = this.nextActorId % 2 === 0;
-    const x = fromRight ? ARENA.maxX - 34 : ARENA.minX + 34;
+    let x: number;
+    if (fromRight) {
+      // Arrive just past the visible right edge of the camera when there is
+      // stage left to reveal; otherwise from the stage's east end.
+      x = Math.min(bounds.maxX - 30, Math.max(cameraRight + 46, frontier + 120));
+    } else {
+      x = Math.max(bounds.minX + 30, Math.min(this.cameraX - 46, frontier - 120));
+    }
     const z = this.rng.range(ARENA.minZ + 32, ARENA.maxZ - 28);
     const enemy = createEnemy(this.nextActorId++, archetype, x, z);
     enemy.facing = fromRight ? -1 : 1;
+    this.applyPressure(enemy);
     this.actors.push(enemy);
+  }
+
+  /** Scales a fresh enemy's resistances by the current wave's pressure. */
+  private applyPressure(enemy: Actor): void {
+    const pressure = Math.max(1, this.wavePressure);
+    enemy.health = Math.round(enemy.health * pressure);
+    enemy.maxHealth = Math.round(enemy.maxHealth * pressure);
+    enemy.guard = Math.round(enemy.guard * pressure);
+    enemy.maxGuard = Math.round(enemy.maxGuard * pressure);
+    enemy.armor = Math.round(enemy.armor * pressure);
+    enemy.maxArmor = Math.round(enemy.maxArmor * pressure);
   }
 
   private spawnWretch(x: number, z: number): void {
     const enemy = createEnemy(this.nextActorId++, 'wretch', x, z);
     enemy.facing = x > 640 ? -1 : 1;
+    this.applyPressure(enemy);
     this.actors.push(enemy);
   }
 
@@ -1129,12 +1258,12 @@ export class GameWorld {
       return;
     }
 
-    if (definition?.upgradeAfter) {
-      this.phase = 'upgrade';
-      const offer = UPGRADE_OFFERS[Math.min(this.upgradeOfferIndex, UPGRADE_OFFERS.length - 1)];
-      this.offeredUpgrades = offer ? [...offer].filter((id) => !this.upgrades.has(id)) : [];
-      this.upgradeOfferIndex += 1;
-      this.emit({ type: 'upgrade-offer', upgrades: [...this.offeredUpgrades] });
+    if (definition?.lessonAfter) {
+      this.phase = 'lesson';
+      const offer = LESSON_OFFERS[Math.min(this.lessonOfferIndex, LESSON_OFFERS.length - 1)] ?? [];
+      this.offeredLessons = [...offer].filter((id) => !this.lessons.has(id));
+      this.lessonOfferIndex += 1;
+      this.emit({ type: 'lesson-offer', lessons: [...this.offeredLessons] });
       return;
     }
 

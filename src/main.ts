@@ -21,6 +21,18 @@ Object.assign(window, {
 
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   window.addEventListener('load', () => {
-    void navigator.serviceWorker.register('./sw.js').catch(() => undefined);
+    void navigator.serviceWorker.register('./sw.js').then((registration) => {
+      // A deploy updates the worker in the background while a tab may stay
+      // open for days. When the new worker takes over, reload once so the
+      // tab actually runs the deployed build instead of its cached one —
+      // but never mid-run; the next title visit picks it up instead.
+      registration.addEventListener('updatefound', () => {
+        registration.installing?.addEventListener('statechange', (event) => {
+          const worker = event.target as ServiceWorker;
+          const idle = !(window as { __FECHTSCHULE__?: { controller?: { world?: unknown } } }).__FECHTSCHULE__?.controller?.world;
+          if (worker.state === 'activated' && navigator.serviceWorker.controller && idle) location.reload();
+        });
+      });
+    }).catch(() => undefined);
   });
 }

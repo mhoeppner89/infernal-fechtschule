@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { resolvePlayerAttack, withUpgradeEffects, getAttack } from '../site/js/sim/attacks.js';
+import { resolveCrouchAttack, resolvePlayerAttack } from '../site/js/sim/attacks.js';
 import { createEnemy, createPlayer } from '../site/js/sim/factories.js';
 import { chooseSoftTarget } from '../site/js/sim/targeting.js';
 import { GameWorld } from '../site/js/sim/world.js';
@@ -43,21 +43,33 @@ test('soft targeting prefers depth alignment and keeps previous target sticky', 
 });
 
 test('the shared combo grammar resolves weapon-specific routes', () => {
+  const allLessons = new Set(['ls-crossing', 'ls-threefold', 'ls-provoker', 'ds-backhand', 'ds-wheel', 'switch-flourish']);
   assert.equal(resolvePlayerAttack('longsword', 'light', null, false), 'ls_l1');
-  assert.equal(resolvePlayerAttack('longsword', 'light', 'ls_l1', false), 'ls_l2');
-  assert.equal(resolvePlayerAttack('longsword', 'heavy', 'ls_l2', false), 'ls_l2h');
-  assert.equal(resolvePlayerAttack('dussack', 'heavy', 'ds_l1', false), 'ds_lh');
-  assert.equal(resolvePlayerAttack('dussack', 'heavy', null, true), 'ds_counter');
+  assert.equal(resolvePlayerAttack('longsword', 'light', 'ls_l1', false, allLessons), 'ls_l2');
+  assert.equal(resolvePlayerAttack('longsword', 'heavy', 'ls_l2', false, allLessons), 'ls_l2h');
+  assert.equal(resolvePlayerAttack('dussack', 'heavy', 'ds_l1', false, allLessons), 'ds_lh');
+  assert.equal(resolvePlayerAttack('dussack', 'heavy', null, true, allLessons), 'ds_counter');
 });
 
-test('lessons alter behavior rather than applying opaque percentage bonuses', () => {
-  const base = getAttack('ls_l3');
-  const upgraded = withUpgradeEffects(base, new Set(['longsword-sweep']));
-  assert.ok(upgraded.depth > base.depth);
-  assert.ok(upgraded.maxTargets > base.maxTargets);
+test('combo lessons gate chained routes until learned', () => {
+  const none = new Set();
+  // Without lessons only the basic starters are reachable: chains fall back.
+  assert.equal(resolvePlayerAttack('longsword', 'light', 'ls_l1', false, none), 'ls_l1');
+  assert.equal(resolvePlayerAttack('longsword', 'heavy', 'ls_l2', false, none), 'ls_h');
+  assert.equal(resolveCrouchAttack('longsword', 'heavy', none), 'ls_low_l');
+  // Learning ls-crossing opens its routes; unrelated routes stay locked.
+  const crossing = new Set(['ls-crossing']);
+  assert.equal(resolvePlayerAttack('longsword', 'light', 'ls_l1', false, crossing), 'ls_l2');
+  assert.equal(resolvePlayerAttack('longsword', 'heavy', 'ls_l2', false, crossing), 'ls_l2h');
+  assert.equal(resolvePlayerAttack('longsword', 'light', 'ls_l2', false, crossing), 'ls_l1');
+  // The low heavy belongs to ls-threefold, not ls-crossing.
+  assert.equal(resolveCrouchAttack('longsword', 'heavy', crossing), 'ls_low_l');
+  assert.equal(resolveCrouchAttack('longsword', 'heavy', new Set(['ls-threefold'])), 'ls_low_h');
 
-  const dussack = withUpgradeEffects(getAttack('ds_l3'), new Set(['dussack-circle']));
-  assert.equal(dussack.arc, 'radial');
+  // Dussack lessons do not unlock longsword chains.
+  const dussackOnly = new Set(['ds-backhand']);
+  assert.equal(resolvePlayerAttack('dussack', 'light', 'ds_l1', false, dussackOnly), 'ds_l2');
+  assert.equal(resolvePlayerAttack('longsword', 'light', 'ls_l1', false, dussackOnly), 'ls_l1');
 });
 
 test('wave flow reaches a lesson choice and resumes after selecting it', () => {
@@ -67,21 +79,24 @@ test('wave flow reaches a lesson choice and resumes after selecting it', () => {
   assert.ok(world.actors.some((actor) => actor.team === 'enemies'));
 
   killEnemies(world);
-  advance(world, 1.5);
-  assert.equal(world.waveIndex, 1);
+  // The clear-fallback may still release the wave's remaining group; keep
+  // clearing until the wave actually resolves (the lesson phase marks it —
+  // waveIndex still points at the finished wave until the choice is made).
+  for (let cycle = 0; cycle < 6 && world.phase === 'wave'; cycle += 1) {
+    killEnemies(world);
+    advance(world, 1.5);
+  }
+  assert.equal(world.phase, 'lesson');
 
-  advance(world, 5.5);
-  killEnemies(world);
-  advance(world, 1.5);
-  assert.equal(world.phase, 'upgrade');
-  assert.equal(world.offeredUpgrades.length, 3);
-
-  const selected = world.offeredUpgrades[0];
+  // The choice advances to wave 1 with the lesson learned (waveIndex still
+  // names the finished wave until the pick lands).
+  const selected = world.offeredLessons[0];
   assert.ok(selected);
-  assert.equal(world.chooseUpgrade(selected), true);
+  assert.equal(world.chooseLesson(selected), true);
   assert.equal(world.phase, 'wave');
-  assert.equal(world.waveIndex, 2);
-  assert.ok(world.upgrades.has(selected));
+  assert.equal(world.waveIndex, 1);
+  assert.ok(world.lessons.has(selected));
+  assert.equal(world.offeredLessons.length, 0);
 });
 
 test('snapshots are JSON serializable for the WebRTC replica client', () => {
@@ -90,7 +105,7 @@ test('snapshots are JSON serializable for the WebRTC replica client', () => {
   const snapshot = world.snapshot();
   const encoded = JSON.stringify(snapshot);
   const decoded = JSON.parse(encoded);
-  assert.equal(decoded.version, 2);
+  assert.equal(decoded.version, 4);
   assert.equal(decoded.actors.filter((actor) => actor.team === 'players').length, 2);
 });
 
@@ -160,14 +175,14 @@ test('the complete encounter sequence can reach victory through both lesson gate
         actor.deathTimer = 2;
       }
     }
-    if (world.phase === 'upgrade') {
-      const selected = world.offeredUpgrades[0];
+    if (world.phase === 'lesson') {
+      const selected = world.offeredLessons[0];
       assert.ok(selected);
-      world.chooseUpgrade(selected);
+      world.chooseLesson(selected);
     }
     world.step(1 / 60, [NEUTRAL_INPUT]);
   }
   assert.equal(world.phase, 'victory');
-  assert.equal(world.waveIndex, 3);
-  assert.equal(world.upgrades.size, 2);
+  assert.equal(world.waveIndex, 6);
+  assert.equal(world.lessons.size, 6);
 });

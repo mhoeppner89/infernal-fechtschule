@@ -136,11 +136,18 @@ function encodeDescription(description: RTCSessionDescription): string {
 }
 
 function decodeDescription(token: string): RTCSessionDescriptionInit {
-  const normalized = token.trim().replaceAll('-', '+').replaceAll('_', '/');
-  const padded = normalized + '='.repeat((4 - normalized.length % 4) % 4);
-  const binary = atob(padded);
-  const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
-  const parsed = JSON.parse(new TextDecoder().decode(bytes)) as RTCSessionDescriptionInit;
+  // Paste accidents are the normal failure here — show one friendly line
+  // instead of the browser's raw atob/JSON exceptions.
+  let parsed: RTCSessionDescriptionInit;
+  try {
+    const normalized = token.trim().replaceAll('-', '+').replaceAll('_', '/');
+    const padded = normalized + '='.repeat((4 - normalized.length % 4) % 4);
+    const binary = atob(padded);
+    const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
+    parsed = JSON.parse(new TextDecoder().decode(bytes)) as RTCSessionDescriptionInit;
+  } catch {
+    throw new Error('That pairing token could not be read — paste the full code again.');
+  }
   if (!parsed.type || !parsed.sdp) throw new Error('The pairing token is incomplete.');
   return parsed;
 }

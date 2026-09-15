@@ -271,8 +271,8 @@ export class SpriteAnimationCatalog {
         const preferred = this.lookup(query);
         if (preferred || !query.variant)
             return preferred;
-        // Only Meyer and the thug have authored zone reactions in this slice.
-        // Every other archetype keeps its existing generic hitstun safely.
+        // Zone variants are authored for Meyer and every NPC archetype now; the
+        // generic-hitstun fallback remains as a safety net if an asset or zone is ever missing.
         return this.lookup({ ...query, variant: null });
     }
     /**

@@ -1,7 +1,9 @@
 import { attackDuration, getAttack } from '../sim/attacks.js';
 import { clamp } from '../sim/math.js';
+import { stageBounds } from '../sim/world.js';
+import { levelIndexForWave } from '../sim/waves.js';
 import { animationTransitionSpec, sameAnimationFrame, SpriteAnimationCatalog } from './animation-catalog.js';
-import { BackgroundCatalog } from './background-catalog.js';
+import { BACKGROUND_MANIFEST, BackgroundCatalog } from './background-catalog.js';
 export class CanvasRenderer {
     debug;
     width = 1280;
@@ -17,6 +19,8 @@ export class CanvasRenderer {
     previousBackgroundWave = -1;
     backgroundTransition = 1;
     shake = 0;
+    /** Screen-space offset applied to world-space drawing (negative camera x). */
+    cameraOffsetX = 0;
     constructor(canvas, debug = false) {
         this.debug = debug;
         const context = canvas.getContext('2d', { alpha: false });
@@ -118,6 +122,10 @@ export class CanvasRenderer {
         this.updateEffects(dt);
         this.updateBackground(snapshot.waveIndex, dt);
         this.updateActorAnimationVisuals(snapshot.actors, dt);
+        // The sim owns the camera; on the title screen (or a stale guest packet)
+        // the window rests at the default position.
+        const cameraX = Number.isFinite(snapshot.cameraX) ? snapshot.cameraX : 0;
+        this.cameraOffsetX = -cameraX;
         const context = this.context;
         const shakeX = this.shake > 0 ? Math.sin(snapshot.tick * 2.399) * this.shake * 0.5 : 0;
         const shakeY = this.shake > 0 ? Math.cos(snapshot.tick * 1.731) * this.shake * 0.275 : 0;
@@ -125,7 +133,16 @@ export class CanvasRenderer {
         context.save();
         context.translate(shakeX, shakeY);
         this.drawBackground(snapshot);
+        // World space: everything grounded in the stage translates with the camera;
+        // the background image stays at parallax so distance recedes.
+        context.save();
+        context.translate(this.cameraOffsetX * 0.25, 0);
+        this.drawBackgroundAtmosphere(snapshot);
+        context.restore();
+        context.save();
+        context.translate(this.cameraOffsetX, 0);
         this.drawPlayfieldFocus(snapshot);
+        this.drawStageBounds(snapshot);
         const sorted = [...snapshot.actors].sort((left, right) => left.z - right.z || left.id - right.id);
         for (const actor of sorted)
             this.drawShadow(actor);
@@ -145,6 +162,53 @@ export class CanvasRenderer {
         if (this.debug)
             this.drawDebug(snapshot);
         context.restore();
+        this.drawOffscreenIndicators(snapshot);
+        context.restore();
+    }
+    drawStageBounds(snapshot) {
+        const context = this.context;
+        // The boundary posts mark the stage's true extent in world space — they
+        // scroll away with the march instead of framing the camera window, where
+        // a frame edge mid-stage would read as an invisible wall.
+        const bounds = stageBounds(snapshot.stageWidth);
+        const left = bounds.minX - 18;
+        const width = bounds.maxX - bounds.minX + 36;
+        context.strokeStyle = 'rgba(235,217,174,0.32)';
+        context.lineWidth = 3;
+        context.strokeRect(left, 232, width, 392);
+        if (snapshot.bossPhase >= 1)
+            this.drawInfernalCorruption(snapshot.bossPhase);
+    }
+    /** Edge chevrons point at offscreen enemies, LF2-style, so the march stays readable. */
+    drawOffscreenIndicators(snapshot) {
+        const context = this.context;
+        const enemies = snapshot.actors.filter((actor) => actor.team === 'enemies' && actor.state !== 'dead');
+        for (const enemy of enemies) {
+            const screenX = enemy.x + this.cameraOffsetX;
+            let side = null;
+            if (screenX < 40)
+                side = 'left';
+            else if (screenX > this.width - 40)
+                side = 'right';
+            if (!side)
+                continue;
+            const edgeX = side === 'left' ? 26 : this.width - 26;
+            const y = clamp(enemy.z - 60, 260, 640);
+            const direction = side === 'left' ? -1 : 1;
+            context.save();
+            context.globalAlpha = 0.85;
+            context.fillStyle = 'rgba(239,92,76,0.9)';
+            context.strokeStyle = 'rgba(27,20,18,0.9)';
+            context.lineWidth = 3;
+            context.beginPath();
+            context.moveTo(edgeX + direction * 10, y - 11);
+            context.lineTo(edgeX + direction * 10, y + 11);
+            context.lineTo(edgeX - direction * 9, y);
+            context.closePath();
+            context.fill();
+            context.stroke();
+            context.restore();
+        }
     }
     drawBackground(snapshot) {
         const context = this.context;
@@ -156,12 +220,6 @@ export class CanvasRenderer {
             }
             const eased = 1 - Math.pow(1 - this.backgroundTransition, 3);
             this.drawBackgroundImage(image, snapshot.time, this.backgroundWave, previous ? eased : 1);
-            this.drawBackgroundAtmosphere(snapshot);
-            context.strokeStyle = 'rgba(246,226,181,0.16)';
-            context.lineWidth = 2;
-            context.strokeRect(74, 232, 1132, 392);
-            if (snapshot.bossPhase >= 1)
-                this.drawInfernalCorruption(snapshot.bossPhase);
             return;
         }
         const gradient = context.createLinearGradient(0, 0, 0, this.height);
@@ -242,30 +300,35 @@ export class CanvasRenderer {
         context.save();
         // Quiet the detailed scenery only where combat happens. The clear centre
         // around the player keeps the scene grounded without turning the floor into
-        // a flat vignette.
+        // a flat vignette. Drawn screen-fixed (compensating the camera translate)
+        // so no interior edge of the band can read as a wall seam mid-stage.
+        const left = -this.cameraOffsetX;
         const band = context.createLinearGradient(0, 205, 0, this.height);
         band.addColorStop(0, 'rgba(13,10,11,0)');
         band.addColorStop(0.22, 'rgba(13,10,11,0.16)');
         band.addColorStop(1, 'rgba(13,10,11,0.2)');
         context.fillStyle = band;
-        context.fillRect(0, 205, this.width, this.height - 205);
+        context.fillRect(left, 205, this.width, this.height - 205);
         if (player) {
             const focus = context.createRadialGradient(player.x, player.z - 48, 40, player.x, player.z - 48, 235);
             focus.addColorStop(0, 'rgba(0,0,0,0)');
             focus.addColorStop(0.52, 'rgba(0,0,0,0.025)');
             focus.addColorStop(1, 'rgba(7,5,6,0.13)');
             context.fillStyle = focus;
-            context.fillRect(0, 205, this.width, this.height - 205);
+            context.fillRect(left, 205, this.width, this.height - 205);
         }
         context.restore();
     }
     drawBackgroundImage(image, time, waveIndex, alpha) {
         const context = this.context;
-        const overscan = 12;
         const pan = Math.sin(time * 0.18 + waveIndex * 1.7) * 4;
+        // Parallax: the far scenery moves at a fraction of camera speed. The source
+        // art is 1920 px wide and drawn once at its natural aspect, so the widest
+        // stage can never outrun it and no tiling seam appears.
+        const parallax = Math.max(this.cameraOffsetX * 0.35, -(1920 - this.width)) + pan;
         context.save();
         context.globalAlpha = alpha;
-        context.drawImage(image, -overscan + pan, -overscan / 2, this.width + overscan * 2, this.height + overscan);
+        context.drawImage(image, parallax - 12, -24, 1920, 1104);
         context.restore();
     }
     drawBackgroundAtmosphere(snapshot) {
@@ -312,10 +375,12 @@ export class CanvasRenderer {
         context.restore();
     }
     updateBackground(waveIndex, dt) {
-        const normalized = Math.max(0, Math.min(3, waveIndex));
-        if (normalized !== this.backgroundWave) {
+        // Levels hold the setting; waves play out inside one. The background only
+        // changes when the journey crosses a level boundary.
+        const level = Math.max(0, Math.min(BACKGROUND_MANIFEST.length - 1, levelIndexForWave(waveIndex)));
+        if (level !== this.backgroundWave) {
             this.previousBackgroundWave = this.backgroundWave;
-            this.backgroundWave = normalized;
+            this.backgroundWave = level;
             this.backgroundTransition = this.previousBackgroundWave < 0 || dt === 0 ? 1 : 0;
         }
         else if (this.backgroundTransition < 1) {
@@ -325,14 +390,17 @@ export class CanvasRenderer {
     drawInfernalCorruption(phase) {
         const context = this.context;
         context.save();
+        // Drawn in world space (inside the camera translate): anchor the tendrils
+        // to the visible band so the corruption follows the march.
+        const left = -this.cameraOffsetX;
         context.globalAlpha = phase >= 2 ? 0.44 : 0.2;
         context.strokeStyle = '#171316';
         context.lineWidth = phase >= 2 ? 10 : 5;
         for (let index = 0; index < 8; index += 1) {
             const y = 250 + index * 58;
             context.beginPath();
-            context.moveTo(index % 2 === 0 ? 0 : this.width, y);
-            context.bezierCurveTo(260 + index * 24, y - 90, 850 - index * 31, y + 110, index % 2 === 0 ? this.width : 0, y + 20);
+            context.moveTo(index % 2 === 0 ? left : left + this.width, y);
+            context.bezierCurveTo(left + 260 + index * 24, y - 90, left + 850 - index * 31, y + 110, index % 2 === 0 ? left + this.width : left, y + 20);
             context.stroke();
         }
         context.globalAlpha = phase >= 2 ? 0.18 : 0.08;
@@ -352,12 +420,31 @@ export class CanvasRenderer {
         const context = this.context;
         const depthScale = this.depthScale(actor.z);
         const jump = this.jumpOffset(actor);
+        // Every sprite anchors its heels at actor.z, and the sprite body covers
+        // the ground directly beneath it — so the visible part of a contact shadow
+        // is the crescent just south of the feet plus the lobes either side. LF2
+        // style: an almost-solid dark decal that crushes floor texture into a flat
+        // shape, so the actor reads as planted on ANY part of the stage.
+        const contact = actor.z + 8;
+        const radiusX = actor.radius * 1.6 * depthScale;
+        const radiusY = actor.radius * 0.52 * depthScale;
         context.save();
-        context.globalAlpha = clamp(0.28 - jump / 420, 0.08, 0.28);
-        context.fillStyle = '#171311';
+        // Near-solid: on the darker mid-depth art an alpha shadow disappears, and
+        // a shadow that appears and vanishes with the floor band reads as a bug.
+        const core = clamp(0.88 - jump / 380, 0.16, 0.88);
+        const shadow = context.createRadialGradient(actor.x, contact, radiusY * 0.2, actor.x, contact, radiusX);
+        shadow.addColorStop(0, `rgba(8,6,6,${core})`);
+        shadow.addColorStop(0.75, `rgba(8,6,6,${core * 0.97})`);
+        shadow.addColorStop(1, 'rgba(8,6,6,0)');
+        context.fillStyle = shadow;
+        context.save();
+        context.translate(actor.x, contact);
+        context.scale(1, radiusY / radiusX);
+        context.translate(-actor.x, -contact);
         context.beginPath();
-        context.ellipse(actor.x, actor.z + 16, actor.radius * 1.08 * depthScale, actor.radius * 0.34 * depthScale, 0, 0, Math.PI * 2);
+        context.arc(actor.x, contact, radiusX, 0, Math.PI * 2);
         context.fill();
+        context.restore();
         context.restore();
     }
     drawActor(actor) {
@@ -1004,11 +1091,16 @@ export class CanvasRenderer {
                 context.strokeStyle = 'rgba(80,235,185,0.75)';
             }
         }
+        context.restore();
+        // HUD-space debug summary (the world translate above must not shift it).
+        context.save();
+        context.fillStyle = 'rgba(10,15,14,0.72)';
         context.fillRect(12, 88, 176, 54);
         context.fillStyle = '#d9f8e8';
         context.font = '14px monospace';
         context.fillText(`tick ${snapshot.tick}`, 20, 108);
         context.fillText(`actors ${snapshot.actors.length}`, 20, 128);
+        context.fillText(`camera ${Math.round(-this.cameraOffsetX)}`, 20, 138);
         context.restore();
     }
     updateEffects(dt) {

@@ -1,5 +1,5 @@
 import { GAME_SNAPSHOT_VERSION } from '../sim/types.js';
-import type { ActorSnapshot, GameSnapshot, InputFrame, UpgradeId } from '../sim/types.js';
+import type { ActorSnapshot, GameSnapshot, InputFrame, LessonId } from '../sim/types.js';
 
 export const PEER_PROTOCOL_VERSION = 2 as const;
 
@@ -8,25 +8,25 @@ export type PeerMessage =
   | { type: 'start'; seed: number }
   | { type: 'input'; seq: number; frame: InputFrame }
   | { type: 'snapshot'; snapshot: GameSnapshot }
-  | { type: 'upgrade'; id: UpgradeId }
+  | { type: 'lesson'; id: LessonId }
   | { type: 'restart' }
   | { type: 'pause'; paused: boolean }
   | { type: 'ping'; sentAt: number }
   | { type: 'pong'; sentAt: number };
 
-const PHASES = new Set(['title', 'countdown', 'wave', 'upgrade', 'victory', 'defeat']);
+const PHASES = new Set(['title', 'countdown', 'wave', 'lesson', 'victory', 'defeat']);
 const TEAMS = new Set(['players', 'enemies']);
 const ARCHETYPES = new Set(['meyer', 'thug', 'spear', 'captain', 'wretch', 'grotesque']);
 const STATES = new Set(['idle', 'move', 'block', 'attack', 'dodge', 'crouch', 'jump', 'switch', 'hitstun', 'guardbreak', 'dead']);
 const HIT_ZONES = new Set(['head', 'torso', 'legs']);
 const WEAPONS = new Set(['longsword', 'dussack']);
-const UPGRADES = new Set<UpgradeId>([
-  'longsword-sweep',
-  'longsword-control',
-  'dussack-circle',
-  'dussack-passing-step',
-  'quick-change',
-  'second-intention'
+const LESSONS = new Set<LessonId>([
+  'ls-crossing',
+  'ls-threefold',
+  'ls-provoker',
+  'ds-backhand',
+  'ds-wheel',
+  'switch-flourish'
 ]);
 
 export function isPeerMessage(value: unknown): value is PeerMessage {
@@ -40,8 +40,8 @@ export function isPeerMessage(value: unknown): value is PeerMessage {
       return isIntegerInRange(value.seq, 0, Number.MAX_SAFE_INTEGER) && isInputFrame(value.frame);
     case 'snapshot':
       return isSnapshot(value.snapshot);
-    case 'upgrade':
-      return typeof value.id === 'string' && UPGRADES.has(value.id as UpgradeId);
+    case 'lesson':
+      return typeof value.id === 'string' && LESSONS.has(value.id as LessonId);
     case 'restart':
       return true;
     case 'pause':
@@ -72,7 +72,8 @@ function isSnapshot(value: unknown): value is GameSnapshot {
   if (typeof value.phase !== 'string' || !PHASES.has(value.phase)) return false;
   if (!isIntegerInRange(value.waveIndex, -1, 64) || typeof value.waveTitle !== 'string' || value.waveTitle.length > 160) return false;
   if (!isFiniteNumber(value.score) || !isIntegerInRange(value.bossPhase, 0, 16)) return false;
-  if (!isUpgradeArray(value.upgrades) || !isUpgradeArray(value.offeredUpgrades)) return false;
+  if (!isFiniteNumber(value.cameraX) || !isFiniteNumber(value.stageWidth) || value.stageWidth <= 0) return false;
+  if (!isLessonArray(value.lessons) || !isLessonArray(value.offeredLessons)) return false;
   if (!Array.isArray(value.actors) || value.actors.length > 128) return false;
   return value.actors.every(isActorSnapshot);
 }
@@ -105,8 +106,8 @@ function isActorSnapshot(value: unknown): value is ActorSnapshot {
     isFiniteNumber(value.deathTimer) && value.deathTimer >= 0;
 }
 
-function isUpgradeArray(value: unknown): value is UpgradeId[] {
-  return Array.isArray(value) && value.length <= UPGRADES.size && value.every((id) => typeof id === 'string' && UPGRADES.has(id as UpgradeId));
+function isLessonArray(value: unknown): value is LessonId[] {
+  return Array.isArray(value) && value.length <= LESSONS.size && value.every((id) => typeof id === 'string' && LESSONS.has(id as LessonId));
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

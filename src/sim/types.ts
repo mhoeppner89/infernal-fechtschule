@@ -1,7 +1,7 @@
 export type Team = 'players' | 'enemies';
 export type Weapon = 'longsword' | 'dussack';
 export type HitZone = 'head' | 'torso' | 'legs';
-export const GAME_SNAPSHOT_VERSION = 2 as const;
+export const GAME_SNAPSHOT_VERSION = 4 as const;
 export type ActorState =
   | 'idle'
   | 'move'
@@ -24,13 +24,18 @@ export type Archetype =
   | 'grotesque';
 
 export type ActionName = 'light' | 'heavy' | 'mobility' | 'switch';
-export type UpgradeId =
-  | 'longsword-sweep'
-  | 'longsword-control'
-  | 'dussack-circle'
-  | 'dussack-passing-step'
-  | 'quick-change'
-  | 'second-intention';
+/**
+ * Lessons are the run's combo unlocks: Meyer starts with only his basic cuts
+ * and learns chained routes over the course of the journey. Each id unlocks a
+ * specific set of attacks (see LESSON_ATTACKS in attacks.ts).
+ */
+export type LessonId =
+  | 'ls-crossing'
+  | 'ls-threefold'
+  | 'ls-provoker'
+  | 'ds-backhand'
+  | 'ds-wheel'
+  | 'switch-flourish';
 
 export interface InputFrame {
   moveX: number;
@@ -150,7 +155,7 @@ export type GamePhase =
   | 'title'
   | 'countdown'
   | 'wave'
-  | 'upgrade'
+  | 'lesson'
   | 'victory'
   | 'defeat';
 
@@ -200,9 +205,13 @@ export interface GameSnapshot {
   waveTitle: string;
   score: number;
   bossPhase: number;
-  upgrades: UpgradeId[];
-  offeredUpgrades: UpgradeId[];
+  lessons: LessonId[];
+  offeredLessons: LessonId[];
   actors: ActorSnapshot[];
+  /** Left edge of the camera window in world coordinates. */
+  cameraX: number;
+  /** Full world width of the current wave's stage. */
+  stageWidth: number;
 }
 
 export type GameEventType =
@@ -218,8 +227,8 @@ export type GameEventType =
   | 'signature'
   | 'weapon-switch'
   | 'wave-clear'
-  | 'upgrade-offer'
-  | 'upgrade-chosen'
+  | 'lesson-offer'
+  | 'lesson-chosen'
   | 'boss-phase'
   | 'victory'
   | 'defeat';
@@ -237,7 +246,7 @@ export interface GameEvent {
   /** True when the struck or blocking target was below normal head-height at contact. */
   targetCrouched?: boolean;
   impact?: 'flesh' | 'armor';
-  upgrades?: UpgradeId[];
+  lessons?: LessonId[];
 }
 
 export interface WorldOptions {

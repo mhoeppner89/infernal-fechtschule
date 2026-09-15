@@ -52,9 +52,9 @@ test('snapshot validation accepts crouching and exact hit zones only', () => {
   }), false);
 });
 
-test('upgrade and start messages are range checked', () => {
-  assert.equal(isPeerMessage({ type: 'upgrade', id: 'quick-change' }), true);
-  assert.equal(isPeerMessage({ type: 'upgrade', id: 'unbounded-power' }), false);
+test('lesson and start messages are range checked', () => {
+  assert.equal(isPeerMessage({ type: 'lesson', id: 'ls-crossing' }), true);
+  assert.equal(isPeerMessage({ type: 'lesson', id: 'unbounded-power' }), false);
   assert.equal(isPeerMessage({ type: 'start', seed: 42 }), true);
   assert.equal(isPeerMessage({ type: 'start', seed: -42 }), false);
 });

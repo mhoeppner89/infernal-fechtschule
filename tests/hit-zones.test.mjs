@@ -125,6 +125,7 @@ test('same-tick Duck plus Attack is buffered as a low attack for both weapons', 
   const longswordWorld = readyWorld(44);
   const longsword = longswordWorld.actors[0];
   assert.ok(longsword);
+  longswordWorld.lessons.add('ls-threefold');
   longswordWorld.step(1 / 60, [frame({ mobilityPressed: true, heavyPressed: true })]);
   assert.equal(longsword.attack?.id, 'ls_low_h');
 
@@ -138,14 +139,15 @@ test('same-tick Duck plus Attack is buffered as a low attack for both weapons', 
 });
 
 test('all four low routes exist and low-light rejoins the existing combo grammar', () => {
+  const allLessons = new Set(['ls-crossing', 'ls-threefold', 'ls-provoker', 'ds-backhand', 'ds-wheel', 'switch-flourish']);
   assert.equal(resolveCrouchAttack('longsword', 'light'), 'ls_low_l');
-  assert.equal(resolveCrouchAttack('longsword', 'heavy'), 'ls_low_h');
+  assert.equal(resolveCrouchAttack('longsword', 'heavy', allLessons), 'ls_low_h');
   assert.equal(resolveCrouchAttack('dussack', 'light'), 'ds_low_l');
-  assert.equal(resolveCrouchAttack('dussack', 'heavy'), 'ds_low_h');
-  assert.equal(resolvePlayerAttack('longsword', 'light', 'ls_low_l', false), 'ls_l2');
-  assert.equal(resolvePlayerAttack('longsword', 'heavy', 'ls_low_l', false), 'ls_lh');
-  assert.equal(resolvePlayerAttack('dussack', 'light', 'ds_low_l', false), 'ds_l2');
-  assert.equal(resolvePlayerAttack('dussack', 'heavy', 'ds_low_l', false), 'ds_lh');
+  assert.equal(resolveCrouchAttack('dussack', 'heavy', allLessons), 'ds_low_h');
+  assert.equal(resolvePlayerAttack('longsword', 'light', 'ls_low_l', false, allLessons), 'ls_l2');
+  assert.equal(resolvePlayerAttack('longsword', 'heavy', 'ls_low_l', false, allLessons), 'ls_lh');
+  assert.equal(resolvePlayerAttack('dussack', 'light', 'ds_low_l', false, allLessons), 'ds_l2');
+  assert.equal(resolvePlayerAttack('dussack', 'heavy', 'ds_low_l', false, allLessons), 'ds_lh');
 });
 
 test('direction plus Duck preserves the dodge instead of crouching', () => {

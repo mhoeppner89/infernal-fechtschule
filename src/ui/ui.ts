@@ -1,11 +1,12 @@
-import { getUpgrade } from '../sim/upgrades.js';
-import type { ActorSnapshot, GameSnapshot, UpgradeId } from '../sim/types.js';
+import { LESSONS } from '../sim/lessons.js';
+import { LESSON_ROUTES } from '../sim/attacks.js';
+import type { ActorSnapshot, GameSnapshot, LessonId } from '../sim/types.js';
 
 export interface UiCallbacks {
   startSolo: () => void;
   enableTilt: () => Promise<string>;
   recenterTilt: () => void;
-  chooseUpgrade: (id: UpgradeId) => void;
+  chooseLesson: (id: LessonId) => void;
   restart: () => void;
   returnToTitle: () => void;
   togglePause: () => void;
@@ -22,8 +23,8 @@ export class GameUI {
   private readonly banner = requireElement<HTMLElement>('banner');
   private readonly bannerTitle = requireElement<HTMLElement>('banner-title');
   private readonly bannerSubtitle = requireElement<HTMLElement>('banner-subtitle');
-  private readonly upgradeOverlay = requireElement<HTMLElement>('upgrade-overlay');
-  private readonly upgradeCards = requireElement<HTMLElement>('upgrade-cards');
+  private readonly lessonOverlay = requireElement<HTMLElement>('lesson-overlay');
+  private readonly lessonCards = requireElement<HTMLElement>('lesson-cards');
   private readonly endOverlay = requireElement<HTMLElement>('end-overlay');
   private readonly endTitle = requireElement<HTMLElement>('end-title');
   private readonly endCopy = requireElement<HTMLElement>('end-copy');
@@ -100,7 +101,7 @@ export class GameUI {
     this.titleScreen.classList.remove('is-hidden');
     this.gameHud.classList.add('is-hidden');
     this.touchControls.classList.add('is-hidden');
-    this.upgradeOverlay.classList.add('is-hidden');
+    this.lessonOverlay.classList.add('is-hidden');
     this.endOverlay.classList.add('is-hidden');
     this.pauseOverlay.classList.add('is-hidden');
     this.networkOverlay.classList.add('is-hidden');
@@ -149,11 +150,13 @@ export class GameUI {
     }, 600);
   }
 
-  showUpgrade(ids: readonly UpgradeId[], interactive: boolean): void {
-    this.upgradeCards.replaceChildren();
+  /** Lesson cards teach the exact button routes each unlock adds. */
+  showLesson(ids: readonly LessonId[], interactive: boolean): void {
+    this.lessonCards.replaceChildren();
     this.lessonWaiting.classList.toggle('is-hidden', interactive);
     for (const id of ids) {
-      const definition = getUpgrade(id);
+      const definition = LESSONS[id];
+      const routes = LESSON_ROUTES[id] ?? [];
       const card = document.createElement('button');
       card.className = 'lesson-card';
       card.disabled = !interactive;
@@ -162,15 +165,16 @@ export class GameUI {
         <strong>${definition.title}</strong>
         <span>${definition.description}</span>
         <small>${definition.detail}</small>
+        <ul class="lesson-routes">${routes.map((route) => `<li>${route}</li>`).join('')}</ul>
       `;
-      card.addEventListener('click', () => this.callbacks?.chooseUpgrade(id));
-      this.upgradeCards.append(card);
+      card.addEventListener('click', () => this.callbacks?.chooseLesson(id));
+      this.lessonCards.append(card);
     }
-    this.upgradeOverlay.classList.remove('is-hidden');
+    this.lessonOverlay.classList.remove('is-hidden');
   }
 
-  hideUpgrade(): void {
-    this.upgradeOverlay.classList.add('is-hidden');
+  hideLesson(): void {
+    this.lessonOverlay.classList.add('is-hidden');
   }
 
   showEnd(victory: boolean, copy: string): void {

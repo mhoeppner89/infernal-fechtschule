@@ -18,9 +18,9 @@ test('the whole cast uses the complete fixed-rig v2 inventory with one display s
   const pilot = ANIMATION_MANIFEST.filter(
     (clip) => ['meyer', 'thug', 'spear', 'captain', 'wretch', 'grotesque'].includes(clip.archetype)
   );
-  assert.equal(pilot.length, 89);
+  assert.equal(pilot.length, 101);
   assert.equal(ANIMATION_MANIFEST.filter((clip) => clip.availability !== 'ready').length, 0);
-  const expectedCounts = { meyer: 50, thug: 14, spear: 5, captain: 8, wretch: 5, grotesque: 7 };
+  const expectedCounts = { meyer: 50, thug: 14, spear: 8, captain: 11, wretch: 8, grotesque: 10 };
   for (const [archetype, count] of Object.entries(expectedCounts)) {
     assert.equal(
       pilot.filter((clip) => clip.archetype === archetype).length,
@@ -89,7 +89,7 @@ test('reaction lookup selects head, torso, and leg clips and preserves generic f
     weapon: 'longsword',
     desiredWeapon: 'longsword',
     state: 'hitstun',
-    reactionZone: 'head'
+    reactionZone: null
   });
   assert.equal(fallback?.id, 'spear:default:hitstun');
 
@@ -98,12 +98,23 @@ test('reaction lookup selects head, torso, and leg clips and preserves generic f
   assert.equal(readiness.minScaleCorrection, 1);
   assert.equal(readiness.maxScaleCorrection, 1);
 
-  // Captains keep their generic guardbreak clip; spear/wretch/grotesque keep
-  // their generic hitstun for every reaction zone.
+  // Captains keep their generic guardbreak clip; every NPC archetype now
+  // resolves an authored zone reaction for each of the three zones.
+  for (const archetype of ['thug', 'spear', 'captain', 'wretch', 'grotesque']) {
+    for (const zone of ['head', 'torso', 'legs']) {
+      const clip = catalog.lookupActor({
+        archetype,
+        weapon: 'longsword',
+        desiredWeapon: 'longsword',
+        state: 'hitstun',
+        reactionZone: zone
+      });
+      assert.equal(clip?.id, `${archetype}:default:hitstun_${zone}`);
+    }
+  }
+
   const genericReactions = [
-    { archetype: 'captain', state: 'guardbreak', expected: 'captain:default:guardbreak' },
-    { archetype: 'spear', state: 'hitstun', expected: 'spear:default:hitstun' },
-    { archetype: 'grotesque', state: 'hitstun', expected: 'grotesque:default:hitstun' }
+    { archetype: 'captain', state: 'guardbreak', expected: 'captain:default:guardbreak' }
   ];
   for (const probe of genericReactions) {
     const clip = catalog.lookupActor({

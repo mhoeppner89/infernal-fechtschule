@@ -1,4 +1,4 @@
-export const GAME_SNAPSHOT_VERSION = 2;
+export const GAME_SNAPSHOT_VERSION = 4;
 export const NEUTRAL_INPUT = Object.freeze({
     moveX: 0,
     moveZ: 0,

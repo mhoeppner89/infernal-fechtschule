@@ -281,26 +281,32 @@ export function isAttackActive(definition, elapsed) {
 export function attackProgress(definition, elapsed) {
     return Math.max(0, Math.min(1, elapsed / attackDuration(definition)));
 }
-export function resolvePlayerAttack(weapon, action, currentAttackId, afterParry) {
+export function resolvePlayerAttack(weapon, action, currentAttackId, afterParry, lessons = ALWAYS_SET) {
     if (afterParry && action === 'heavy')
         return weapon === 'longsword' ? 'ls_counter' : 'ds_counter';
     if (currentAttackId) {
         const current = getAttack(currentAttackId);
         const chained = action === 'light' ? current.nextLight : current.nextHeavy;
-        if (chained)
+        if (chained && isAttackUnlocked(chained, lessons))
             return chained;
+        // A locked chain falls through to the basic starter so the input always
+        // produces a legal attack instead of a dead buffer.
     }
     if (weapon === 'longsword')
         return action === 'light' ? 'ls_l1' : 'ls_h';
     return action === 'light' ? 'ds_l1' : 'ds_h';
 }
+const ALWAYS_SET = new Set();
 export function resolveDodgeAttack(weapon) {
     return weapon === 'longsword' ? 'ls_dodge_l' : 'ds_dodge_l';
 }
-export function resolveCrouchAttack(weapon, action) {
+export function resolveCrouchAttack(weapon, action, lessons = ALWAYS_SET) {
     if (weapon === 'longsword')
-        return action === 'light' ? 'ls_low_l' : 'ls_low_h';
-    return action === 'light' ? 'ds_low_l' : 'ds_low_h';
+        return action === 'light' ? 'ls_low_l' : resolveCrouchHeavy('ls_low_h', lessons);
+    return action === 'light' ? 'ds_low_l' : resolveCrouchHeavy('ds_low_h', lessons);
+}
+function resolveCrouchHeavy(fallback, lessons) {
+    return isAttackUnlocked(fallback, lessons) ? fallback : fallback === 'ls_low_h' ? 'ls_low_l' : 'ds_low_l';
 }
 export function isHitZoneExposed(state, hitZone) {
     if (state !== 'crouch')
@@ -322,17 +328,69 @@ export function nextAttackForAction(definition, action) {
         return definition.nextSwitch ?? null;
     return null;
 }
-export function withUpgradeEffects(base, upgrades) {
-    let result = base;
-    if (upgrades.has('longsword-sweep') && base.id === 'ls_l3') {
-        result = { ...result, depth: result.depth + 20, maxTargets: result.maxTargets + 2, knockback: result.knockback + 18 };
-    }
-    if (upgrades.has('dussack-circle') && (base.id === 'ds_l2h' || base.id === 'ds_l3')) {
-        result = { ...result, arc: 'radial', minForward: -result.reach, depth: result.depth + 18, maxTargets: result.maxTargets + 2 };
-    }
-    if (upgrades.has('dussack-passing-step') && base.id === 'ds_dodge_l') {
-        result = { ...result, movement: result.movement + 42, maxTargets: result.maxTargets + 1 };
-    }
-    return result;
+/**
+ * Which attacks each lesson unlocks. Meyer starts with only his opening cuts
+ * (ls_l1/ds_l1 lights, committed heavies, and the movement/air/counter
+ * strikes); every chained route beyond that is learned through a lesson. The
+ * two behaviour lessons add no attacks — they unlock recovery cancels and
+ * faster hit-confirmed switching instead.
+ */
+export const LESSON_ATTACKS = Object.freeze({
+    'ls-crossing': Object.freeze(['ls_l2', 'ls_l2h', 'ls_lh']),
+    'ls-threefold': Object.freeze(['ls_l3', 'ls_hl', 'ls_low_h']),
+    'ls-provoker': Object.freeze([]),
+    'ds-backhand': Object.freeze(['ds_l2', 'ds_l2h', 'ds_lh']),
+    'ds-wheel': Object.freeze(['ds_l3', 'ds_hl', 'ds_low_h']),
+    'switch-flourish': Object.freeze([])
+});
+/** The basic repertoire everyone starts the run with. */
+const BASIC_ATTACKS = new Set([
+    'ls_l1', 'ls_h', 'ls_dodge_l', 'ls_low_l', 'ls_air_l', 'ls_counter', 'ls_switch_in',
+    'ds_l1', 'ds_h', 'ds_dodge_l', 'ds_low_l', 'ds_air_l', 'ds_counter', 'ds_switch_in'
+]);
+const ATTACK_LESSON = new Map();
+for (const [lesson, attacks] of Object.entries(LESSON_ATTACKS)) {
+    for (const id of attacks)
+        ATTACK_LESSON.set(id, lesson);
 }
+export function isAttackUnlocked(attackId, lessons) {
+    if (BASIC_ATTACKS.has(attackId))
+        return true;
+    const lesson = ATTACK_LESSON.get(attackId);
+    return lesson !== undefined && lessons.has(lesson);
+}
+/**
+ * Chained routes hidden behind a specific lesson, used by the lesson cards to
+ * explain exactly which inputs gain a new branch.
+ */
+export const LESSON_ROUTES = Object.freeze({
+    'ls-crossing': Object.freeze([
+        'J after Opening Hew — Crossing Hew',
+        'K after Crossing Hew — Crossing Breaker',
+        'K after Opening Hew — Provoking Hew'
+    ]),
+    'ls-threefold': Object.freeze([
+        'J after Crossing Hew — Threefold Cut',
+        'K after Provoking Hew — Taking Cut',
+        'L then K — Low Sweeping Hew'
+    ]),
+    'ls-provoker': Object.freeze([
+        'Hold I after a blocked provoke — cancel into Guard',
+        'Provoke → Take → Hit deals +78% damage'
+    ]),
+    'ds-backhand': Object.freeze([
+        'J after Forehand Cut — Backhand Cut',
+        'K after Backhand Cut — Wheel Cut',
+        'K after Forehand Cut — Pressing Cut'
+    ]),
+    'ds-wheel': Object.freeze([
+        'J after Backhand Cut — Circular Pursuit',
+        'K after Pressing Cut — Reversing Cut',
+        'L then K — Low Wheel Cut'
+    ]),
+    'switch-flourish': Object.freeze([
+        'U after a confirmed hit — instant weapon switch',
+        'Switch while advancing keeps a stepping entry strike'
+    ])
+});
 //# sourceMappingURL=attacks.js.map

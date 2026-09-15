@@ -1,4 +1,5 @@
-import { getUpgrade } from '../sim/upgrades.js';
+import { LESSONS } from '../sim/lessons.js';
+import { LESSON_ROUTES } from '../sim/attacks.js';
 export class GameUI {
     titleScreen = requireElement('title-screen');
     gameHud = requireElement('game-hud');
@@ -6,8 +7,8 @@ export class GameUI {
     banner = requireElement('banner');
     bannerTitle = requireElement('banner-title');
     bannerSubtitle = requireElement('banner-subtitle');
-    upgradeOverlay = requireElement('upgrade-overlay');
-    upgradeCards = requireElement('upgrade-cards');
+    lessonOverlay = requireElement('lesson-overlay');
+    lessonCards = requireElement('lesson-cards');
     endOverlay = requireElement('end-overlay');
     endTitle = requireElement('end-title');
     endCopy = requireElement('end-copy');
@@ -80,7 +81,7 @@ export class GameUI {
         this.titleScreen.classList.remove('is-hidden');
         this.gameHud.classList.add('is-hidden');
         this.touchControls.classList.add('is-hidden');
-        this.upgradeOverlay.classList.add('is-hidden');
+        this.lessonOverlay.classList.add('is-hidden');
         this.endOverlay.classList.add('is-hidden');
         this.pauseOverlay.classList.add('is-hidden');
         this.networkOverlay.classList.add('is-hidden');
@@ -125,11 +126,13 @@ export class GameUI {
             window.setTimeout(() => this.banner.classList.add('is-hidden'), 180);
         }, 600);
     }
-    showUpgrade(ids, interactive) {
-        this.upgradeCards.replaceChildren();
+    /** Lesson cards teach the exact button routes each unlock adds. */
+    showLesson(ids, interactive) {
+        this.lessonCards.replaceChildren();
         this.lessonWaiting.classList.toggle('is-hidden', interactive);
         for (const id of ids) {
-            const definition = getUpgrade(id);
+            const definition = LESSONS[id];
+            const routes = LESSON_ROUTES[id] ?? [];
             const card = document.createElement('button');
             card.className = 'lesson-card';
             card.disabled = !interactive;
@@ -138,14 +141,15 @@ export class GameUI {
         <strong>${definition.title}</strong>
         <span>${definition.description}</span>
         <small>${definition.detail}</small>
+        <ul class="lesson-routes">${routes.map((route) => `<li>${route}</li>`).join('')}</ul>
       `;
-            card.addEventListener('click', () => this.callbacks?.chooseUpgrade(id));
-            this.upgradeCards.append(card);
+            card.addEventListener('click', () => this.callbacks?.chooseLesson(id));
+            this.lessonCards.append(card);
         }
-        this.upgradeOverlay.classList.remove('is-hidden');
+        this.lessonOverlay.classList.remove('is-hidden');
     }
-    hideUpgrade() {
-        this.upgradeOverlay.classList.add('is-hidden');
+    hideLesson() {
+        this.lessonOverlay.classList.add('is-hidden');
     }
     showEnd(victory, copy) {
         this.endTitle.textContent = victory ? 'THE JOURNEY CONTINUES' : 'THE ROAD CLAIMS YOU';

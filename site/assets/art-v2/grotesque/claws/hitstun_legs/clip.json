@@ -1,0 +1,529 @@
+{
+  "actor": "grotesque",
+  "canvas": [
+    384,
+    384
+  ],
+  "footAnchor": [
+    192,
+    350
+  ],
+  "frames": [
+    {
+      "alphaBBox": [
+        126,
+        112,
+        296,
+        351
+      ],
+      "cue": "contact",
+      "file": "grotesque/claws/hitstun_legs/01.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 4,
+      "landmarks": {
+        "chest": [
+          206.925,
+          179.274
+        ],
+        "frontAnkle": [
+          203.431,
+          342.98
+        ],
+        "frontElbow": [
+          278.424,
+          234.358
+        ],
+        "frontHip": [
+          208.741,
+          251.522
+        ],
+        "frontKnee": [
+          169.633,
+          298.129
+        ],
+        "frontShoulder": [
+          247.247,
+          191.448
+        ],
+        "frontWrist": [
+          277.552,
+          284.271
+        ],
+        "head": [
+          219.009,
+          139.251
+        ],
+        "neck": [
+          212.787,
+          159.86
+        ],
+        "pelvis": [
+          187.086,
+          244.985
+        ],
+        "rearAnkle": [
+          171.484,
+          332.948
+        ],
+        "rearElbow": [
+          169.379,
+          220.067
+        ],
+        "rearHip": [
+          165.431,
+          238.447
+        ],
+        "rearKnee": [
+          202.888,
+          286.389
+        ],
+        "rearShoulder": [
+          166.603,
+          167.1
+        ],
+        "rearWrist": [
+          192.042,
+          264.547
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "a35536b574b49873b511580ae47e1e005377bf7db58335f139f1c4c86374a37f"
+    },
+    {
+      "alphaBBox": [
+        119,
+        111,
+        281,
+        351
+      ],
+      "cue": "recovery",
+      "file": "grotesque/claws/hitstun_legs/02.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 5,
+      "landmarks": {
+        "chest": [
+          190.633,
+          180.402
+        ],
+        "frontAnkle": [
+          198.171,
+          342.98
+        ],
+        "frontElbow": [
+          263.519,
+          229.175
+        ],
+        "frontHip": [
+          203.48,
+          251.522
+        ],
+        "frontKnee": [
+          164.373,
+          298.129
+        ],
+        "frontShoulder": [
+          232.343,
+          186.264
+        ],
+        "frontWrist": [
+          262.648,
+          279.087
+        ],
+        "head": [
+          196.451,
+          139.001
+        ],
+        "neck": [
+          193.455,
+          160.32
+        ],
+        "pelvis": [
+          181.08,
+          248.374
+        ],
+        "rearAnkle": [
+          164.733,
+          339.728
+        ],
+        "rearElbow": [
+          151.699,
+          227.508
+        ],
+        "rearHip": [
+          158.68,
+          245.226
+        ],
+        "rearKnee": [
+          196.137,
+          293.169
+        ],
+        "rearShoulder": [
+          148.923,
+          174.54
+        ],
+        "rearWrist": [
+          174.362,
+          271.987
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "99add5e28716fbba0240989c5426b43078cb496db1d384fbca02fe8819381d5c"
+    },
+    {
+      "alphaBBox": [
+        120,
+        111,
+        284,
+        351
+      ],
+      "cue": "recovery",
+      "file": "grotesque/claws/hitstun_legs/03.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 3,
+      "landmarks": {
+        "chest": [
+          193.619,
+          180.071
+        ],
+        "frontAnkle": [
+          199.166,
+          342.98
+        ],
+        "frontElbow": [
+          266.325,
+          230.006
+        ],
+        "frontHip": [
+          204.475,
+          251.522
+        ],
+        "frontKnee": [
+          165.368,
+          298.129
+        ],
+        "frontShoulder": [
+          235.149,
+          187.096
+        ],
+        "frontWrist": [
+          265.454,
+          279.918
+        ],
+        "head": [
+          200.591,
+          138.849
+        ],
+        "neck": [
+          197.001,
+          160.075
+        ],
+        "pelvis": [
+          182.172,
+          247.75
+        ],
+        "rearAnkle": [
+          165.921,
+          338.479
+        ],
+        "rearElbow": [
+          154.865,
+          226.014
+        ],
+        "rearHip": [
+          159.869,
+          243.978
+        ],
+        "rearKnee": [
+          197.326,
+          291.92
+        ],
+        "rearShoulder": [
+          152.089,
+          173.047
+        ],
+        "rearWrist": [
+          177.528,
+          270.493
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "eed54402c48b3bcb6984939324d040393367dae439a57da4b51bde9ee41c8624"
+    },
+    {
+      "alphaBBox": [
+        124,
+        111,
+        292,
+        351
+      ],
+      "cue": "recovery",
+      "file": "grotesque/claws/hitstun_legs/04.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 3,
+      "landmarks": {
+        "chest": [
+          202.518,
+          179.414
+        ],
+        "frontAnkle": [
+          202.048,
+          342.98
+        ],
+        "frontElbow": [
+          274.491,
+          232.799
+        ],
+        "frontHip": [
+          207.357,
+          251.522
+        ],
+        "frontKnee": [
+          168.25,
+          298.129
+        ],
+        "frontShoulder": [
+          243.315,
+          189.888
+        ],
+        "frontWrist": [
+          273.62,
+          282.711
+        ],
+        "head": [
+          212.915,
+          138.919
+        ],
+        "neck": [
+          207.562,
+          159.771
+        ],
+        "pelvis": [
+          185.448,
+          245.897
+        ],
+        "rearAnkle": [
+          169.591,
+          334.773
+        ],
+        "rearElbow": [
+          164.497,
+          221.906
+        ],
+        "rearHip": [
+          163.539,
+          240.272
+        ],
+        "rearKnee": [
+          200.995,
+          288.214
+        ],
+        "rearShoulder": [
+          161.721,
+          168.939
+        ],
+        "rearWrist": [
+          187.16,
+          266.385
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "7226a205a5b119d749ec6f4ddfa24c9f681513305c02e4aebf70709bcc8bf8bf"
+    },
+    {
+      "alphaBBox": [
+        128,
+        112,
+        301,
+        351
+      ],
+      "cue": "recovery",
+      "file": "grotesque/claws/hitstun_legs/05.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 5,
+      "landmarks": {
+        "chest": [
+          211.877,
+          179.269
+        ],
+        "frontAnkle": [
+          204.953,
+          342.98
+        ],
+        "frontElbow": [
+          282.753,
+          236.253
+        ],
+        "frontHip": [
+          210.262,
+          251.522
+        ],
+        "frontKnee": [
+          171.155,
+          298.129
+        ],
+        "frontShoulder": [
+          251.577,
+          193.343
+        ],
+        "frontWrist": [
+          281.882,
+          286.166
+        ],
+        "head": [
+          225.847,
+          139.864
+        ],
+        "neck": [
+          218.654,
+          160.155
+        ],
+        "pelvis": [
+          188.942,
+          243.964
+        ],
+        "rearAnkle": [
+          173.675,
+          330.908
+        ],
+        "rearElbow": [
+          174.954,
+          218.163
+        ],
+        "rearHip": [
+          167.622,
+          236.406
+        ],
+        "rearKnee": [
+          205.079,
+          284.349
+        ],
+        "rearShoulder": [
+          172.178,
+          165.196
+        ],
+        "rearWrist": [
+          197.617,
+          262.642
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "5c916f45375d345ce96bddc0c6ff24f38b7d1402681ab99f06862a74953f9aba"
+    },
+    {
+      "alphaBBox": [
+        132,
+        114,
+        308,
+        351
+      ],
+      "cue": "recovery",
+      "file": "grotesque/claws/hitstun_legs/06.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 5,
+      "landmarks": {
+        "chest": [
+          219.918,
+          179.616
+        ],
+        "frontAnkle": [
+          207.355,
+          342.98
+        ],
+        "frontElbow": [
+          289.573,
+          239.658
+        ],
+        "frontHip": [
+          212.664,
+          251.522
+        ],
+        "frontKnee": [
+          173.557,
+          298.129
+        ],
+        "frontShoulder": [
+          258.397,
+          196.748
+        ],
+        "frontWrist": [
+          288.702,
+          289.571
+        ],
+        "head": [
+          236.923,
+          141.423
+        ],
+        "neck": [
+          228.167,
+          161.09
+        ],
+        "pelvis": [
+          192.0,
+          242.322
+        ],
+        "rearAnkle": [
+          177.388,
+          327.623
+        ],
+        "rearElbow": [
+          184.216,
+          215.452
+        ],
+        "rearHip": [
+          171.336,
+          233.122
+        ],
+        "rearKnee": [
+          208.792,
+          281.064
+        ],
+        "rearShoulder": [
+          181.44,
+          162.485
+        ],
+        "rearWrist": [
+          206.879,
+          259.931
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "1d8ee84f6ed4d5b253d5232f3e65d60aed6dca5df583def1445d829927a0b86f"
+    }
+  ],
+  "id": "hitstun_legs",
+  "kind": "state",
+  "playback": "once",
+  "rasterScale": 0.78,
+  "rootScale": 1.0,
+  "weapon": "claws"
+}

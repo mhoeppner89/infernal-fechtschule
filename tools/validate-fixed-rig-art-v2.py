@@ -38,13 +38,13 @@ THUG_STATES = {
     "hitstun_head", "hitstun_torso", "hitstun_legs", "guardbreak", "dead",
 }
 THUG_ATTACKS = {"thug_overhead", "thug_body", "thug_low"}
-SPEAR_STATES = {"idle", "move", "hitstun", "dead"}
+SPEAR_STATES = {"idle", "move", "hitstun", "hitstun_head", "hitstun_torso", "hitstun_legs", "dead"}
 SPEAR_ATTACKS = {"spear_thrust"}
-CAPTAIN_STATES = {"idle", "move", "block", "hitstun", "guardbreak", "dead"}
+CAPTAIN_STATES = {"idle", "move", "block", "hitstun", "hitstun_head", "hitstun_torso", "hitstun_legs", "guardbreak", "dead"}
 CAPTAIN_ATTACKS = {"captain_cut", "captain_bash"}
-WRETCH_STATES = {"idle", "move", "hitstun", "dead"}
+WRETCH_STATES = {"idle", "move", "hitstun", "hitstun_head", "hitstun_torso", "hitstun_legs", "dead"}
 WRETCH_ATTACKS = {"wretch_claw"}
-GROTESQUE_STATES = {"idle", "move", "hitstun", "dead"}
+GROTESQUE_STATES = {"idle", "move", "hitstun", "hitstun_head", "hitstun_torso", "hitstun_legs", "dead"}
 GROTESQUE_ATTACKS = {"boss_sweep", "boss_leap", "boss_shock"}
 
 BONES = (

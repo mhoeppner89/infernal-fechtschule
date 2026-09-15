@@ -1,18 +1,18 @@
 import { GAME_SNAPSHOT_VERSION } from '../sim/types.js';
 export const PEER_PROTOCOL_VERSION = 2;
-const PHASES = new Set(['title', 'countdown', 'wave', 'upgrade', 'victory', 'defeat']);
+const PHASES = new Set(['title', 'countdown', 'wave', 'lesson', 'victory', 'defeat']);
 const TEAMS = new Set(['players', 'enemies']);
 const ARCHETYPES = new Set(['meyer', 'thug', 'spear', 'captain', 'wretch', 'grotesque']);
 const STATES = new Set(['idle', 'move', 'block', 'attack', 'dodge', 'crouch', 'jump', 'switch', 'hitstun', 'guardbreak', 'dead']);
 const HIT_ZONES = new Set(['head', 'torso', 'legs']);
 const WEAPONS = new Set(['longsword', 'dussack']);
-const UPGRADES = new Set([
-    'longsword-sweep',
-    'longsword-control',
-    'dussack-circle',
-    'dussack-passing-step',
-    'quick-change',
-    'second-intention'
+const LESSONS = new Set([
+    'ls-crossing',
+    'ls-threefold',
+    'ls-provoker',
+    'ds-backhand',
+    'ds-wheel',
+    'switch-flourish'
 ]);
 export function isPeerMessage(value) {
     if (!isRecord(value) || typeof value.type !== 'string')
@@ -26,8 +26,8 @@ export function isPeerMessage(value) {
             return isIntegerInRange(value.seq, 0, Number.MAX_SAFE_INTEGER) && isInputFrame(value.frame);
         case 'snapshot':
             return isSnapshot(value.snapshot);
-        case 'upgrade':
-            return typeof value.id === 'string' && UPGRADES.has(value.id);
+        case 'lesson':
+            return typeof value.id === 'string' && LESSONS.has(value.id);
         case 'restart':
             return true;
         case 'pause':
@@ -63,7 +63,9 @@ function isSnapshot(value) {
         return false;
     if (!isFiniteNumber(value.score) || !isIntegerInRange(value.bossPhase, 0, 16))
         return false;
-    if (!isUpgradeArray(value.upgrades) || !isUpgradeArray(value.offeredUpgrades))
+    if (!isFiniteNumber(value.cameraX) || !isFiniteNumber(value.stageWidth) || value.stageWidth <= 0)
+        return false;
+    if (!isLessonArray(value.lessons) || !isLessonArray(value.offeredLessons))
         return false;
     if (!Array.isArray(value.actors) || value.actors.length > 128)
         return false;
@@ -97,8 +99,8 @@ function isActorSnapshot(value) {
         (value.reactionZone === null || (typeof value.reactionZone === 'string' && HIT_ZONES.has(value.reactionZone))) &&
         isFiniteNumber(value.deathTimer) && value.deathTimer >= 0;
 }
-function isUpgradeArray(value) {
-    return Array.isArray(value) && value.length <= UPGRADES.size && value.every((id) => typeof id === 'string' && UPGRADES.has(id));
+function isLessonArray(value) {
+    return Array.isArray(value) && value.length <= LESSONS.size && value.every((id) => typeof id === 'string' && LESSONS.has(id));
 }
 function isRecord(value) {
     return typeof value === 'object' && value !== null && !Array.isArray(value);

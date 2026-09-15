@@ -601,21 +601,19 @@ for (const kit of V2_NPC_KITS) {
       frames: v2Frames(`${kit.folder}/${state}`, stateCues(state))
     });
   }
-  // Only the thug has authored per-zone reaction variants in this slice;
-  // every other archetype keeps its generic hitstun for all zones.
-  if (kit.archetype === 'thug') {
-    for (const zone of V2_REACTION_ZONES) {
-      registerReady({
-        archetype: kit.archetype,
-        weapon: null,
-        state: 'hitstun',
-        attackId: null,
-        variant: zone,
-        playback: 'once',
-        display,
-        frames: v2Frames(`${kit.folder}/hitstun_${zone}`, V2_HIT_REACTION_CUES)
-      });
-    }
+  // Every archetype now has authored per-zone reaction variants; the generic
+  // hitstun clip remains registered as a safe fallback.
+  for (const zone of V2_REACTION_ZONES) {
+    registerReady({
+      archetype: kit.archetype,
+      weapon: null,
+      state: 'hitstun',
+      attackId: null,
+      variant: zone,
+      playback: 'once',
+      display,
+      frames: v2Frames(`${kit.folder}/hitstun_${zone}`, V2_HIT_REACTION_CUES)
+    });
   }
   for (const attackId of kit.attacks) {
     registerReady({

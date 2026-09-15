@@ -6,7 +6,7 @@ import { CanvasRenderer } from '../render/canvas-renderer.js';
 import { ATTACKS } from '../sim/attacks.js';
 import { WAVES } from '../sim/waves.js';
 import { GameWorld } from '../sim/world.js';
-import type { ActorSnapshot, GameEvent, GameSnapshot, InputFrame, UpgradeId } from '../sim/types.js';
+import type { ActorSnapshot, GameEvent, GameSnapshot, InputFrame, LessonId } from '../sim/types.js';
 import { GAME_SNAPSHOT_VERSION, NEUTRAL_INPUT } from '../sim/types.js';
 import { GameUI } from '../ui/ui.js';
 
@@ -99,6 +99,7 @@ export class GameController {
       tick: snapshot.tick,
       time: Number(snapshot.time.toFixed(3)),
       wave: { index: snapshot.waveIndex, title: snapshot.waveTitle, bossPhase: snapshot.bossPhase },
+      camera: { x: Math.round(snapshot.cameraX), stageWidth: Math.round(snapshot.stageWidth) },
       score: snapshot.score,
       animationAssets: this.renderer.getAnimationReadiness(),
       backgroundAssets: this.renderer.getBackgroundReadiness(),
@@ -134,7 +135,7 @@ export class GameController {
       startSolo: () => this.startSolo(false),
       enableTilt: () => this.input.tilt.requestPermissionAndEnable(),
       recenterTilt: () => this.input.tilt.recenter(),
-      chooseUpgrade: (id) => this.chooseUpgrade(id),
+      chooseLesson: (id) => this.chooseLesson(id),
       restart: () => this.restart(),
       returnToTitle: () => this.returnToTitle(),
       togglePause: () => this.togglePause(),
@@ -210,7 +211,7 @@ export class GameController {
     this.pendingRemote = cloneInput(NEUTRAL_INPUT);
     this.lastUiPhase = '';
     this.input.reset();
-    this.ui.hideUpgrade();
+    this.ui.hideLesson();
     this.ui.showGame();
     if (!this.running) {
       this.running = true;
@@ -301,10 +302,10 @@ export class GameController {
       if (event.type === 'banner' && event.text) {
         const wave = WAVES[this.world?.waveIndex ?? -1];
         this.ui.showBanner(event.text, wave?.subtitle ?? '');
-      } else if (event.type === 'upgrade-offer' && event.upgrades) {
-        this.ui.showUpgrade(event.upgrades, true);
-      } else if (event.type === 'upgrade-chosen') {
-        this.ui.hideUpgrade();
+      } else if (event.type === 'lesson-offer' && event.lessons) {
+        this.ui.showLesson(event.lessons, true);
+      } else if (event.type === 'lesson-chosen') {
+        this.ui.hideLesson();
       } else if (event.type === 'boss-phase' && event.text) {
         this.ui.showBanner('THE CHAINS TEAR', event.text);
       } else if (event.type === 'victory') {
@@ -318,10 +319,10 @@ export class GameController {
   private syncOverlayToSnapshot(snapshot: GameSnapshot): void {
     if (snapshot.phase === this.lastUiPhase) return;
     this.lastUiPhase = snapshot.phase;
-    if (snapshot.phase === 'upgrade') {
-      this.ui.showUpgrade(snapshot.offeredUpgrades, this.mode !== 'guest');
+    if (snapshot.phase === 'lesson') {
+      this.ui.showLesson(snapshot.offeredLessons, this.mode !== 'guest');
     } else {
-      this.ui.hideUpgrade();
+      this.ui.hideLesson();
     }
     if (snapshot.phase === 'victory') {
       this.ui.showEnd(true, snapshot.waveTitle);
@@ -344,8 +345,8 @@ export class GameController {
       case 'snapshot':
         if (this.mode === 'guest') this.acceptGuestSnapshot(message.snapshot);
         break;
-      case 'upgrade':
-        if (this.mode === 'host') this.chooseUpgrade(message.id);
+      case 'lesson':
+        if (this.mode === 'host') this.chooseLesson(message.id);
         break;
       case 'restart':
         if (this.mode === 'host') void this.startHostRun();
@@ -367,12 +368,12 @@ export class GameController {
     }
   }
 
-  private chooseUpgrade(id: UpgradeId): void {
+  private chooseLesson(id: LessonId): void {
     if (this.mode === 'guest') {
-      this.peer.send({ type: 'upgrade', id });
+      this.peer.send({ type: 'lesson', id });
       return;
     }
-    if (this.world?.chooseUpgrade(id)) this.ui.hideUpgrade();
+    if (this.world?.chooseLesson(id)) this.ui.hideLesson();
   }
 
   private restart(): void {
@@ -509,9 +510,11 @@ export class GameController {
       waveTitle: 'Meyer Crosses the Alps',
       score: 0,
       bossPhase: 0,
-      upgrades: [],
-      offeredUpgrades: [],
-      actors: []
+      lessons: [],
+      offeredLessons: [],
+      actors: [],
+      cameraX: 0,
+      stageWidth: 1280
     };
     this.renderer.render(backdrop, FIXED_STEP);
   }
@@ -573,11 +576,16 @@ export function interpolateGuestSnapshot(
     ? lerp(previous.time, latest.time, alpha)
     : base.time;
 
+  const cameraAdvanced = previous && latest.cameraX >= previous.cameraX
+    ? lerp(previous.cameraX, latest.cameraX, alpha)
+    : base.cameraX;
+
   return {
     ...base,
     time: timeAdvanced,
-    upgrades: [...base.upgrades],
-    offeredUpgrades: [...base.offeredUpgrades],
+    cameraX: cameraAdvanced,
+    lessons: [...base.lessons],
+    offeredLessons: [...base.offeredLessons],
     actors
   };
 }

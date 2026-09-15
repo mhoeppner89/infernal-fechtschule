@@ -951,10 +951,10 @@ NPC_ATTACKS = {
 }
 NPC_STATES = {
     "thug": ("idle", "move", "crouch", "dodge", "block", "hitstun", "hitstun_head", "hitstun_torso", "hitstun_legs", "guardbreak", "dead"),
-    "spear": ("idle", "move", "hitstun", "dead"),
-    "captain": ("idle", "move", "block", "hitstun", "guardbreak", "dead"),
-    "wretch": ("idle", "move", "hitstun", "dead"),
-    "grotesque": ("idle", "move", "hitstun", "dead"),
+    "spear": ("idle", "move", "hitstun", "hitstun_head", "hitstun_torso", "hitstun_legs", "dead"),
+    "captain": ("idle", "move", "block", "hitstun", "hitstun_head", "hitstun_torso", "hitstun_legs", "guardbreak", "dead"),
+    "wretch": ("idle", "move", "hitstun", "hitstun_head", "hitstun_torso", "hitstun_legs", "dead"),
+    "grotesque": ("idle", "move", "hitstun", "hitstun_head", "hitstun_torso", "hitstun_legs", "dead"),
 }
 
 STATES = ("idle", "move", "crouch", "dodge", "block", "switch", "hitstun", "hitstun_head", "hitstun_torso", "hitstun_legs", "guardbreak", "dead")
@@ -1096,6 +1096,18 @@ def build_previews(output: Path) -> None:
         ("defeat", paths("grotesque", "claws", "dead")),
     ])
     contacts = [
+        ("Spear · head", paths("spear", "spear", "hitstun_head")[0]),
+        ("Spear · torso", paths("spear", "spear", "hitstun")[0]),
+        ("Spear · legs", paths("spear", "spear", "hitstun_legs")[0]),
+        ("Captain · head", paths("captain", "captain-sword", "hitstun_head")[0]),
+        ("Captain · torso", paths("captain", "captain-sword", "hitstun")[0]),
+        ("Captain · legs", paths("captain", "captain-sword", "hitstun_legs")[0]),
+        ("Wretch · head", paths("wretch", "claws", "hitstun_head")[0]),
+        ("Wretch · torso", paths("wretch", "claws", "hitstun")[0]),
+        ("Wretch · legs", paths("wretch", "claws", "hitstun_legs")[0]),
+        ("Grotesque · head", paths("grotesque", "claws", "hitstun_head")[0]),
+        ("Grotesque · torso", paths("grotesque", "claws", "hitstun")[0]),
+        ("Grotesque · legs", paths("grotesque", "claws", "hitstun_legs")[0]),
         ("Meyer LS · head", paths("meyer", "longsword", "ls_h")[2]),
         ("Meyer LS · torso", paths("meyer", "longsword", "ls_l1")[2]),
         ("Meyer LS · legs", paths("meyer", "longsword", "ls_low_h")[2]),
