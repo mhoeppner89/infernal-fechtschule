@@ -349,6 +349,8 @@ assets/
 
 `tools/generate-fixed-rig-art-v2.py` is the only art producer: it renders every pose from one parameterised rig, and the tool is deterministic — regenerating reproduces byte-identical output, which is what makes `manifest-v2.json` safe to commit. Adding a weapon kit is therefore a generator change plus a manifest entry, not a drawing task. Meyer's club and spear (`site/assets/art-v2/meyer/club`, `.../spear`, 31 clips) were added that way.
 
+The runtime tree is `site/assets/art-v2/` and nothing else: every clip the manifest names lives there, and the four backdrops are the only survivors of the v1 root (`site/assets/art/backgrounds/`). The v1 sprite tree itself was moved to `art-source/v1/` — it is source for the v1-era tools and is dead at runtime, because the v2 kits re-register every one of its clip ids and win the map. While it sat under `site/` the service worker shipped all 135 MB of it in the offline payload; the payload is 21 MB now. Anything placed under `site/` is published, so art that is only source belongs beside the repo, not inside it.
+
 A found weapon is **not** part of that pipeline. The rig has no grip for a cudgel or a shaft, so an item on the floor is drawn as vector art by the renderer (`drawItem`/`drawCudgel`/`drawShaft`), which is also why a dropped weapon and a carried one read as the same silhouette. If finds become a core system rather than a stage resource, they should get authored poses and a rig grip in the same pass.
 
 ## Canvas renderer versus Phaser

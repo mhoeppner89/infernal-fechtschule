@@ -34,7 +34,7 @@ from PIL import Image, ImageDraw, ImageFilter
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-ART_ROOT = REPO_ROOT / "site/assets/art"
+ART_ROOT = REPO_ROOT / "art-source/v1"  # v1 source tree, outside the shipped site/
 MEYER_IDLE_DIR = ART_ROOT / "meyer/longsword/idle"
 CAPTAIN_GUARDBREAK_DIR = ART_ROOT / "enemies/captain/guardbreak"
 MEYER_FRAME_NAMES = ("01", "02", "03", "04")

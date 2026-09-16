@@ -241,22 +241,35 @@ test('the service-worker cache name follows the served bytes, not the version st
   }
 });
 
-test('the precache list keeps editable art out and reports itself as a list', async () => {
+test('the precache list keeps editable art out of every art root', async () => {
   const fixture = await workspace();
   const site = path.join(fixture.base, 'site');
   try {
-    await mkdir(path.join(site, 'assets', 'art', 'thug'), { recursive: true });
+    // Two art roots, because the rule has to name all of them: the runtime cast
+    // moved to art-v2 while the exclusion still checked the v1 prefix, and the
+    // preview sheets under the new root shipped for it. Both roots are covered.
+    for (const root of ['art', 'art-v2']) {
+      await mkdir(path.join(site, 'assets', root, 'thug'), { recursive: true });
+      await mkdir(path.join(site, 'assets', root, 'previews'), { recursive: true });
+      await writeFile(path.join(site, 'assets', root, 'thug', '01.webp'), 'webp');
+      await writeFile(path.join(site, 'assets', root, 'thug', '01.png'), 'png');
+      await writeFile(path.join(site, 'assets', root, 'thug', 'normalization.json'), '{}');
+      await writeFile(path.join(site, 'assets', root, 'thug', 'clip.json'), '{}');
+      await writeFile(path.join(site, 'assets', root, 'thug', 'strip.png.map'), 'ignored');
+      await writeFile(path.join(site, 'assets', root, 'previews', 'thug-animation.png'), 'png');
+    }
     await writeFile(path.join(site, 'index.html'), '<html></html>');
-    await writeFile(path.join(site, 'assets', 'art', 'thug', '01.webp'), 'webp');
-    await writeFile(path.join(site, 'assets', 'art', 'thug', '01.png'), 'png');
-    await writeFile(path.join(site, 'assets', 'art', 'thug', 'normalization.json'), '{}');
-    await writeFile(path.join(site, 'assets', 'art', 'thug', 'clip.json'), '{}');
-    await writeFile(path.join(site, 'assets', 'art', 'thug', 'strip.png.map'), 'ignored');
     const files = await precacheList(site);
-    assert.ok(files.includes('./assets/art/thug/01.webp'));
-    assert.ok(!files.includes('./assets/art/thug/01.png'), 'editable strips stay out of the payload');
-    assert.ok(!files.includes('./assets/art/thug/normalization.json'));
-    assert.ok(files.includes('./assets/art/thug/clip.json'), 'runtime clips stay in');
+    for (const root of ['art', 'art-v2']) {
+      assert.ok(files.includes(`./assets/${root}/thug/01.webp`));
+      assert.ok(!files.includes(`./assets/${root}/thug/01.png`), 'editable strips stay out of the payload');
+      assert.ok(!files.includes(`./assets/${root}/thug/normalization.json`));
+      assert.ok(files.includes(`./assets/${root}/thug/clip.json`), 'runtime clips stay in');
+      assert.ok(
+        !files.includes(`./assets/${root}/previews/thug-animation.png`),
+        'preview sheets stay out of the payload'
+      );
+    }
     assert.ok(!files.some((file) => file.endsWith('.map')), 'source maps stay out of the payload');
     assert.deepEqual(files, [...files].sort(), 'the list is sorted, so its order cannot move the digest');
     assert.match(await contentDigest(site, files), /^[0-9a-f]{10}$/);

@@ -15,11 +15,19 @@ const roots = [
   'js'
 ];
 
+/**
+ * Every root that holds runtime art. The rule has to name all of them: it once
+ * checked `assets/art/` alone, so when the cast moved to `assets/art-v2/` the
+ * preview sheets and loose PNG strips under the new root quietly started
+ * shipping — eight files, 6.8 MB, that no code path asks for.
+ */
+const ART_ROOTS = ['assets/art/', 'assets/art-v2/'];
+
 function shouldPrecache(relativePath) {
   const normalized = relativePath.replaceAll(path.sep, '/');
-  if (!normalized.startsWith('assets/art/')) return true;
+  if (!ART_ROOTS.some((root) => normalized.startsWith(root))) return true;
   // Runtime sprites are optimized WebP files. Keep editable PNG strips,
-  // previews, seeds, and normalization metadata out of the offline payload.
+  // preview sheets, seeds, and normalization metadata out of the offline payload.
   return !normalized.endsWith('.png') && !normalized.endsWith('/normalization.json');
 }
 

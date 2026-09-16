@@ -25,7 +25,7 @@ import numpy as np
 from PIL import Image, ImageDraw
 
 
-ART_ROOT = Path("site/assets/art")
+ART_ROOT = Path("art-source/v1")  # v1 source tree, outside the shipped site/
 MAX_POSE_HOLD_SECONDS = 0.120
 MIN_RECOVERY_POSES = 3
 OVERSHOOT_HOLD_TICKS = 3

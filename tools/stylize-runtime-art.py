@@ -26,7 +26,7 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFilter
 
 
-DEFAULT_SOURCE_ROOT = Path("site/assets/art")
+DEFAULT_SOURCE_ROOT = Path("art-source/v1")  # v1 source tree, outside the shipped site/
 SPRITE_SIZE = (384, 384)
 BACKGROUND_DIR = "backgrounds"
 RUNTIME_FRAME_DIGITS = 2

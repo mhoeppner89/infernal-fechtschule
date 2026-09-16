@@ -162,8 +162,10 @@ Three reasons, and they are the reasons the rest of the brief takes the shape it
 The palettes in `site/assets/art-v2/source/rigs/*.json` are the authoritative colours.
 `tools/stylize-runtime-art.py` snaps every numbered runtime frame to one fixed palette per
 actor, so drift between frames is repaired automatically — but repaired, not hidden: paint
-inside the palette and the pass is a no-op. The tables in §6.2 are those files, so a prompt
-can quote hex directly.
+inside the palette and the pass is a no-op. (That tool belongs to the v1 pass and reads the
+source tree at `art-source/v1/`; for repainted v2 clips, palette lock is the prompt's job,
+which is why §6.2 quotes the hex.) The tables in §6.2 are those files, so a prompt can quote
+hex directly.
 
 Scenery is deliberately **not** palette-locked, and is treated with a wider palette and less
 smoothing so it recedes without posterising.

@@ -17,7 +17,11 @@ import numpy as np
 from PIL import Image, ImageDraw
 
 
-ART_ROOT = Path("site/assets/art")
+# The v1 sprite tree, kept as source beside the repo rather than inside site/:
+# nothing in the runtime loads it any more (the v2 set replaced it clip for
+# clip), and while it lived under site/ the service worker shipped all 135 MB
+# of it in the offline payload.
+ART_ROOT = Path("art-source/v1")
 LOW_CORRECTION = 0.78
 HIGH_CORRECTION = 1.55
 

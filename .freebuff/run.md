@@ -12,9 +12,18 @@ cd /Users/mhoeppner/Desktop/infernal-fechtschule
 npm run build        # = tsc -p tsconfig.json && node tools/write-service-worker.mjs
 ```
 
-This is the full pipeline: it emits `site/js/**` from `src/`, rewrites `site/sw.js`
-(1357 precached files), and refreshes any armed preview copy (see below). There are no env
-files to copy and no package installs.
+This is the full pipeline: it emits `site/js/**` from `src/`, rewrites `site/sw.js`, and
+refreshes any armed preview copy (see below). There are no env files to copy and no package
+installs.
+
+The served payload is **970 files / 21 MB**, and `site/` is 30 MB on disk. It was four times
+that until the superseded v1 sprite tree moved out: `site/assets/art/` now holds only the four
+backdrop images the renderer loads, and the v1 sprites plus their loose PNG strips and preview
+sheets live in `art-source/v1/` — source for the v1-era tools (`stylize-runtime-art.py`,
+`repair-sprite-defects.py`, `audit-animation-scale.py`, `generate-recovery-inbetweens.py`),
+never served. **Anything under `site/` ships by default**, so art that is only source belongs
+outside it; `tools/write-service-worker.mjs` additionally keeps editable `.png` strips and
+`normalization.json` reports out of the precache under every art root.
 
 The worker's cache name is a digest of the served bytes rather than the version string
 (`infernal-fechtschule-0.1.1-a087cf5de6`), so a changed build cannot leave a returning tab
