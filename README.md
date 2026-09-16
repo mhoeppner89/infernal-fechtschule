@@ -10,11 +10,13 @@ This repository contains a playable vertical slice, its TypeScript source, a pro
 
 - Arena movement on horizontal and depth axes, with soft automatic alignment when attacks start
 - Tilt movement in landscape orientation, plus virtual stick, keyboard, and gamepad-ready input boundaries
-- Joachim Meyer with freely switchable longsword and dussack kits
+- Joachim Meyer with freely switchable longsword and dussack kits, plus a short improvised kit for any weapon he picks up
 - Light, heavy, mobility, guard/parry, and weapon-switch actions
+- Dropped arms and health draughts on the road: the road marks what your hands can take, and Switch picks it up — press it again to hurl the find, which splits after a few landed blows
 - Short buffered combo routes and hit-confirmed switch entries
 - A Provoke → Take → Hit doctrine that rewards provoking attacks, parries/interceptions, and committed finishers
-- Four encounters: thugs, spear soldiers, an armoured captain, and a two-phase grotesque boss
+- Four enemy archetypes: thugs, spear soldiers, an armoured captain, and a two-phase grotesque boss
+- Five levels over seven waves, each wave one idea: a crowd, a gate, a duel, a trap, a flood, a stand, and the thing the castle bound. A level is a place — one road, one setting — and its waves are fought along it; only its last wave opens the doorway east
 - Two lesson choices, drawn from six behavioral upgrades
 - Solo play and experimental host-authoritative two-phone co-op
 - Procedural placeholder art and Web Audio cues; no external game assets are required
@@ -40,7 +42,13 @@ npm test
 npm start
 ```
 
-`npm run build` compiles `src/` into `site/js/` and regenerates the service worker’s complete precache list.
+`npm run build` compiles `src/` into `site/js/`, regenerates the service worker's complete precache list, and refreshes an armed preview copy (see `.freebuff/run.md`).
+
+`npm run measure` plays the campaign with two bot policies and reports what each encounter costs — a wave's difficulty is a property of its shape rather than of a number, so it is measured rather than asserted (`--fresh` refills the bar at every wave line, `--seeds` and `--json` for more evidence).
+
+## Levels and waves
+
+A level is one place: a road, a setting, and the waves fought along it. Its waves arrive in order — nobody is ever placed inside the picture, so every fighter walks in from off the edge of the screen — and clearing one only brings the next on: the road, the view and anything the fallen dropped stay exactly where they were. A level does not end when its last opponent falls either: its eastern doorway bars itself for as long as anyone is standing, opens once the place is clear, and the level ends when Meyer walks out through it. The next level starts at its own western end, so each place is walked left to right and everything left on the road (cudgels, shafts, a captain's steel, a draught) can be taken up before moving on.
 
 ## Controls
 
@@ -51,7 +59,7 @@ npm start
 | Heavy attack | **H** button | K or X |
 | Duck / directional dodge | **MOVE** button | L or C |
 | Hold guard / timed parry | **GUARD** button | I, V, or Shift |
-| Switch weapon | **WEAPON** button | U or Space |
+| Switch blade / take / throw | **SWITCH** button | U or Space |
 | Pause | HUD pause button | Escape |
 
 Useful routes:
@@ -73,7 +81,7 @@ The title screen includes a manual WebRTC pairing flow that avoids any signaling
 2. Guest pastes it, creates an answer token, and returns that token.
 3. Host applies the answer and starts the run once the connection is ready.
 
-Use the same Wi-Fi network or a phone hotspot for the most useful test. The host owns enemies, random state, hits, wave flow, and upgrades. The guest sends inputs and renders host snapshots.
+Use the same Wi-Fi network or a phone hotspot for the most useful test. The host owns enemies, random state, hits, level and wave flow, and upgrades. The guest sends inputs and renders host snapshots — snapshots that describe the whole fight, so both phones draw the same road.
 
 Manual token exchange is a laboratory interface. The production plan replaces it with QR/room-code signaling while retaining peer-to-peer gameplay where network conditions permit. See [Networking](docs/NETWORKING.md).
 
@@ -112,7 +120,7 @@ src/
   network/                  Manual WebRTC and protocol definitions
   render/                   Disposable Canvas 2D view adapter
   sim/                      Deterministic combat, AI, waves, and progression
-  ui/                       DOM HUD, menus, lessons, and pairing flow
+  ui/                       DOM interface: the fight's cues, menus, lessons, pairing
 tests/                      Deterministic simulation tests
 tools/                      Static server and service-worker generator
 docs/                       Design, architecture, roadmap, and validation
@@ -130,6 +138,7 @@ The slice uses a small Canvas 2D renderer so the downloadable build is self-cont
 - [Full game layout](docs/FULL_GAME_LAYOUT.md)
 - [Technical architecture](docs/ARCHITECTURE.md)
 - [Networking plan](docs/NETWORKING.md)
+- [Art overhaul work order](docs/ART_OVERHAUL.md)
 - [Historical method](docs/HISTORICAL_METHOD.md)
 - [Playtest plan](docs/PLAYTEST_PLAN.md)
 - [Roadmap and next issues](docs/ROADMAP.md)

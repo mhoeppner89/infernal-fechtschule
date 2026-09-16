@@ -1,0 +1,529 @@
+{
+  "actor": "meyer",
+  "canvas": [
+    384,
+    384
+  ],
+  "footAnchor": [
+    192,
+    350
+  ],
+  "frames": [
+    {
+      "alphaBBox": [
+        137,
+        93,
+        266,
+        351
+      ],
+      "cue": "neutral",
+      "file": "meyer/club/idle/01.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 4,
+      "landmarks": {
+        "chest": [
+          192.0,
+          190.1
+        ],
+        "frontAnkle": [
+          208.778,
+          342.498
+        ],
+        "frontElbow": [
+          233.706,
+          229.68
+        ],
+        "frontHip": [
+          207.6,
+          243.14
+        ],
+        "frontKnee": [
+          218.303,
+          293.495
+        ],
+        "frontShoulder": [
+          219.3,
+          190.1
+        ],
+        "frontWrist": [
+          220.755,
+          267.293
+        ],
+        "head": [
+          192.0,
+          151.1
+        ],
+        "neck": [
+          192.0,
+          169.04
+        ],
+        "pelvis": [
+          192.0,
+          243.14
+        ],
+        "rearAnkle": [
+          174.386,
+          342.98
+        ],
+        "rearElbow": [
+          151.684,
+          230.159
+        ],
+        "rearHip": [
+          176.4,
+          243.14
+        ],
+        "rearKnee": [
+          166.577,
+          293.675
+        ],
+        "rearShoulder": [
+          164.7,
+          190.1
+        ],
+        "rearWrist": [
+          170.97,
+          264.951
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "bb3e8d8c45ee00d135a671df8b0353a7ed3adc1cfa453fbd8bbcaae01caba7db"
+    },
+    {
+      "alphaBBox": [
+        139,
+        93,
+        270,
+        351
+      ],
+      "cue": "neutral",
+      "file": "meyer/club/idle/02.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 5,
+      "landmarks": {
+        "chest": [
+          194.296,
+          190.22
+        ],
+        "frontAnkle": [
+          209.787,
+          342.98
+        ],
+        "frontElbow": [
+          235.994,
+          230.46
+        ],
+        "frontHip": [
+          208.609,
+          243.622
+        ],
+        "frontKnee": [
+          219.312,
+          293.977
+        ],
+        "frontShoulder": [
+          221.588,
+          190.881
+        ],
+        "frontWrist": [
+          223.043,
+          268.073
+        ],
+        "head": [
+          195.239,
+          151.232
+        ],
+        "neck": [
+          194.805,
+          169.167
+        ],
+        "pelvis": [
+          193.013,
+          243.245
+        ],
+        "rearAnkle": [
+          175.404,
+          342.707
+        ],
+        "rearElbow": [
+          153.988,
+          229.619
+        ],
+        "rearHip": [
+          177.418,
+          242.868
+        ],
+        "rearKnee": [
+          167.595,
+          293.402
+        ],
+        "rearShoulder": [
+          167.004,
+          189.56
+        ],
+        "rearWrist": [
+          173.274,
+          264.411
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "a48a2025a6a7c4235ea0f87c3d9b7104e40a88d212ae232ad1038c4a84273476"
+    },
+    {
+      "alphaBBox": [
+        139,
+        93,
+        270,
+        351
+      ],
+      "cue": "neutral",
+      "file": "meyer/club/idle/03.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 3,
+      "landmarks": {
+        "chest": [
+          194.296,
+          190.22
+        ],
+        "frontAnkle": [
+          209.787,
+          342.98
+        ],
+        "frontElbow": [
+          235.994,
+          230.46
+        ],
+        "frontHip": [
+          208.609,
+          243.622
+        ],
+        "frontKnee": [
+          219.312,
+          293.977
+        ],
+        "frontShoulder": [
+          221.588,
+          190.881
+        ],
+        "frontWrist": [
+          223.043,
+          268.073
+        ],
+        "head": [
+          195.239,
+          151.232
+        ],
+        "neck": [
+          194.805,
+          169.167
+        ],
+        "pelvis": [
+          193.013,
+          243.245
+        ],
+        "rearAnkle": [
+          175.404,
+          342.707
+        ],
+        "rearElbow": [
+          153.988,
+          229.619
+        ],
+        "rearHip": [
+          177.418,
+          242.868
+        ],
+        "rearKnee": [
+          167.595,
+          293.402
+        ],
+        "rearShoulder": [
+          167.004,
+          189.56
+        ],
+        "rearWrist": [
+          173.274,
+          264.411
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "a48a2025a6a7c4235ea0f87c3d9b7104e40a88d212ae232ad1038c4a84273476"
+    },
+    {
+      "alphaBBox": [
+        137,
+        93,
+        266,
+        351
+      ],
+      "cue": "neutral",
+      "file": "meyer/club/idle/04.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 3,
+      "landmarks": {
+        "chest": [
+          192.0,
+          190.1
+        ],
+        "frontAnkle": [
+          208.778,
+          342.498
+        ],
+        "frontElbow": [
+          233.706,
+          229.68
+        ],
+        "frontHip": [
+          207.6,
+          243.14
+        ],
+        "frontKnee": [
+          218.303,
+          293.495
+        ],
+        "frontShoulder": [
+          219.3,
+          190.1
+        ],
+        "frontWrist": [
+          220.755,
+          267.293
+        ],
+        "head": [
+          192.0,
+          151.1
+        ],
+        "neck": [
+          192.0,
+          169.04
+        ],
+        "pelvis": [
+          192.0,
+          243.14
+        ],
+        "rearAnkle": [
+          174.386,
+          342.98
+        ],
+        "rearElbow": [
+          151.684,
+          230.159
+        ],
+        "rearHip": [
+          176.4,
+          243.14
+        ],
+        "rearKnee": [
+          166.577,
+          293.675
+        ],
+        "rearShoulder": [
+          164.7,
+          190.1
+        ],
+        "rearWrist": [
+          170.97,
+          264.951
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "bb3e8d8c45ee00d135a671df8b0353a7ed3adc1cfa453fbd8bbcaae01caba7db"
+    },
+    {
+      "alphaBBox": [
+        135,
+        93,
+        261,
+        351
+      ],
+      "cue": "neutral",
+      "file": "meyer/club/idle/05.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 5,
+      "landmarks": {
+        "chest": [
+          189.704,
+          189.739
+        ],
+        "frontAnkle": [
+          207.76,
+          341.744
+        ],
+        "frontElbow": [
+          231.402,
+          228.658
+        ],
+        "frontHip": [
+          206.582,
+          242.386
+        ],
+        "frontKnee": [
+          217.285,
+          292.741
+        ],
+        "frontShoulder": [
+          216.996,
+          189.079
+        ],
+        "frontWrist": [
+          218.451,
+          266.271
+        ],
+        "head": [
+          188.761,
+          150.75
+        ],
+        "neck": [
+          189.195,
+          168.685
+        ],
+        "pelvis": [
+          190.987,
+          242.763
+        ],
+        "rearAnkle": [
+          173.378,
+          342.98
+        ],
+        "rearElbow": [
+          149.396,
+          230.457
+        ],
+        "rearHip": [
+          175.391,
+          243.14
+        ],
+        "rearKnee": [
+          165.568,
+          293.675
+        ],
+        "rearShoulder": [
+          162.412,
+          190.399
+        ],
+        "rearWrist": [
+          168.682,
+          265.25
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "7a450aeb6abc98190bd26522ae97f96aa5a66d2f415b5600148c58435e79460a"
+    },
+    {
+      "alphaBBox": [
+        135,
+        93,
+        261,
+        351
+      ],
+      "cue": "neutral",
+      "file": "meyer/club/idle/06.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 5,
+      "landmarks": {
+        "chest": [
+          189.704,
+          189.739
+        ],
+        "frontAnkle": [
+          207.76,
+          341.744
+        ],
+        "frontElbow": [
+          231.402,
+          228.658
+        ],
+        "frontHip": [
+          206.582,
+          242.386
+        ],
+        "frontKnee": [
+          217.285,
+          292.741
+        ],
+        "frontShoulder": [
+          216.996,
+          189.079
+        ],
+        "frontWrist": [
+          218.451,
+          266.271
+        ],
+        "head": [
+          188.761,
+          150.75
+        ],
+        "neck": [
+          189.195,
+          168.685
+        ],
+        "pelvis": [
+          190.987,
+          242.763
+        ],
+        "rearAnkle": [
+          173.378,
+          342.98
+        ],
+        "rearElbow": [
+          149.396,
+          230.457
+        ],
+        "rearHip": [
+          175.391,
+          243.14
+        ],
+        "rearKnee": [
+          165.568,
+          293.675
+        ],
+        "rearShoulder": [
+          162.412,
+          190.399
+        ],
+        "rearWrist": [
+          168.682,
+          265.25
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "7a450aeb6abc98190bd26522ae97f96aa5a66d2f415b5600148c58435e79460a"
+    }
+  ],
+  "id": "idle",
+  "kind": "state",
+  "playback": "loop",
+  "rasterScale": 0.78,
+  "rootScale": 1.0,
+  "weapon": "club"
+}

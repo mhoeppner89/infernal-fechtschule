@@ -861,21 +861,26 @@ def state_pose(actor: str, state: str, index: int) -> Pose:
     raise ValueError(f"Unknown state: {state}")
 
 
-def attack_pose(actor: str, zone: str, index: int, heavy: bool) -> Pose:
+def attack_pose(actor: str, zone: str, index: int, heavy: bool, weapon_kind: str | None = None) -> Pose:
     base = base_pose(actor)
     weight = 1.0 if heavy else 0.72
-    # The spearman plants his feet and delivers reach with the point instead
-    # of a deep forward lunge, so the long shaft keeps its safety margin.
-    lunge = 0.62 if actor == "spear" else 1.0
+    # Anyone holding a shaft plants their feet and delivers reach with the point
+    # instead of a deep forward lunge, so the long shaft keeps its safety margin.
+    # That holds for the spearman and for Meyer once he picks one up.
+    lunge = 0.62 if actor == "spear" or weapon_kind == "spear" else 1.0
+    # The soldier was trained to plant his shaft; a fencing master who has just
+    # grabbed one braces it further back, which also keeps the point inside the
+    # canvas margin that the soldier's own stance only just respects.
+    brace = 40.0 if weapon_kind == "spear" and actor != "spear" else 0.0
     if index == 0:
         return replace(base, cue="anticipation", zone=zone)
     if zone == "head":
         if index == 1:
             return replace(base, torso=-98, root_dx=-8, rear_arm=(12, -25), front_arm=(-25, -55), weapon_angle=-101, cue="anticipation", zone=zone)
         if index == 2:
-            return replace(base, torso=-78, root_dx=-78 * weight, rear_leg=(106, 78), front_leg=(68, 111), rear_arm=(27, 5), front_arm=(-4, 22), weapon_angle=-24, cue="contact", zone=zone, motion_arc=True)
+            return replace(base, torso=-78, root_dx=-78 * weight - brace, rear_leg=(106, 78), front_leg=(68, 111), rear_arm=(27, 5), front_arm=(-4, 22), weapon_angle=-24, cue="contact", zone=zone, motion_arc=True)
         if index == 3:
-            return replace(base, torso=-67, root_dx=-70 * weight * lunge, rear_arm=(42, 24), front_arm=(18, 42), weapon_angle=17, cue="overshoot", zone=zone, motion_arc=True)
+            return replace(base, torso=-67, root_dx=-70 * weight * lunge - brace, rear_arm=(42, 24), front_arm=(18, 42), weapon_angle=17, cue="overshoot", zone=zone, motion_arc=True)
     elif zone == "legs":
         crouch = crouched_pose(actor, 14 if heavy else 8)
         if index == 1:
@@ -888,9 +893,9 @@ def attack_pose(actor: str, zone: str, index: int, heavy: bool) -> Pose:
         if index == 1:
             return replace(base, torso=-98, root_dx=-8, rear_arm=(142, 116), front_arm=(125, 154), weapon_angle=-158, cue="anticipation", zone=zone)
         if index == 2:
-            return replace(base, torso=-74, root_dx=-78 * weight * lunge, rear_arm=(38, 28), front_arm=(9, 12), weapon_angle=-3, cue="contact", zone=zone, motion_arc=True)
+            return replace(base, torso=-74, root_dx=-78 * weight * lunge - brace, rear_arm=(38, 28), front_arm=(9, 12), weapon_angle=-3, cue="contact", zone=zone, motion_arc=True)
         if index == 3:
-            return replace(base, torso=-65, root_dx=-72 * weight * lunge, rear_arm=(55, 42), front_arm=(23, 38), weapon_angle=21, cue="overshoot", zone=zone, motion_arc=True)
+            return replace(base, torso=-65, root_dx=-72 * weight * lunge - brace, rear_arm=(55, 42), front_arm=(23, 38), weapon_angle=21, cue="overshoot", zone=zone, motion_arc=True)
     if index == 4:
         recovery = 0.55 if heavy else 0.38
         return replace(base, torso=mix(base.torso, -72, recovery), root_dx=-7 * weight, rear_arm=(89, 63), front_arm=(61, 82), weapon_angle=39 if zone == "legs" else -24, cue="recovery", zone=zone)
@@ -898,6 +903,12 @@ def attack_pose(actor: str, zone: str, index: int, heavy: bool) -> Pose:
 
 
 MEYER_ATTACKS: dict[str, tuple[str, bool]] = {
+    # Improvised kits. Meyer can pick up anything and swing it, but only the two
+    # fencing weapons carry his learned routes: a club has a two-beat cut and a
+    # hurled throw, a spear has a planted thrust, and that is the whole kit.
+    "cl_l1": ("torso", False), "cl_l2": ("torso", False), "cl_h": ("head", True),
+    "cl_throw": ("head", True),
+    "sp_l1": ("torso", False), "sp_h": ("torso", True), "sp_throw": ("head", True),
     "ls_l1": ("torso", False), "ls_l2": ("torso", False), "ls_l3": ("head", True),
     "ls_lh": ("head", True), "ls_l2h": ("torso", True), "ls_h": ("head", True),
     "ls_hl": ("torso", False), "ls_dodge_l": ("torso", False), "ls_air_l": ("head", True),
@@ -960,12 +971,17 @@ NPC_STATES = {
 STATES = ("idle", "move", "crouch", "dodge", "block", "switch", "hitstun", "hitstun_head", "hitstun_torso", "hitstun_legs", "guardbreak", "dead")
 
 
+# Meyer's kits: the two fencing weapons he trained with and the improvised
+# things he can pick up off the street. One prefix per kit, so the attack table
+# stays a single source of truth.
+MEYER_KITS: tuple[tuple[str, str], ...] = (("longsword", "ls_"), ("dussack", "ds_"), ("club", "cl_"), ("spear", "sp_"))
+
+
 def clip_inventory() -> list[dict[str, Any]]:
     clips: list[dict[str, Any]] = []
-    for weapon in ("longsword", "dussack"):
+    for weapon, prefix in MEYER_KITS:
         for state in STATES:
             clips.append({"actor": "meyer", "weapon": weapon, "id": state, "kind": "state", "playback": "loop" if state in ("idle", "move", "crouch", "block") else "once"})
-        prefix = "ls_" if weapon == "longsword" else "ds_"
         for attack_id, (zone, heavy) in MEYER_ATTACKS.items():
             if attack_id.startswith(prefix):
                 clips.append({"actor": "meyer", "weapon": weapon, "id": attack_id, "kind": "attack", "zone": zone, "heavy": heavy, "playback": "once"})
@@ -982,7 +998,7 @@ def clip_inventory() -> list[dict[str, Any]]:
 
 def render_frame(rig: dict[str, Any], weapon: dict[str, Any], clip: dict[str, Any], index: int) -> tuple[Image.Image, Pose, dict[str, Point]]:
     actor = clip["actor"]
-    pose = attack_pose(actor, clip["zone"], index, bool(clip["heavy"])) if clip["kind"] == "attack" else state_pose(actor, clip["id"], index)
+    pose = attack_pose(actor, clip["zone"], index, bool(clip["heavy"]), weapon.get("kind")) if clip["kind"] == "attack" else state_pose(actor, clip["id"], index)
     joints = skeleton(rig, pose)
     painter = Painter()
     if actor == "meyer":

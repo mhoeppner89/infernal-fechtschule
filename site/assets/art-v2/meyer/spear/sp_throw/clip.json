@@ -1,0 +1,531 @@
+{
+  "actor": "meyer",
+  "canvas": [
+    384,
+    384
+  ],
+  "footAnchor": [
+    192,
+    350
+  ],
+  "frames": [
+    {
+      "alphaBBox": [
+        137,
+        93,
+        271,
+        351
+      ],
+      "cue": "neutral",
+      "file": "meyer/spear/sp_throw/01.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 4,
+      "landmarks": {
+        "chest": [
+          192.0,
+          190.1
+        ],
+        "frontAnkle": [
+          208.778,
+          342.498
+        ],
+        "frontElbow": [
+          233.706,
+          229.68
+        ],
+        "frontHip": [
+          207.6,
+          243.14
+        ],
+        "frontKnee": [
+          218.303,
+          293.495
+        ],
+        "frontShoulder": [
+          219.3,
+          190.1
+        ],
+        "frontWrist": [
+          220.755,
+          267.293
+        ],
+        "head": [
+          192.0,
+          151.1
+        ],
+        "neck": [
+          192.0,
+          169.04
+        ],
+        "pelvis": [
+          192.0,
+          243.14
+        ],
+        "rearAnkle": [
+          174.386,
+          342.98
+        ],
+        "rearElbow": [
+          151.684,
+          230.159
+        ],
+        "rearHip": [
+          176.4,
+          243.14
+        ],
+        "rearKnee": [
+          166.577,
+          293.675
+        ],
+        "rearShoulder": [
+          164.7,
+          190.1
+        ],
+        "rearWrist": [
+          170.97,
+          264.951
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "bc3e17ffa795585ddd155330421f380aa505da4714502e40be81ce972df43f8c"
+    },
+    {
+      "alphaBBox": [
+        133,
+        27,
+        283,
+        351
+      ],
+      "cue": "anticipation",
+      "file": "meyer/spear/sp_throw/02.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 5,
+      "landmarks": {
+        "chest": [
+          178.378,
+          188.446
+        ],
+        "frontAnkle": [
+          202.386,
+          338.156
+        ],
+        "frontElbow": [
+          243.586,
+          166.845
+        ],
+        "frontHip": [
+          201.208,
+          238.798
+        ],
+        "frontKnee": [
+          211.911,
+          289.153
+        ],
+        "frontShoulder": [
+          205.413,
+          184.646
+        ],
+        "frontWrist": [
+          266.403,
+          134.26
+        ],
+        "head": [
+          172.951,
+          149.825
+        ],
+        "neck": [
+          175.447,
+          167.59
+        ],
+        "pelvis": [
+          185.76,
+          240.969
+        ],
+        "rearAnkle": [
+          168.298,
+          342.98
+        ],
+        "rearElbow": [
+          192.544,
+          201.002
+        ],
+        "rearHip": [
+          170.312,
+          243.14
+        ],
+        "rearKnee": [
+          160.489,
+          293.675
+        ],
+        "rearShoulder": [
+          151.344,
+          192.245
+        ],
+        "rearWrist": [
+          228.596,
+          184.19
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "a9ddd246f41b5046fe29bc05a05865ed260a4687653f7ff457d02712d3e7ea31"
+    },
+    {
+      "alphaBBox": [
+        53,
+        97,
+        328,
+        351
+      ],
+      "cue": "contact",
+      "file": "meyer/spear/sp_throw/03.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 3,
+      "landmarks": {
+        "chest": [
+          110.988,
+          193.52
+        ],
+        "frontAnkle": [
+          116.614,
+          342.98
+        ],
+        "frontElbow": [
+          179.708,
+          196.258
+        ],
+        "frontHip": [
+          115.219,
+          248.644
+        ],
+        "frontKnee": [
+          134.504,
+          296.376
+        ],
+        "frontShoulder": [
+          137.691,
+          199.196
+        ],
+        "frontWrist": [
+          216.592,
+          211.16
+        ],
+        "head": [
+          119.096,
+          155.372
+        ],
+        "neck": [
+          115.366,
+          172.92
+        ],
+        "pelvis": [
+          99.96,
+          245.401
+        ],
+        "rearAnkle": [
+          80.89,
+          340.472
+        ],
+        "rearElbow": [
+          121.813,
+          206.966
+        ],
+        "rearHip": [
+          84.701,
+          242.157
+        ],
+        "rearKnee": [
+          70.511,
+          291.643
+        ],
+        "rearShoulder": [
+          84.284,
+          187.844
+        ],
+        "rearWrist": [
+          161.442,
+          210.433
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "c185c1b3e6f8bb09ee2d2a65a0b218e0dbaa7c5d4ae49c0bb7c7eedd9088763a"
+    },
+    {
+      "alphaBBox": [
+        83,
+        95,
+        347,
+        351
+      ],
+      "cue": "overshoot",
+      "file": "meyer/spear/sp_throw/04.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 3,
+      "landmarks": {
+        "chest": [
+          147.672,
+          188.703
+        ],
+        "frontAnkle": [
+          142.486,
+          342.98
+        ],
+        "frontElbow": [
+          212.861,
+          212.386
+        ],
+        "frontHip": [
+          141.308,
+          243.622
+        ],
+        "frontKnee": [
+          152.011,
+          293.977
+        ],
+        "frontShoulder": [
+          172.802,
+          199.37
+        ],
+        "frontWrist": [
+          242.423,
+          239.004
+        ],
+        "head": [
+          162.911,
+          152.803
+        ],
+        "neck": [
+          155.901,
+          169.317
+        ],
+        "pelvis": [
+          126.948,
+          237.527
+        ],
+        "rearAnkle": [
+          110.574,
+          331.271
+        ],
+        "rearElbow": [
+          153.844,
+          206.22
+        ],
+        "rearHip": [
+          112.588,
+          231.431
+        ],
+        "rearKnee": [
+          102.765,
+          281.965
+        ],
+        "rearShoulder": [
+          122.543,
+          178.036
+        ],
+        "rearWrist": [
+          190.185,
+          222.4
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "e4216de21acc30c60aa4653f91b334fd75e993a40c02f9ac4d1869b8002b264a"
+    },
+    {
+      "alphaBBox": [
+        141,
+        92,
+        349,
+        351
+      ],
+      "cue": "recovery",
+      "file": "meyer/spear/sp_throw/05.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 5,
+      "landmarks": {
+        "chest": [
+          195.659,
+          188.69
+        ],
+        "frontAnkle": [
+          203.086,
+          342.98
+        ],
+        "frontElbow": [
+          242.973,
+          230.222
+        ],
+        "frontHip": [
+          201.908,
+          243.622
+        ],
+        "frontKnee": [
+          212.611,
+          293.977
+        ],
+        "frontShoulder": [
+          222.553,
+          193.384
+        ],
+        "frontWrist": [
+          248.509,
+          269.615
+        ],
+        "head": [
+          202.364,
+          150.271
+        ],
+        "neck": [
+          199.28,
+          167.943
+        ],
+        "pelvis": [
+          186.54,
+          240.94
+        ],
+        "rearAnkle": [
+          169.159,
+          338.098
+        ],
+        "rearElbow": [
+          169.501,
+          226.11
+        ],
+        "rearHip": [
+          171.172,
+          238.258
+        ],
+        "rearKnee": [
+          161.349,
+          288.792
+        ],
+        "rearShoulder": [
+          168.766,
+          183.996
+        ],
+        "rearWrist": [
+          187.56,
+          261.554
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "e79643c626a2ba904021b8020f56e1e9ed8acb3583debe04c5e96931898f4d1e"
+    },
+    {
+      "alphaBBox": [
+        137,
+        93,
+        271,
+        351
+      ],
+      "cue": "neutral",
+      "file": "meyer/spear/sp_throw/06.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 5,
+      "landmarks": {
+        "chest": [
+          192.0,
+          190.1
+        ],
+        "frontAnkle": [
+          208.778,
+          342.498
+        ],
+        "frontElbow": [
+          233.706,
+          229.68
+        ],
+        "frontHip": [
+          207.6,
+          243.14
+        ],
+        "frontKnee": [
+          218.303,
+          293.495
+        ],
+        "frontShoulder": [
+          219.3,
+          190.1
+        ],
+        "frontWrist": [
+          220.755,
+          267.293
+        ],
+        "head": [
+          192.0,
+          151.1
+        ],
+        "neck": [
+          192.0,
+          169.04
+        ],
+        "pelvis": [
+          192.0,
+          243.14
+        ],
+        "rearAnkle": [
+          174.386,
+          342.98
+        ],
+        "rearElbow": [
+          151.684,
+          230.159
+        ],
+        "rearHip": [
+          176.4,
+          243.14
+        ],
+        "rearKnee": [
+          166.577,
+          293.675
+        ],
+        "rearShoulder": [
+          164.7,
+          190.1
+        ],
+        "rearWrist": [
+          170.97,
+          264.951
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "bc3e17ffa795585ddd155330421f380aa505da4714502e40be81ce972df43f8c"
+    }
+  ],
+  "heavy": true,
+  "id": "sp_throw",
+  "kind": "attack",
+  "playback": "once",
+  "rasterScale": 0.78,
+  "rootScale": 1.0,
+  "weapon": "spear",
+  "zone": "head"
+}

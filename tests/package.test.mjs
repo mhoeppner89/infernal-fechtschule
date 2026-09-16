@@ -78,6 +78,20 @@ test('the service worker precaches only files present in the shipped site', asyn
   assert.ok(entries.includes('./manifest.webmanifest'));
 });
 
+test('the service worker matches its precache regardless of the query string', async () => {
+  // The precache is keyed without a query, so a query-insensitive match is what
+  // keeps one build's files together: a navigation such as `?autostart=1` that
+  // missed the cache fell through to the network for markup while the scripts
+  // still came out of the previous cache, and since the two are written together
+  // that pair is a broken page (the old UI asked for a HUD element the new
+  // markup no longer has), not merely an old one. Being a build behind is
+  // recoverable; being half of two is not.
+  const source = await readFile(path.join(root, 'site/sw.js'), 'utf8');
+  assert.match(source, /caches\.match\(event\.request, \{ ignoreSearch: true \}\)/);
+  assert.match(source, /caches\.match\('\.\/index\.html', \{ ignoreSearch: true \}\)/);
+  assert.doesNotMatch(source, /caches\.match\(event\.request\)\.then/);
+});
+
 test('manifest icons and start URL are valid package-relative assets', async () => {
   const manifest = JSON.parse(await readFile(path.join(root, 'site/manifest.webmanifest'), 'utf8'));
   assert.equal(manifest.start_url, './');

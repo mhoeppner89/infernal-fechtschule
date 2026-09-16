@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { interpolateGuestSnapshot } from '../site/js/app/controller.js';
+import { GAME_SNAPSHOT_VERSION } from '../site/js/sim/types.js';
 
 function actor(overrides = {}) {
   return {
@@ -44,20 +45,31 @@ function actor(overrides = {}) {
 }
 
 function snapshot(tick, time, actorSnapshot) {
+  // A snapshot of the shape the sim actually publishes, so the fixture cannot
+  // drift a schema away from the thing it is standing in for.
   return {
-    version: 4,
+    version: GAME_SNAPSHOT_VERSION,
     tick,
     time,
     phase: 'wave',
-    waveIndex: 0,
-    waveTitle: 'Roadside Ambush',
+    levelIndex: 0,
+    levelName: 'The Town',
+    scenery: 'cobbled-streets',
+    waveInLevel: 0,
+    wavesInLevel: 1,
+    waveTitle: 'Street Rabble',
+    waveLabel: 'THE PRESS',
+    lane: null,
     score: 0,
     bossPhase: 0,
     lessons: [],
     offeredLessons: [],
     actors: [actorSnapshot],
+    items: [],
     cameraX: 0,
-    stageWidth: 1280
+    roadWidth: 2360,
+    exitOpen: false,
+    holdRemaining: 0
   };
 }
 

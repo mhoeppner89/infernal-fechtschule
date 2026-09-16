@@ -323,9 +323,18 @@ function actorLookup(actor: ActorSnapshot): AnimationLookup {
     archetype: actor.archetype,
     weapon,
     state: actor.state,
-    attackId: actor.state === 'attack' ? actor.attackId : null,
+    // A row may borrow another row's authored poses (`animation`), so a new
+    // tempo needs no new sprites. Only the clip is borrowed: the frame timing
+    // is still driven by the real attack id in `resolveActorFrame`.
+    attackId: actor.state === 'attack' ? resolveAttackClipId(actor.attackId) : null,
     variant: actor.state === 'hitstun' ? actor.reactionZone : null
   };
+}
+
+/** Maps an attack id to the clip that draws it, following one level of alias. */
+export function resolveAttackClipId(attackId: string | null): string | null {
+  if (!attackId) return null;
+  return ATTACKS[attackId]?.animation ?? attackId;
 }
 
 export class SpriteAnimationCatalog {

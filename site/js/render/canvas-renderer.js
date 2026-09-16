@@ -1,9 +1,23 @@
 import { attackDuration, getAttack } from '../sim/attacks.js';
 import { clamp } from '../sim/math.js';
-import { stageBounds } from '../sim/world.js';
-import { levelIndexForWave } from '../sim/waves.js';
+import { laneDepthRange, levelExitX, roadBounds } from '../sim/world.js';
+import { laneNarrowingAt } from '../sim/waves.js';
+import { ITEM_LIFETIME_SECONDS, ITEM_REACH_STATES, itemWithinReach } from '../sim/world.js';
 import { animationTransitionSpec, sameAnimationFrame, SpriteAnimationCatalog } from './animation-catalog.js';
-import { BACKGROUND_MANIFEST, BackgroundCatalog } from './background-catalog.js';
+import { BackgroundCatalog, sceneryIndexOf } from './background-catalog.js';
+/**
+ * Head height in sprite space per archetype: the authored display height plus a
+ * small margin, so a bar clears the tallest pose instead of sitting across the
+ * fighter's chest.
+ */
+export const BAR_LIFT = Object.freeze({
+    meyer: 200,
+    thug: 186,
+    spear: 193,
+    captain: 208,
+    wretch: 174,
+    grotesque: 356
+});
 export class CanvasRenderer {
     debug;
     width = 1280;
@@ -15,8 +29,9 @@ export class CanvasRenderer {
     floatingTexts = [];
     impactMarks = [];
     actorAnimationVisuals = new Map();
-    backgroundWave = -1;
-    previousBackgroundWave = -1;
+    /** The place being drawn, and the one being cross-faded out of. */
+    backgroundScenery = null;
+    previousBackgroundScenery = null;
     backgroundTransition = 1;
     shake = 0;
     /** Screen-space offset applied to world-space drawing (negative camera x). */
@@ -117,10 +132,40 @@ export class CanvasRenderer {
             // it quickly so recovery reads as a distinct beat.
             this.floatingTexts.push({ x, y: contactY - 20, text: String(event.amount), delay: 1 / 30, life: 0.12, maxLife: 0.12, large: false });
         }
+        else if (event.type === 'item-heal' && event.amount) {
+            // A draught is announced in the same place damage is, or the player never
+            // learns what the flask on the floor did for him.
+            this.floatingTexts.push({ x, y: y - 74, text: `+${event.amount}`, delay: 0, life: 0.42, maxLife: 0.42, large: true });
+        }
+        else if (event.type === 'weapon-break' && event.text) {
+            this.floatingTexts.push({ x, y: y - 66, text: `${event.text.toUpperCase()} SPLITS`, delay: 0, life: 0.45, maxLife: 0.45, large: false });
+            // The find comes apart in his hands: a spray of splinters where it broke.
+            for (let index = 0; index < 12; index += 1) {
+                const angle = index / 12 * Math.PI * 2 + 0.4;
+                this.particles.push({
+                    x,
+                    y: y - 48,
+                    vx: Math.cos(angle) * (50 + (index % 5) * 22),
+                    vy: Math.sin(angle) * 70 - 40,
+                    life: 0.3 + (index % 4) * 0.06,
+                    maxLife: 0.5,
+                    size: 2 + (index % 3),
+                    color: '#6b4a2c',
+                    gravity: 420
+                });
+            }
+            this.shake = Math.max(this.shake, 6);
+        }
+        else if (event.type === 'item-pickup' && event.text) {
+            this.floatingTexts.push({ x, y: y - 78, text: event.text.toUpperCase(), delay: 0, life: 0.3, maxLife: 0.3, large: false });
+        }
     }
     render(snapshot, dt) {
         this.updateEffects(dt);
-        this.updateBackground(snapshot.waveIndex, dt);
+        // Scenery belongs to the level, not the wave: the view only changes when the
+        // journey crosses into a new place, and which place that is travels in the
+        // snapshot rather than being looked up in the campaign from here.
+        this.updateBackground(snapshot.scenery, dt);
         this.updateActorAnimationVisuals(snapshot.actors, dt);
         // The sim owns the camera; on the title screen (or a stale guest packet)
         // the window rests at the default position.
@@ -142,17 +187,41 @@ export class CanvasRenderer {
         context.save();
         context.translate(this.cameraOffsetX, 0);
         this.drawPlayfieldFocus(snapshot);
-        this.drawStageBounds(snapshot);
+        this.drawRoadBounds(snapshot);
+        // Furniture goes under the cast: a fighter leaving through the doorway, or
+        // filing through a gate, stands in front of what he is passing.
+        this.drawRoadLane(snapshot);
+        this.drawLevelExit(snapshot);
         const sorted = [...snapshot.actors].sort((left, right) => left.z - right.z || left.id - right.id);
         for (const actor of sorted)
             this.drawShadow(actor);
-        // During an attack, the local fighter is the subject of the frame. Drawing
-        // that sprite last prevents same-depth targets from erasing the action.
+        for (const item of snapshot.items)
+            this.drawItemShadow(item);
+        // The offer goes down before the objects: a thing on the road is asked for,
+        // not stumbled over, so the road has to say which things it is offering.
+        this.drawItemOffers(snapshot);
+        // Weapons on the floor sort into the same depth order as the cast, so a
+        // cudgel lying behind a fighter is covered by him and one lying in front
+        // of him is not.
         const attackingPlayers = sorted.filter((actor) => actor.team === 'players' && actor.state === 'attack');
-        const drawOrder = attackingPlayers.length === 0
-            ? sorted
-            : [...sorted.filter((actor) => !attackingPlayers.includes(actor)), ...attackingPlayers];
-        for (const actor of drawOrder)
+        const drawOrder = [
+            ...sorted.map((actor, index) => ({ depth: actor.z, order: index, actor })),
+            ...snapshot.items.map((item, index) => ({ depth: item.z, order: 1000 + index, item }))
+        ];
+        drawOrder.sort((left, right) => left.depth - right.depth || left.order - right.order);
+        for (const entry of drawOrder) {
+            if (entry.actor) {
+                // During an attack the local fighter is the subject of the frame; his
+                // own sprite is lifted above everything else at his depth.
+                if (attackingPlayers.includes(entry.actor))
+                    continue;
+                this.drawActor(entry.actor);
+            }
+            else if (entry.item) {
+                this.drawItem(entry.item, snapshot.time);
+            }
+        }
+        for (const actor of attackingPlayers)
             this.drawActor(actor);
         // The mark is deliberately compact, so it can sit above both silhouettes
         // and pinpoint the blade/body intersection without hiding either fighter.
@@ -165,12 +234,12 @@ export class CanvasRenderer {
         this.drawOffscreenIndicators(snapshot);
         context.restore();
     }
-    drawStageBounds(snapshot) {
+    drawRoadBounds(snapshot) {
         const context = this.context;
-        // The boundary posts mark the stage's true extent in world space — they
+        // The boundary posts mark the road's true extent in world space — they
         // scroll away with the march instead of framing the camera window, where
-        // a frame edge mid-stage would read as an invisible wall.
-        const bounds = stageBounds(snapshot.stageWidth);
+        // a frame edge mid-road would read as an invisible wall.
+        const bounds = roadBounds(snapshot.roadWidth);
         const left = bounds.minX - 18;
         const width = bounds.maxX - bounds.minX + 36;
         context.strokeStyle = 'rgba(235,217,174,0.32)';
@@ -179,9 +248,167 @@ export class CanvasRenderer {
         if (snapshot.bossPhase >= 1)
             this.drawInfernalCorruption(snapshot.bossPhase);
     }
+    /**
+     * A narrowing of the road, drawn as the bollards and barrels that squeeze it.
+     *
+     * The lane is not decoration: the sim clamps every actor to the depth this
+     * funnel describes (`laneDepthRange`), so a choke is painted with the same
+     * geometry it is played with — posts follow the narrowing curve on both
+     * shoulders of the road, and a crowd queued at the mouth is visibly queued.
+     */
+    drawRoadLane(snapshot) {
+        // The lane is whatever the sim says is narrowing the road this frame, which
+        // is the same object it clamps every actor to — the funnel drawn is the
+        // funnel that acts, with no second look-up to drift out of step with it.
+        const lane = snapshot.lane;
+        if (!lane)
+            return;
+        const context = this.context;
+        const bounds = roadBounds(snapshot.roadWidth);
+        const from = Math.max(bounds.minX, lane.from - lane.approach);
+        const to = Math.min(bounds.maxX, lane.to + lane.approach);
+        context.save();
+        // The narrow ground itself: a packed, drained surface between the stalls.
+        context.fillStyle = 'rgba(24,17,13,0.22)';
+        context.fillRect(lane.from, lane.minZ - 16, lane.to - lane.from, lane.maxZ - lane.minZ + 32);
+        context.strokeStyle = 'rgba(214,190,146,0.28)';
+        context.lineWidth = 2;
+        context.strokeRect(lane.from, lane.minZ - 16, lane.to - lane.from, lane.maxZ - lane.minZ + 32);
+        // Bollards along both shoulders, following the funnel in toward the mouth.
+        for (let x = from; x <= to; x += 46) {
+            const depth = laneDepthRange(x, lane);
+            const inside = x >= lane.from && x <= lane.to;
+            const radius = laneNarrowingAt(x, lane) * 4 + 6;
+            for (const edgeZ of [depth.minZ - 12, depth.maxZ + 14]) {
+                context.fillStyle = inside ? '#6b5744' : '#5a4a3b';
+                context.beginPath();
+                context.ellipse(x, edgeZ, radius, radius * 0.55, 0, 0, Math.PI * 2);
+                context.fill();
+                context.strokeStyle = 'rgba(22,15,12,0.7)';
+                context.lineWidth = 1.5;
+                context.stroke();
+            }
+        }
+        context.restore();
+    }
+    /**
+     * The eastern doorway, drawn shut or open.
+     *
+     * Little Fighter 2 ends a stage with a walk out of it, and the walk only
+     * teaches the rule if the way out is visible before it is usable: the gate is
+     * barred for as long as anyone is still standing, and opens with a lamp and a
+     * gold arrow once the street is clear.
+     */
+    drawLevelExit(snapshot) {
+        const context = this.context;
+        const bounds = roadBounds(snapshot.roadWidth);
+        const near = levelExitX(snapshot.roadWidth);
+        // The gate stands ON the road: it starts below the horizon (where the
+        // cobbles do) so it reads as stage furniture rather than a column of light
+        // hanging in the sky, and the posts rise a little above the road.
+        const top = 296;
+        const bottom = 628;
+        const postTop = 268;
+        const width = bounds.maxX - near;
+        context.save();
+        // The stretch of road under the gate: lit when it is the way out, shadowed
+        // while it is only the end of the street.
+        context.fillStyle = snapshot.exitOpen ? 'rgba(233,196,124,0.1)' : 'rgba(18,12,10,0.2)';
+        context.fillRect(near, top, width + 10, bottom - top);
+        if (snapshot.exitOpen) {
+            // Lamplight spilling onto the cobbles, brightest at the threshold.
+            const pulse = 0.5 + 0.5 * Math.sin(snapshot.time * 3.1);
+            const glow = context.createLinearGradient(0, bottom, 0, top);
+            glow.addColorStop(0, `rgba(246,227,172,${0.3 + pulse * 0.16})`);
+            glow.addColorStop(1, 'rgba(246,227,172,0)');
+            context.fillStyle = glow;
+            context.fillRect(near + 10, top, width - 20, bottom - top);
+        }
+        // Two stone posts frame the doorway, capped at both shoulders of the road.
+        for (const postX of [near - 16, bounds.maxX - 6]) {
+            context.fillStyle = '#5b4a3c';
+            context.fillRect(postX, postTop, 18, bottom - postTop);
+            context.fillStyle = '#7d6950';
+            context.fillRect(postX - 2, postTop, 22, 11);
+            context.fillStyle = '#8b7758';
+            context.fillRect(postX - 2, postTop - 9, 22, 9);
+            context.strokeStyle = 'rgba(24,16,14,0.7)';
+            context.lineWidth = 2;
+            context.strokeRect(postX, postTop, 18, bottom - postTop);
+        }
+        if (snapshot.exitOpen) {
+            // The arrow lies on the road, pointing the way the stage is walked.
+            const pulse = 0.5 + 0.5 * Math.sin(snapshot.time * 4.2);
+            const arrowX = near + 34;
+            const arrowY = 572;
+            context.globalAlpha = 0.6 + pulse * 0.4;
+            context.fillStyle = '#f6e3ac';
+            context.strokeStyle = 'rgba(32,22,16,0.85)';
+            context.lineWidth = 2;
+            context.beginPath();
+            context.moveTo(arrowX - 18, arrowY - 6);
+            context.lineTo(arrowX + 4, arrowY - 6);
+            context.lineTo(arrowX + 4, arrowY - 14);
+            context.lineTo(arrowX + 22, arrowY);
+            context.lineTo(arrowX + 4, arrowY + 14);
+            context.lineTo(arrowX + 4, arrowY + 6);
+            context.lineTo(arrowX - 18, arrowY + 6);
+            context.closePath();
+            context.fill();
+            context.stroke();
+            context.globalAlpha = 1;
+        }
+        else {
+            // Barred: three oak planks bolted across the opening behind two iron
+            // straps, so it reads as a held gate rather than a ladder propped there.
+            const plankTop = top + 26;
+            const plankBottom = bottom - 96;
+            for (let plank = 0; plank < 3; plank += 1) {
+                const y = plankTop + plank * ((plankBottom - plankTop) / 2) - 11;
+                context.fillStyle = '#4a3324';
+                context.fillRect(near - 8, y, width + 16, 22);
+                context.strokeStyle = 'rgba(20,13,10,0.85)';
+                context.lineWidth = 2;
+                context.strokeRect(near - 8, y, width + 16, 22);
+                context.fillStyle = 'rgba(122,96,66,0.5)';
+                context.fillRect(near - 8, y + 3, width + 16, 3);
+            }
+            for (const strapX of [near + 10, near + width - 22]) {
+                context.fillStyle = '#6d6558';
+                context.fillRect(strapX, plankTop - 16, 12, plankBottom - plankTop + 18);
+                context.strokeStyle = 'rgba(22,16,12,0.85)';
+                context.lineWidth = 2;
+                context.strokeRect(strapX, plankTop - 16, 12, plankBottom - plankTop + 18);
+                context.fillStyle = '#a89c8a';
+                for (let rivet = 0; rivet < 3; rivet += 1) {
+                    context.fillRect(strapX + 3, plankTop - 6 + rivet * 74, 6, 6);
+                }
+            }
+        }
+        context.restore();
+    }
     /** Edge chevrons point at offscreen enemies, LF2-style, so the march stays readable. */
     drawOffscreenIndicators(snapshot) {
         const context = this.context;
+        // An open doorway off the right edge gets the same kind of chevron the
+        // enemies get, in gold: the march has somewhere to go, and it is east.
+        if (snapshot.exitOpen && levelExitX(snapshot.roadWidth) + this.cameraOffsetX > this.width - 30) {
+            const pulse = 0.55 + 0.45 * Math.sin(snapshot.time * 5);
+            context.save();
+            context.globalAlpha = pulse;
+            context.fillStyle = 'rgba(246,227,172,0.95)';
+            context.strokeStyle = 'rgba(30,20,14,0.9)';
+            context.lineWidth = 3;
+            context.beginPath();
+            context.moveTo(this.width - 18, 400);
+            context.lineTo(this.width - 48, 430);
+            context.lineTo(this.width - 18, 460);
+            context.lineTo(this.width - 2, 430);
+            context.closePath();
+            context.fill();
+            context.stroke();
+            context.restore();
+        }
         const enemies = snapshot.actors.filter((actor) => actor.team === 'enemies' && actor.state !== 'dead');
         for (const enemy of enemies) {
             const screenX = enemy.x + this.cameraOffsetX;
@@ -212,14 +439,14 @@ export class CanvasRenderer {
     }
     drawBackground(snapshot) {
         const context = this.context;
-        const image = this.backgrounds.resolve(this.backgroundWave);
+        const image = this.backgrounds.resolve(this.backgroundScenery);
         if (image) {
-            const previous = this.backgrounds.resolve(this.previousBackgroundWave);
+            const previous = this.backgrounds.resolve(this.previousBackgroundScenery);
             if (previous && this.backgroundTransition < 1) {
-                this.drawBackgroundImage(previous, snapshot.time, this.previousBackgroundWave, 1);
+                this.drawBackgroundImage(previous, snapshot.time, this.previousBackgroundScenery, 1);
             }
             const eased = 1 - Math.pow(1 - this.backgroundTransition, 3);
-            this.drawBackgroundImage(image, snapshot.time, this.backgroundWave, previous ? eased : 1);
+            this.drawBackgroundImage(image, snapshot.time, this.backgroundScenery, previous ? eased : 1);
             return;
         }
         const gradient = context.createLinearGradient(0, 0, 0, this.height);
@@ -319,9 +546,9 @@ export class CanvasRenderer {
         }
         context.restore();
     }
-    drawBackgroundImage(image, time, waveIndex, alpha) {
+    drawBackgroundImage(image, time, scenery, alpha) {
         const context = this.context;
-        const pan = Math.sin(time * 0.18 + waveIndex * 1.7) * 4;
+        const pan = Math.sin(time * 0.18 + sceneryIndexOf(scenery) * 1.7) * 4;
         // Parallax: the far scenery moves at a fraction of camera speed. The source
         // art is 1920 px wide and drawn once at its natural aspect, so the widest
         // stage can never outrun it and no tiling seam appears.
@@ -335,8 +562,9 @@ export class CanvasRenderer {
         const context = this.context;
         const time = snapshot.time;
         context.save();
-        if (this.backgroundWave === 0 || this.backgroundWave === 2) {
-            context.fillStyle = this.backgroundWave === 2 ? 'rgba(255,231,176,0.34)' : 'rgba(236,218,171,0.25)';
+        const scenery = sceneryIndexOf(this.backgroundScenery);
+        if (scenery === 0 || scenery === 2) {
+            context.fillStyle = scenery === 2 ? 'rgba(255,231,176,0.34)' : 'rgba(236,218,171,0.25)';
             for (let index = 0; index < 18; index += 1) {
                 const x = (index * 173 + time * (7 + index % 3) * 4) % (this.width + 60) - 30;
                 const y = 115 + (index * 97) % 430 + Math.sin(time * 0.7 + index) * 8;
@@ -345,7 +573,7 @@ export class CanvasRenderer {
                 context.fillRect(x, y, size, size);
             }
         }
-        else if (this.backgroundWave === 1) {
+        else if (scenery === 1) {
             context.globalAlpha = 0.12;
             const mist = context.createLinearGradient(0, 0, this.width, 0);
             mist.addColorStop(0, 'rgba(220,224,214,0)');
@@ -355,7 +583,7 @@ export class CanvasRenderer {
             const drift = Math.sin(time * 0.13) * 90;
             context.fillRect(-180 + drift, 210, this.width + 360, 105);
         }
-        else if (this.backgroundWave === 3) {
+        else if (scenery === 3) {
             const lightning = Math.max(0, Math.sin(time * 0.72 - 1.1));
             if (lightning > 0.985) {
                 context.globalAlpha = (lightning - 0.985) * 18;
@@ -374,14 +602,11 @@ export class CanvasRenderer {
         }
         context.restore();
     }
-    updateBackground(waveIndex, dt) {
-        // Levels hold the setting; waves play out inside one. The background only
-        // changes when the journey crosses a level boundary.
-        const level = Math.max(0, Math.min(BACKGROUND_MANIFEST.length - 1, levelIndexForWave(waveIndex)));
-        if (level !== this.backgroundWave) {
-            this.previousBackgroundWave = this.backgroundWave;
-            this.backgroundWave = level;
-            this.backgroundTransition = this.previousBackgroundWave < 0 || dt === 0 ? 1 : 0;
+    updateBackground(scenery, dt) {
+        if (scenery !== this.backgroundScenery) {
+            this.previousBackgroundScenery = this.backgroundScenery;
+            this.backgroundScenery = scenery;
+            this.backgroundTransition = this.previousBackgroundScenery === null || dt === 0 ? 1 : 0;
         }
         else if (this.backgroundTransition < 1) {
             this.backgroundTransition = Math.min(1, this.backgroundTransition + dt / 0.55);
@@ -429,9 +654,9 @@ export class CanvasRenderer {
         const radiusX = actor.radius * 1.6 * depthScale;
         const radiusY = actor.radius * 0.52 * depthScale;
         context.save();
-        // Near-solid: on the darker mid-depth art an alpha shadow disappears, and
-        // a shadow that appears and vanishes with the floor band reads as a bug.
-        const core = clamp(0.88 - jump / 380, 0.16, 0.88);
+        // A soft core that still reads on the darker mid-depth art; it lifts
+        // toward nothing as the actor leaves the ground.
+        const core = clamp(0.5 - jump / 380, 0.12, 0.5);
         const shadow = context.createRadialGradient(actor.x, contact, radiusY * 0.2, actor.x, contact, radiusX);
         shadow.addColorStop(0, `rgba(8,6,6,${core})`);
         shadow.addColorStop(0.75, `rgba(8,6,6,${core * 0.97})`);
@@ -446,6 +671,169 @@ export class CanvasRenderer {
         context.fill();
         context.restore();
         context.restore();
+    }
+    /**
+     * The floor decal under a dropped or thrown object. It shrinks and fades as
+     * the object lifts, so a hurled club reads as airborne even before it is
+     * drawn higher than the shadow it left behind.
+     */
+    drawItemShadow(item) {
+        const context = this.context;
+        const scale = this.depthScale(item.z);
+        const contact = clamp(1 - item.y / 44, 0.22, 1);
+        const radiusX = (item.kind === 'spear' ? 21 : 12) * scale * contact;
+        const radiusY = radiusX * 0.34;
+        context.save();
+        context.globalAlpha = 0.34 * contact;
+        context.fillStyle = '#0a0808';
+        context.beginPath();
+        context.ellipse(item.x, item.z + 4, radiusX, radiusY, 0, 0, Math.PI * 2);
+        context.fill();
+        context.restore();
+    }
+    /**
+     * The offer: a ring on the ground around a thing, and a caret over it, for as
+     * long as some pair of hands could take it. Nothing is collected by walking
+     * over it any more, so this is how the road asks to be looted — and it is
+     * drawn from the very predicate the press accepts, so a caret never promises
+     * a take the hands will refuse.
+     */
+    drawItemOffers(snapshot) {
+        if (snapshot.items.length === 0)
+            return;
+        const reachable = snapshot.actors.filter((actor) => actor.state !== 'dead' && ITEM_REACH_STATES.has(actor.state));
+        if (reachable.length === 0)
+            return;
+        const context = this.context;
+        for (const item of snapshot.items) {
+            if (!reachable.some((actor) => itemWithinReach(actor, item)))
+                continue;
+            const scale = this.depthScale(item.z);
+            const lift = item.y * scale;
+            // Deliberately slower than the draught's own bob, so the ring reads as a
+            // standing invitation rather than as part of the object.
+            const pulse = 0.5 + 0.5 * Math.sin(snapshot.time * 4.2 + item.id * 1.7);
+            context.save();
+            context.translate(item.x, item.z - lift);
+            context.scale(scale, scale);
+            context.save();
+            context.globalAlpha = 0.24 + 0.3 * pulse;
+            context.strokeStyle = '#f0d68b';
+            context.lineWidth = 2.2;
+            context.beginPath();
+            context.ellipse(0, 2, 18, 6.6, 0, 0, Math.PI * 2);
+            context.stroke();
+            context.restore();
+            context.save();
+            context.globalAlpha = 0.45 + 0.55 * pulse;
+            context.fillStyle = '#f7e6b4';
+            context.beginPath();
+            context.moveTo(-7, -42);
+            context.lineTo(7, -42);
+            context.lineTo(0, -31);
+            context.closePath();
+            context.fill();
+            context.restore();
+            context.restore();
+        }
+    }
+    /**
+     * One object on the road. The fixed-rig inventory covers the cast, so a cudgel
+     * or a shaft is drawn as vector art — the same silhouette whether it is in a
+     * fist or lying where it fell, which is what makes a thrown weapon readable.
+     */
+    drawItem(item, time) {
+        const context = this.context;
+        const scale = this.depthScale(item.z);
+        // The sim's floor height is world units; the sprite scale turns it into the
+        // same pixels the cast's own jumps use.
+        const lift = item.y * scale;
+        const expiring = item.age > ITEM_LIFETIME_SECONDS - 3;
+        const alpha = expiring ? 0.35 + 0.65 * Math.abs(Math.sin(item.age * 7)) : 1;
+        context.save();
+        context.globalAlpha = alpha;
+        context.translate(item.x, item.z - lift);
+        context.scale(scale, scale);
+        context.lineCap = 'round';
+        if (item.kind === 'potion') {
+            // A draught breathes, so it is the one thing on the floor that looks alive.
+            context.translate(0, Math.sin(time * 3.1 + item.id) * 1.4 - 12);
+            const glow = context.createRadialGradient(0, 2, 1, 0, 2, 22);
+            glow.addColorStop(0, 'rgba(240,126,98,0.42)');
+            glow.addColorStop(1, 'rgba(240,126,98,0)');
+            context.fillStyle = glow;
+            context.beginPath();
+            context.arc(0, 2, 22, 0, Math.PI * 2);
+            context.fill();
+            context.fillStyle = 'rgba(230,238,224,0.82)';
+            context.beginPath();
+            context.arc(0, 3, 8.4, 0, Math.PI * 2);
+            context.fill();
+            context.fillStyle = '#bf4340';
+            context.beginPath();
+            context.arc(0, 4, 6.2, 0, Math.PI * 2);
+            context.fill();
+            context.fillStyle = 'rgba(230,238,224,0.82)';
+            context.fillRect(-3.4, -9, 6.8, 7);
+            context.fillStyle = '#7b5836';
+            context.fillRect(-4.6, -13, 9.2, 4.4);
+            context.fillStyle = 'rgba(255,255,255,0.55)';
+            context.beginPath();
+            context.arc(-2.6, 1, 2.1, 0, Math.PI * 2);
+            context.fill();
+            context.restore();
+            return;
+        }
+        // A weapon in the air spins; one on the ground lies where it settled.
+        const airborne = item.thrown && item.y > 6;
+        context.rotate(airborne ? item.age * 11 : -0.2 + (item.id % 3) * 0.06);
+        context.translate(-12, 0);
+        if (item.kind === 'club')
+            this.drawCudgel();
+        else if (item.kind === 'spear')
+            this.drawShaft();
+        else if (item.kind === 'longsword')
+            this.drawStraightSword(70, '#e0ddcf');
+        else
+            this.drawDussack();
+        context.restore();
+    }
+    drawCudgel() {
+        const context = this.context;
+        context.strokeStyle = '#5f4127';
+        context.lineWidth = 7;
+        context.beginPath();
+        context.moveTo(-18, 0);
+        context.lineTo(12, 0);
+        context.stroke();
+        context.fillStyle = '#40301f';
+        context.fillRect(6, -8.5, 24, 17);
+        context.fillStyle = '#2a2019';
+        context.fillRect(24, -6, 8, 12);
+        context.strokeStyle = '#8a6a44';
+        context.lineWidth = 3;
+        context.beginPath();
+        context.moveTo(-14, -4);
+        context.lineTo(-14, 4);
+        context.stroke();
+    }
+    drawShaft() {
+        const context = this.context;
+        context.strokeStyle = '#6b4c2c';
+        context.lineWidth = 4.4;
+        context.beginPath();
+        context.moveTo(-34, 0);
+        context.lineTo(34, 0);
+        context.stroke();
+        context.fillStyle = '#cfc9b4';
+        context.beginPath();
+        context.moveTo(52, 0);
+        context.lineTo(32, -7.5);
+        context.lineTo(32, 7.5);
+        context.closePath();
+        context.fill();
+        context.fillStyle = '#a58b4f';
+        context.fillRect(30, -3.4, 4, 6.8);
     }
     drawActor(actor) {
         const context = this.context;
@@ -485,9 +873,8 @@ export class CanvasRenderer {
             context.fill();
         }
         context.restore();
-        if (actor.team === 'enemies' && (actor.archetype === 'captain' || actor.archetype === 'grotesque')) {
-            this.drawEnemyBar(actor);
-        }
+        if (actor.state !== 'dead')
+            this.drawActorBar(actor);
     }
     drawSpriteActor(actor, resolved, opacity = 1) {
         const context = this.context;
@@ -874,18 +1261,46 @@ export class CanvasRenderer {
             context.stroke();
         }
     }
-    drawEnemyBar(actor) {
+    /**
+     * Little Fighter 2 reads a fight off the fighters: every living actor carries
+     * its own bar directly over its head, with the armour pool as a thin second
+     * track under it. There is no corner readout to fall back on any more, so this
+     * is the whole of a fighter's state — the bar, its armour, the find in his hand
+     * and the pips left in that find.
+     */
+    drawActorBar(actor) {
         const context = this.context;
-        const width = actor.archetype === 'grotesque' ? 150 : 76;
-        const y = actor.z - (actor.archetype === 'grotesque' ? 180 : 139) * this.depthScale(actor.z);
+        const width = actor.archetype === 'grotesque' ? 150 : actor.team === 'players' ? 68 : 76;
+        const y = actor.z
+            - this.jumpOffset(actor)
+            - BAR_LIFT[actor.archetype] * this.depthScale(actor.z) * (actor.archetype === 'grotesque' ? 1.18 : 1);
+        const health = clamp(actor.health / actor.maxHealth, 0, 1);
         context.save();
         context.fillStyle = 'rgba(20,15,14,0.78)';
         context.fillRect(actor.x - width / 2 - 2, y - 2, width + 4, 10);
-        context.fillStyle = '#a43b31';
-        context.fillRect(actor.x - width / 2, y, width * clamp(actor.health / actor.maxHealth, 0, 1), 6);
+        // Mates read cool, the press reads red — the same colour language as the
+        // HUD, so a glance at the field tells you whose bar is draining.
+        context.fillStyle = actor.team === 'players' ? '#6f9c4e' : '#a43b31';
+        context.fillRect(actor.x - width / 2, y, width * health, 6);
         if (actor.maxArmor > 0 && actor.armor > 0) {
             context.fillStyle = '#a9a994';
             context.fillRect(actor.x - width / 2, y + 9, width * clamp(actor.armor / actor.maxArmor, 0, 1), 3);
+        }
+        // A find has a life of its own: the pips over the bar say how many blows are
+        // left in the club before it comes apart in his hands.
+        if (actor.team === 'players' && (actor.weapon === 'club' || actor.weapon === 'spear') && actor.durability > 0) {
+            const pipWidth = 6;
+            const pipGap = 2;
+            const total = actor.durability * pipWidth + (actor.durability - 1) * pipGap;
+            const pipY = y + (actor.maxArmor > 0 && actor.armor > 0 ? 13 : 9);
+            let pipX = actor.x - total / 2;
+            context.fillStyle = 'rgba(20,15,14,0.72)';
+            context.fillRect(actor.x - total / 2 - 1.5, pipY - 1.5, total + 3, 5);
+            context.fillStyle = actor.durability <= 2 ? '#c2703f' : '#d8b25e';
+            for (let pip = 0; pip < actor.durability; pip += 1) {
+                context.fillRect(pipX, pipY, pipWidth, 2);
+                pipX += pipWidth + pipGap;
+            }
         }
         context.restore();
     }

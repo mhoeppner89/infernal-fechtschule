@@ -1,6 +1,7 @@
 node_modules/
 .DS_Store
 *.log
+.freebuff/preview-sync.json
 coverage/
 playtest-output/
 __pycache__/

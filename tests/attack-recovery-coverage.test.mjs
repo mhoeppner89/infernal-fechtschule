@@ -47,7 +47,7 @@ test('all attack recoveries have distinct timed pose tracks and complete assets'
   const clips = ANIMATION_MANIFEST.filter(
     (clip) => clip.availability === 'ready' && clip.state === 'attack' && clip.attackId
   );
-  assert.equal(clips.length, 36);
+  assert.equal(clips.length, 35);
 
   for (const clip of clips) {
     const definition = ATTACKS[clip.attackId];

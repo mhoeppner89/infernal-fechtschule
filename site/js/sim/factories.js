@@ -18,6 +18,7 @@ export function createPlayer(id, playerIndex, x, z) {
         guard: 72,
         armor: 0,
         weapon: 'longsword',
+        stowedWeapon: 'longsword',
         scoreValue: 0
     });
 }
@@ -45,6 +46,9 @@ export function createEnemy(id, archetype, x, z) {
         guard: config.guard,
         armor: config.armor,
         weapon: 'longsword',
+        // Enemies do not fence: their snapshot weapon is presentation only, and the
+        // thing that actually drops is declared in the world's drop table.
+        stowedWeapon: 'longsword',
         scoreValue: config.scoreValue
     });
 }
@@ -83,14 +87,22 @@ function createActor(config) {
         attack: null,
         weapon: config.weapon,
         desiredWeapon: config.weapon,
+        stowedWeapon: config.stowedWeapon,
+        durability: 0,
         lastInput: cloneInput(NEUTRAL_INPUT),
         aiCooldown: 0,
         aiThink: 0,
         aiStrafeSign: idParity(config.id),
         attackPermission: config.archetype === 'grotesque',
+        pairBeatTimer: 0,
+        answerTimer: 0,
+        answerCooldown: 0,
+        urgency: 0,
         deathTimer: 0,
         flashTimer: 0,
         comboCount: 0,
+        comboHits: 0,
+        comboLull: 0,
         reactionZone: null,
         scoreValue: config.scoreValue
     };

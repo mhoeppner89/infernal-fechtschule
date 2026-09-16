@@ -74,27 +74,28 @@ try {
     return {
       lessons: world.lessons ? [...world.lessons] : null,
       phase: world.phase,
-      waveIndex: world.waveIndex,
-      stageWidth: world.stageWidth
+      level: world.levelIndex,
+      wave: world.waveInLevel,
+      roadWidth: world.road
     };
   });
   check('run starts with zero lessons', Array.isArray(basicState?.lessons) && basicState.lessons.length === 0, JSON.stringify(basicState));
-  check('wave 1 is a wide scroll stage', (basicState?.stageWidth ?? 0) > 1280, `stageWidth ${basicState?.stageWidth}`);
+  check('the opening road scrolls', (basicState?.roadWidth ?? 0) > 1280, `roadWidth ${basicState?.roadWidth}`);
 
   // Beat wave 1 quickly: march east and auto-kill through the clear-fallback.
   const cleared = await page.evaluate(async () => {
     const world = window.__FECHTSCHULE__.controller.world;
     const neutral = { moveX: 0, moveZ: 0, lightPressed: false, heavyPressed: false, mobilityPressed: false, switchPressed: false, guardHeld: false, guardPressed: false };
-    for (let frame = 0; frame < 60 * 90 && world.phase === 'wave' && world.waveIndex === 0; frame += 1) {
+    for (let frame = 0; frame < 60 * 90 && world.phase === 'wave' && world.levelIndex === 0; frame += 1) {
       for (const actor of world.actors) {
         if (actor.team === 'players') { actor.health = actor.maxHealth; actor.invulnerable = 2; }
         else if (actor.state !== 'dead') { actor.health = 0; actor.state = 'dead'; actor.deathTimer = 2; }
       }
       world.step(1 / 60, [{ ...neutral, moveX: 1 }]);
     }
-    return { phase: world.phase, waveIndex: world.waveIndex };
+    return { phase: world.phase, level: world.levelIndex, wave: world.waveInLevel };
   });
-  check('clearing level 1 opens the lesson phase', cleared.phase === 'lesson', JSON.stringify(cleared));
+  check('clearing the first level opens the lesson phase', cleared.phase === 'lesson', JSON.stringify(cleared));
 
   // The overlay syncs on the next animation frame after the sim phase flips.
   await page.waitForTimeout(250);
@@ -107,7 +108,7 @@ try {
     };
   });
   check('lesson overlay is visible', !overlay.hidden, JSON.stringify(overlay));
-  check('each card lists its input routes', overlay.cards.length >= 2 && overlay.cards.every((card) => card.routes >= 2), JSON.stringify(overlay.cards));
+  check('each card lists its input routes', overlay.cards.length >= 2 && overlay.cards.every((card) => card.routes >= 1), JSON.stringify(overlay.cards));
   await page.screenshot({ path: `${OUT}/lesson-overlay.png` });
 
   // Pick the first card and confirm the unlocked chain fires in combat.
@@ -116,7 +117,7 @@ try {
     const world = controller.world;
     const card = document.querySelector('.lesson-card');
     card?.click();
-    const after = { phase: world.phase, lessons: [...world.lessons], waveIndex: world.waveIndex };
+    const after = { phase: world.phase, lessons: [...world.lessons], level: world.levelIndex, wave: world.waveInLevel };
     // Step the sim: light-light should now chain into ls_l2 for the lesson picked.
     const neutral = { moveX: 0, moveZ: 0, lightPressed: false, heavyPressed: false, mobilityPressed: false, switchPressed: false, guardHeld: false, guardPressed: false };
     world.step(1 / 60, [{ ...neutral, lightPressed: true }]);
@@ -124,7 +125,7 @@ try {
     const player = world.actors.find((actor) => actor.team === 'players');
     return { after, firstAttack: player?.attack?.id ?? null, recent: player?.lastInput ?? null };
   });
-  check('lesson choice resumes the next wave', chain.after.phase === 'wave' && chain.after.waveIndex === 1, JSON.stringify(chain.after));
+  check('lesson choice resumes at the next place', chain.after.phase === 'wave' && chain.after.level === 1 && chain.after.wave === 0, JSON.stringify(chain.after));
   check('exactly one lesson learned', chain.after.lessons.length === 1, JSON.stringify(chain.after.lessons));
   check('opening light fires', chain.firstAttack === 'ls_l1' || chain.firstAttack === 'ls_l2', String(chain.firstAttack));
 

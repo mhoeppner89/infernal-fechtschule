@@ -3,9 +3,8 @@ import { InputHub } from '../input/input.js';
 import { ManualPeerSession } from '../network/manual-peer.js';
 import { CanvasRenderer } from '../render/canvas-renderer.js';
 import { ATTACKS } from '../sim/attacks.js';
-import { WAVES } from '../sim/waves.js';
-import { GameWorld } from '../sim/world.js';
-import { GAME_SNAPSHOT_VERSION, NEUTRAL_INPUT } from '../sim/types.js';
+import { GameWorld, titleSnapshot } from '../sim/world.js';
+import { NEUTRAL_INPUT } from '../sim/types.js';
 import { GameUI } from '../ui/ui.js';
 const FIXED_STEP = 1 / 60;
 const GUEST_SNAPSHOT_PERIOD = 1 / 20;
@@ -89,8 +88,16 @@ export class GameController {
             phase: snapshot.phase,
             tick: snapshot.tick,
             time: Number(snapshot.time.toFixed(3)),
-            wave: { index: snapshot.waveIndex, title: snapshot.waveTitle, bossPhase: snapshot.bossPhase },
-            camera: { x: Math.round(snapshot.cameraX), stageWidth: Math.round(snapshot.stageWidth) },
+            wave: {
+                level: snapshot.levelIndex,
+                levelName: snapshot.levelName,
+                inLevel: snapshot.waveInLevel,
+                ofLevel: snapshot.wavesInLevel,
+                title: snapshot.waveTitle,
+                label: snapshot.waveLabel,
+                bossPhase: snapshot.bossPhase
+            },
+            camera: { x: Math.round(snapshot.cameraX), roadWidth: Math.round(snapshot.roadWidth) },
             score: snapshot.score,
             animationAssets: this.renderer.getAnimationReadiness(),
             backgroundAssets: this.renderer.getBackgroundReadiness(),
@@ -110,11 +117,20 @@ export class GameController {
                     ATTACKS[actor.attackId]?.crouchedPosture === true),
                 stateElapsed: Number(actor.stateElapsed.toFixed(3)),
                 weapon: actor.weapon,
+                durability: actor.durability,
                 attackId: actor.attackId,
                 hitZone: actor.attackId ? ATTACKS[actor.attackId]?.hitZone ?? null : null,
                 attackElapsed: Number(actor.attackElapsed.toFixed(3)),
                 reactionZone: actor.reactionZone,
                 comboCount: actor.comboCount
+            })),
+            items: snapshot.items.map((item) => ({
+                kind: item.kind,
+                x: Math.round(item.x),
+                z: Math.round(item.z),
+                y: Number(item.y.toFixed(1)),
+                durability: item.durability,
+                thrown: item.thrown
             }))
         });
     }
@@ -276,9 +292,31 @@ export class GameController {
         for (const event of events) {
             this.renderer.handle(event);
             this.audio.handle(event);
-            if (event.type === 'banner' && event.text) {
-                const wave = WAVES[this.world?.waveIndex ?? -1];
-                this.ui.showBanner(event.text, wave?.subtitle ?? '');
+            if (event.type === 'ambush') {
+                // The trap is the one event the player has to hear about immediately:
+                // the wall behind them is about to stop being a wall.
+                this.ui.showBanner(event.text ?? 'AMBUSH', event.subtitle ?? 'They are at your back.', 2200);
+            }
+            else if (event.type === 'wave-clear') {
+                // The rule this project plays by is worth saying out loud the moment it
+                // applies: the place is clear, the way out runs east, and walking it is
+                // the player's call to make. It only fires at the end of a *level* — the
+                // waves inside one hand off to each other without a doorway in between.
+                this.ui.showBanner('LEVEL CLEAR', 'The road runs east — walk it when you are ready.', 1600);
+            }
+            else if (event.type === 'banner' && event.text) {
+                // A wave opens with the place, which fight of it this is, the fight's
+                // name and what it is asking. With nothing read out in a corner, this
+                // announcement is the only place the journey's names appear, so it stays
+                // long enough to read rather than flashing past like a hit marker.
+                // The place and which fight of it this is come off the snapshot, and the
+                // fight's own words come off the event: the sim knows the campaign, so
+                // the DOM layer never looks a wave up for itself.
+                const snapshot = this.getSnapshot();
+                const note = snapshot
+                    ? `${snapshot.levelName} · WAVE ${snapshot.waveInLevel + 1} OF ${snapshot.wavesInLevel}`
+                    : '';
+                this.ui.showBanner(event.text, event.subtitle ?? '', 2600, note);
             }
             else if (event.type === 'lesson-offer' && event.lessons) {
                 this.ui.showLesson(event.lessons, true);
@@ -470,23 +508,13 @@ export class GameController {
         this.guestPresentationElapsed = 0;
         this.guestSnapshotPeriod = GUEST_SNAPSHOT_PERIOD;
     }
+    /**
+     * The view before the run starts: the world with nobody in it. The snapshot
+     * itself comes from the sim (`titleSnapshot`), so the title card cannot fall a
+     * schema version behind the game it is previewing.
+     */
     renderTitleBackdrop() {
-        const backdrop = {
-            version: GAME_SNAPSHOT_VERSION,
-            tick: 0,
-            time: 0,
-            phase: 'title',
-            waveIndex: -1,
-            waveTitle: 'Meyer Crosses the Alps',
-            score: 0,
-            bossPhase: 0,
-            lessons: [],
-            offeredLessons: [],
-            actors: [],
-            cameraX: 0,
-            stageWidth: 1280
-        };
-        this.renderer.render(backdrop, FIXED_STEP);
+        this.renderer.render(titleSnapshot(), FIXED_STEP);
     }
 }
 function cloneInput(frame) {

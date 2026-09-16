@@ -8,43 +8,43 @@ export const LESSONS = Object.freeze({
         id: 'ls-crossing',
         title: 'The Crossing Hew',
         school: 'Longsword',
-        description: 'Chain a second cut after the Opening Hew, and open the provoking route.',
-        detail: 'Unlocks: Crossing Hew (J·J), Provoking Hew (J·K), Crossing Breaker (J·J·K).'
+        description: 'Chain a second cut after the Opening Hew.',
+        detail: 'Unlocks: Crossing Hew (J·J).'
     },
     'ls-threefold': {
         id: 'ls-threefold',
         title: 'The Threefold Cut',
         school: 'Longsword',
         description: 'Extend the longsword chain to its threefold head-cut conclusion.',
-        detail: 'Unlocks: Threefold Cut (J·J·J), Taking Cut (K·J), Low Sweeping Hew (L then K).'
+        detail: 'Unlocks: Threefold Cut (J·J·J).'
     },
     'ls-provoker': {
         id: 'ls-provoker',
         title: 'Provocation Mastered',
         school: 'Longsword',
         description: 'A provoking cut that meets a guard may recover straight into defense.',
-        detail: 'Unlocks: hold Guard after a blocked provoke to cancel recovery; leaping Descending Hew.'
+        detail: 'Unlocks: hold Guard after a blocked provoke to cancel into it.'
     },
     'ds-backhand': {
         id: 'ds-backhand',
         title: 'The Backhand Cut',
         school: 'Dussack',
-        description: 'Chain a backhand after the forehand, and open the pressing route.',
-        detail: 'Unlocks: Backhand Cut (J·J), Pressing Cut (J·K), Wheel Cut (J·J·K).'
+        description: 'Chain a backhand after the Forehand Cut.',
+        detail: 'Unlocks: Backhand Cut (J·J).'
     },
     'ds-wheel': {
         id: 'ds-wheel',
         title: 'Complete the Wheel',
         school: 'Dussack',
-        description: 'Extend the dussack chain to the wrapping wheel and low wheel.',
-        detail: 'Unlocks: Circular Pursuit (J·J·J), Reversing Cut (K·J), Low Wheel Cut (L then K).'
+        description: 'Extend the dussack chain into the wheel that turns back on itself.',
+        detail: 'Unlocks: Circular Pursuit (J·J·J·J).'
     },
     'switch-flourish': {
         id: 'switch-flourish',
         title: 'The Flourish',
         school: 'Shared',
         description: 'Switching mid-combo flows into entry strikes with routes of their own.',
-        detail: 'Unlocks: switch entries keep their chains; either weapon gains the parry Master Cut.'
+        detail: 'Unlocks: switch right after a confirmed hit.'
     }
 });
 /**

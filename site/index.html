@@ -41,57 +41,36 @@
             <div><strong>Heavy</strong><span>K / X</span></div>
             <div><strong>Duck / Dodge</strong><span>L / C · Direction + Duck dodges</span></div>
             <div><strong>Guard / Parry</strong><span>I / V / Shift</span></div>
-            <div><strong>Switch weapon</strong><span>U / Space</span></div>
+            <div><strong>Switch / take / throw</strong><span>U / Space · Takes what lies within arm’s reach when the road marks it, otherwise switches blades or hurls the find in your hand</span></div>
           </div>
           <p>Tap Duck, then quickly Light or Heavy for a low attack. Direction + Duck dodges. Try Light → Light → Heavy, Heavy → Light, and Parry → Heavy.</p>
+          <p>A level is a place — a road, a setting, and the waves fought along it. Clearing a wave only brings the next one on: the road, the view, and anything the fallen dropped stay exactly where they were. A level is not over when the last man falls either — the way east bars itself while the place is held, opens when it is clear, and the level ends when you walk out through it. Loot the fallen before you go.</p>
+          <p>Every wave asks one question. The crowd teaches the press; the town gate narrows the road to a queue of one; the fencing hall gives you a single captain and no crowd; the courtyard opens doors behind you; the flood comes in surges with a lull between them, and the castle road only asks you to stand. Nothing is ever dropped in front of you: every fighter walks in from off the edge of the screen, so what you can see is what is coming.</p>
+          <p>Fallen arms stay on the road, and the road marks what your hands can take: a gold ring and caret under it mean Switch will pick it up. Nothing is collected by walking over it — step onto the mark and press Switch to take a cudgel, a shaft, or steel off a captain, then press it again to hurl the find at whoever is left. A draught is only offered when you are hurt enough for it to matter. Finds splinter after a few blows.</p>
         </details>
         <p class="prototype-note">Original production art and animation. No Little Fighter 2 assets or code are used.</p>
       </div>
     </section>
 
     <section id="game-hud" class="game-hud is-hidden" aria-live="polite">
-      <div class="player-hud hud-panel">
-        <div class="hud-heading">
-          <strong id="player-name">Joachim Meyer</strong>
-          <span id="weapon-name">LONGSWORD</span>
-        </div>
-        <div class="bar-row">
-          <span>Health</span>
-          <div class="bar health-bar"><i id="health-fill"></i></div>
-          <small id="health-number">110 / 110</small>
-        </div>
-        <div class="bar-row">
-          <span>Guard</span>
-          <div class="bar guard-bar"><i id="guard-fill"></i></div>
-          <small id="guard-number">72 / 72</small>
-        </div>
-      </div>
-
-      <div class="wave-hud hud-panel">
-        <span id="wave-label">PREPARE</span>
-        <strong id="wave-title">Meyer Crosses the Alps</strong>
-      </div>
-
-      <div class="meta-hud hud-panel">
-        <span>SCORE</span>
-        <strong id="score-value">0</strong>
-      </div>
-
-      <div class="doctrine" aria-label="Meyer doctrine: Provoke, Take, Hit">
-        <span id="doctrine-provoke">PROVOKE</span>
-        <i>›</i>
-        <span id="doctrine-take">TAKE</span>
-        <i>›</i>
-        <span id="doctrine-hit">HIT</span>
-      </div>
-
-      <div id="boss-hud" class="boss-hud is-hidden">
-        <strong id="boss-name">The Bound Grotesque</strong>
-        <div class="bar boss-bar"><i id="boss-health-fill"></i></div>
-      </div>
-
-      <div id="combo-count" class="combo-count"></div>
       <button id="pause-button" class="pause-button" aria-label="Pause">Ⅱ</button>
+
+      <!-- The only things on screen while fighting are the fight's own cues, in
+           one column low in the picture: nothing is read out in a corner, and
+           health, guard, weapon and pips are drawn over the fighters themselves. -->
+      <div class="cue-stack">
+        <div id="combo-count" class="combo-count is-hidden"></div>
+        <div id="doctrine" class="doctrine" aria-label="Meyer doctrine: Provoke, Take, Hit">
+          <span id="doctrine-provoke">PROVOKE</span>
+          <i>›</i>
+          <span id="doctrine-take">TAKE</span>
+          <i>›</i>
+          <span id="doctrine-hit">HIT</span>
+        </div>
+        <div id="take-prompt" class="take-prompt is-hidden">⇄ TAKE CUDGEL</div>
+        <div id="wave-objective" class="wave-objective is-hidden"></div>
+        <div id="wave-prompt" class="wave-prompt is-hidden">LEVEL CLEAR · WALK EAST</div>
+      </div>
     </section>
 
     <section id="touch-controls" class="touch-controls is-hidden" aria-label="Touch controls">
@@ -104,11 +83,12 @@
         <button class="action-button light" data-button="light" aria-label="Light attack"><b>L</b><span>LIGHT</span></button>
         <button class="action-button heavy" data-button="heavy" aria-label="Heavy attack"><b>H</b><span>HEAVY</span></button>
         <button class="action-button guard" data-button="guard" aria-label="Block or parry"><b>◇</b><span>GUARD</span></button>
-        <button class="switch-button" data-button="switch" aria-label="Switch weapon"><b>⇄</b><span>WEAPON</span></button>
+        <button class="switch-button" data-button="switch" aria-label="Switch weapon; take what the road marks within arm's reach; hurl the find in hand"><b>⇄</b><span>SWITCH</span></button>
       </div>
     </section>
 
     <section id="banner" class="banner is-hidden" aria-live="assertive">
+      <small id="banner-note"></small>
       <span id="banner-title"></span>
       <small id="banner-subtitle"></small>
     </section>

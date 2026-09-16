@@ -1,0 +1,529 @@
+{
+  "actor": "meyer",
+  "canvas": [
+    384,
+    384
+  ],
+  "footAnchor": [
+    192,
+    350
+  ],
+  "frames": [
+    {
+      "alphaBBox": [
+        137,
+        93,
+        271,
+        351
+      ],
+      "cue": "neutral",
+      "file": "meyer/spear/crouch/01.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 4,
+      "landmarks": {
+        "chest": [
+          192.0,
+          190.1
+        ],
+        "frontAnkle": [
+          208.778,
+          342.498
+        ],
+        "frontElbow": [
+          233.706,
+          229.68
+        ],
+        "frontHip": [
+          207.6,
+          243.14
+        ],
+        "frontKnee": [
+          218.303,
+          293.495
+        ],
+        "frontShoulder": [
+          219.3,
+          190.1
+        ],
+        "frontWrist": [
+          220.755,
+          267.293
+        ],
+        "head": [
+          192.0,
+          151.1
+        ],
+        "neck": [
+          192.0,
+          169.04
+        ],
+        "pelvis": [
+          192.0,
+          243.14
+        ],
+        "rearAnkle": [
+          174.386,
+          342.98
+        ],
+        "rearElbow": [
+          151.684,
+          230.159
+        ],
+        "rearHip": [
+          176.4,
+          243.14
+        ],
+        "rearKnee": [
+          166.577,
+          293.675
+        ],
+        "rearShoulder": [
+          164.7,
+          190.1
+        ],
+        "rearWrist": [
+          170.97,
+          264.951
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "bc3e17ffa795585ddd155330421f380aa505da4714502e40be81ce972df43f8c"
+    },
+    {
+      "alphaBBox": [
+        139,
+        91,
+        318,
+        351
+      ],
+      "cue": "neutral",
+      "file": "meyer/spear/crouch/02.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 5,
+      "landmarks": {
+        "chest": [
+          186.926,
+          187.775
+        ],
+        "frontAnkle": [
+          197.487,
+          342.98
+        ],
+        "frontElbow": [
+          240.389,
+          222.881
+        ],
+        "frontHip": [
+          198.269,
+          241.885
+        ],
+        "frontKnee": [
+          193.961,
+          293.185
+        ],
+        "frontShoulder": [
+          214.14,
+          189.941
+        ],
+        "frontWrist": [
+          243.233,
+          262.559
+        ],
+        "head": [
+          190.019,
+          148.898
+        ],
+        "neck": [
+          188.596,
+          166.781
+        ],
+        "pelvis": [
+          182.718,
+          240.648
+        ],
+        "rearAnkle": [
+          167.06,
+          340.541
+        ],
+        "rearElbow": [
+          163.456,
+          227.562
+        ],
+        "rearHip": [
+          167.167,
+          239.41
+        ],
+        "rearKnee": [
+          170.803,
+          290.762
+        ],
+        "rearShoulder": [
+          159.712,
+          185.609
+        ],
+        "rearWrist": [
+          179.921,
+          263.775
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "7869a0fbb0fad39e49782d2fcd2eafe731986a5dc792e32c6a4a620c18fd7840"
+    },
+    {
+      "alphaBBox": [
+        131,
+        97,
+        358,
+        351
+      ],
+      "cue": "neutral",
+      "file": "meyer/spear/crouch/03.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 3,
+      "landmarks": {
+        "chest": [
+          181.532,
+          193.647
+        ],
+        "frontAnkle": [
+          185.588,
+          342.98
+        ],
+        "frontElbow": [
+          244.25,
+          220.307
+        ],
+        "frontHip": [
+          188.298,
+          248.518
+        ],
+        "frontKnee": [
+          168.548,
+          296.059
+        ],
+        "frontShoulder": [
+          208.468,
+          198.087
+        ],
+        "frontWrist": [
+          263.244,
+          255.26
+        ],
+        "head": [
+          187.875,
+          155.166
+        ],
+        "neck": [
+          184.957,
+          172.867
+        ],
+        "pelvis": [
+          172.906,
+          245.981
+        ],
+        "rearAnkle": [
+          159.363,
+          339.21
+        ],
+        "rearElbow": [
+          175.349,
+          225.859
+        ],
+        "rearHip": [
+          157.513,
+          243.444
+        ],
+        "rearKnee": [
+          175.087,
+          291.831
+        ],
+        "rearShoulder": [
+          154.595,
+          189.207
+        ],
+        "rearWrist": [
+          188.719,
+          263.325
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "6dbb903ddb4c0fa4d89288f0b4acf069c04d6ee24896d426d8c7c5dcb36bb5f1"
+    },
+    {
+      "alphaBBox": [
+        125,
+        108,
+        378,
+        351
+      ],
+      "cue": "neutral",
+      "file": "meyer/spear/crouch/04.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 3,
+      "landmarks": {
+        "chest": [
+          177.411,
+          203.807
+        ],
+        "frontAnkle": [
+          176.875,
+          342.98
+        ],
+        "frontElbow": [
+          244.291,
+          222.263
+        ],
+        "frontHip": [
+          180.68,
+          258.997
+        ],
+        "frontKnee": [
+          150.421,
+          300.645
+        ],
+        "frontShoulder": [
+          204.012,
+          209.949
+        ],
+        "frontWrist": [
+          273.385,
+          249.393
+        ],
+        "head": [
+          186.184,
+          165.807
+        ],
+        "neck": [
+          182.149,
+          183.287
+        ],
+        "pelvis": [
+          165.48,
+          255.488
+        ],
+        "rearAnkle": [
+          153.358,
+          339.297
+        ],
+        "rearElbow": [
+          182.112,
+          225.85
+        ],
+        "rearHip": [
+          150.28,
+          251.979
+        ],
+        "rearKnee": [
+          177.56,
+          295.636
+        ],
+        "rearShoulder": [
+          150.811,
+          197.666
+        ],
+        "rearWrist": [
+          193.077,
+          264.089
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "d098590e0f88873cf9ed894ebfcf0e8e93d51170d955bc47cebf56cb762c4f4d"
+    },
+    {
+      "alphaBBox": [
+        128,
+        102,
+        369,
+        351
+      ],
+      "cue": "neutral",
+      "file": "meyer/spear/crouch/05.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 5,
+      "landmarks": {
+        "chest": [
+          179.477,
+          198.143
+        ],
+        "frontAnkle": [
+          181.187,
+          342.98
+        ],
+        "frontElbow": [
+          244.611,
+          220.85
+        ],
+        "frontHip": [
+          184.497,
+          253.202
+        ],
+        "frontKnee": [
+          159.319,
+          298.105
+        ],
+        "frontShoulder": [
+          206.259,
+          203.437
+        ],
+        "frontWrist": [
+          268.97,
+          252.299
+        ],
+        "head": [
+          187.039,
+          159.884
+        ],
+        "neck": [
+          183.56,
+          177.483
+        ],
+        "pelvis": [
+          169.193,
+          250.177
+        ],
+        "rearAnkle": [
+          156.391,
+          339.147
+        ],
+        "rearElbow": [
+          179.065,
+          225.694
+        ],
+        "rearHip": [
+          153.889,
+          247.152
+        ],
+        "rearKnee": [
+          176.44,
+          293.43
+        ],
+        "rearShoulder": [
+          152.695,
+          192.85
+        ],
+        "rearWrist": [
+          191.238,
+          263.566
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "2e0ce3ce149eb37466722b52f9d4cb079c9a1e7c773cb3ab5058f46371d525b5"
+    },
+    {
+      "alphaBBox": [
+        125,
+        108,
+        378,
+        351
+      ],
+      "cue": "neutral",
+      "file": "meyer/spear/crouch/06.webp",
+      "footAnchor": [
+        192,
+        350
+      ],
+      "groundRow": 350,
+      "holdTicks": 5,
+      "landmarks": {
+        "chest": [
+          177.411,
+          203.807
+        ],
+        "frontAnkle": [
+          176.875,
+          342.98
+        ],
+        "frontElbow": [
+          244.291,
+          222.263
+        ],
+        "frontHip": [
+          180.68,
+          258.997
+        ],
+        "frontKnee": [
+          150.421,
+          300.645
+        ],
+        "frontShoulder": [
+          204.012,
+          209.949
+        ],
+        "frontWrist": [
+          273.385,
+          249.393
+        ],
+        "head": [
+          186.184,
+          165.807
+        ],
+        "neck": [
+          182.149,
+          183.287
+        ],
+        "pelvis": [
+          165.48,
+          255.488
+        ],
+        "rearAnkle": [
+          153.358,
+          339.297
+        ],
+        "rearElbow": [
+          182.112,
+          225.85
+        ],
+        "rearHip": [
+          150.28,
+          251.979
+        ],
+        "rearKnee": [
+          177.56,
+          295.636
+        ],
+        "rearShoulder": [
+          150.811,
+          197.666
+        ],
+        "rearWrist": [
+          193.077,
+          264.089
+        ]
+      },
+      "rasterScale": 0.78,
+      "rootScale": 1.0,
+      "sha256": "d098590e0f88873cf9ed894ebfcf0e8e93d51170d955bc47cebf56cb762c4f4d"
+    }
+  ],
+  "id": "crouch",
+  "kind": "state",
+  "playback": "loop",
+  "rasterScale": 0.78,
+  "rootScale": 1.0,
+  "weapon": "spear"
+}

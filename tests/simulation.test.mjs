@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { resolveCrouchAttack, resolvePlayerAttack } from '../site/js/sim/attacks.js';
 import { createEnemy, createPlayer } from '../site/js/sim/factories.js';
 import { chooseSoftTarget } from '../site/js/sim/targeting.js';
+import { LEVELS } from '../site/js/sim/waves.js';
 import { GameWorld } from '../site/js/sim/world.js';
 import { NEUTRAL_INPUT } from '../site/js/sim/types.js';
 
@@ -20,6 +21,19 @@ function killEnemies(world) {
       actor.state = 'dead';
       actor.deathTimer = 2;
     }
+  }
+}
+
+/**
+ * A stage ends at its eastern doorway, so clearing one is a clear *and* a walk
+ * out of it. Marches the whole party east until the phase changes.
+ */
+function walkOut(world, seconds = 30) {
+  const start = world.phase;
+  const march = { ...neutral(), moveX: 1 };
+  for (let frame = 0; frame < seconds * 60 && world.phase === start; frame += 1) {
+    killEnemies(world);
+    world.step(1 / 60, [march, march]);
   }
 }
 
@@ -46,8 +60,8 @@ test('the shared combo grammar resolves weapon-specific routes', () => {
   const allLessons = new Set(['ls-crossing', 'ls-threefold', 'ls-provoker', 'ds-backhand', 'ds-wheel', 'switch-flourish']);
   assert.equal(resolvePlayerAttack('longsword', 'light', null, false), 'ls_l1');
   assert.equal(resolvePlayerAttack('longsword', 'light', 'ls_l1', false, allLessons), 'ls_l2');
-  assert.equal(resolvePlayerAttack('longsword', 'heavy', 'ls_l2', false, allLessons), 'ls_l2h');
-  assert.equal(resolvePlayerAttack('dussack', 'heavy', 'ds_l1', false, allLessons), 'ds_lh');
+  assert.equal(resolvePlayerAttack('longsword', 'heavy', 'ls_l2', false, allLessons), 'ls_h');
+  assert.equal(resolvePlayerAttack('dussack', 'heavy', 'ds_l1', false, allLessons), 'ds_h');
   assert.equal(resolvePlayerAttack('dussack', 'heavy', null, true, allLessons), 'ds_counter');
 });
 
@@ -55,16 +69,14 @@ test('combo lessons gate chained routes until learned', () => {
   const none = new Set();
   // Without lessons only the basic starters are reachable: chains fall back.
   assert.equal(resolvePlayerAttack('longsword', 'light', 'ls_l1', false, none), 'ls_l1');
-  assert.equal(resolvePlayerAttack('longsword', 'heavy', 'ls_l2', false, none), 'ls_h');
-  assert.equal(resolveCrouchAttack('longsword', 'heavy', none), 'ls_low_l');
-  // Learning ls-crossing opens its routes; unrelated routes stay locked.
+  assert.equal(resolvePlayerAttack('dussack', 'light', 'ds_l1', false, none), 'ds_l1');
+  // Learning ls-crossing opens the crossing route; the dussack chain stays locked.
   const crossing = new Set(['ls-crossing']);
   assert.equal(resolvePlayerAttack('longsword', 'light', 'ls_l1', false, crossing), 'ls_l2');
-  assert.equal(resolvePlayerAttack('longsword', 'heavy', 'ls_l2', false, crossing), 'ls_l2h');
   assert.equal(resolvePlayerAttack('longsword', 'light', 'ls_l2', false, crossing), 'ls_l1');
-  // The low heavy belongs to ls-threefold, not ls-crossing.
-  assert.equal(resolveCrouchAttack('longsword', 'heavy', crossing), 'ls_low_l');
-  assert.equal(resolveCrouchAttack('longsword', 'heavy', new Set(['ls-threefold'])), 'ls_low_h');
+  // The threefold link needs its own lesson even with crossing learned.
+  const crossingAndThreefold = new Set(['ls-crossing', 'ls-threefold']);
+  assert.equal(resolvePlayerAttack('longsword', 'light', 'ls_l2', false, crossingAndThreefold), 'ls_l3');
 
   // Dussack lessons do not unlock longsword chains.
   const dussackOnly = new Set(['ds-backhand']);
@@ -75,26 +87,23 @@ test('combo lessons gate chained routes until learned', () => {
 test('wave flow reaches a lesson choice and resumes after selecting it', () => {
   const world = new GameWorld({ playerCount: 1, seed: 1234, skipCountdown: true });
   advance(world, 5.5);
-  assert.equal(world.waveIndex, 0);
+  assert.deepEqual({ level: world.levelIndex, wave: world.waveInLevel }, { level: 0, wave: 0 });
   assert.ok(world.actors.some((actor) => actor.team === 'enemies'));
 
   killEnemies(world);
-  // The clear-fallback may still release the wave's remaining group; keep
-  // clearing until the wave actually resolves (the lesson phase marks it —
-  // waveIndex still points at the finished wave until the choice is made).
-  for (let cycle = 0; cycle < 6 && world.phase === 'wave'; cycle += 1) {
-    killEnemies(world);
-    advance(world, 1.5);
-  }
+  // Clearing only opens the road; the level resolves when the player walks out
+  // of it, and a group held back by the march can still release into the lull,
+  // so the walk keeps clearing as it goes.
+  walkOut(world);
   assert.equal(world.phase, 'lesson');
 
-  // The choice advances to wave 1 with the lesson learned (waveIndex still
-  // names the finished wave until the pick lands).
+  // The choice moves the journey on with the lesson learned: the first place
+  // held one fight, so the next wave is the next level's first.
   const selected = world.offeredLessons[0];
   assert.ok(selected);
   assert.equal(world.chooseLesson(selected), true);
   assert.equal(world.phase, 'wave');
-  assert.equal(world.waveIndex, 1);
+  assert.deepEqual({ level: world.levelIndex, wave: world.waveInLevel }, { level: 1, wave: 0 });
   assert.ok(world.lessons.has(selected));
   assert.equal(world.offeredLessons.length, 0);
 });
@@ -105,8 +114,16 @@ test('snapshots are JSON serializable for the WebRTC replica client', () => {
   const snapshot = world.snapshot();
   const encoded = JSON.stringify(snapshot);
   const decoded = JSON.parse(encoded);
-  assert.equal(decoded.version, 4);
+  assert.equal(decoded.version, 9);
   assert.equal(decoded.actors.filter((actor) => actor.team === 'players').length, 2);
+  assert.ok(Array.isArray(decoded.items), 'snapshot carries the floor items');
+  // The place travels with the snapshot: it names the fight and picks the
+  // scenery, so a replica draws the same road the host is standing on.
+  assert.equal(decoded.levelName, 'The Town');
+  assert.equal(decoded.scenery, 'cobbled-streets');
+  assert.equal(decoded.waveInLevel, 0);
+  assert.equal(decoded.wavesInLevel, LEVELS[0].waves.length);
+  assert.equal(decoded.roadWidth, LEVELS[0].road);
 });
 
 test('continuous movement animation clocks reset on entry and advance while moving', () => {
@@ -164,6 +181,9 @@ test('the same seed and input log produce identical snapshots', () => {
 
 test('the complete encounter sequence can reach victory through both lesson gates', () => {
   const world = new GameWorld({ playerCount: 1, seed: 20260830, skipCountdown: true });
+  // The march east is not incidental: every stage of the journey has to be
+  // walked out of its eastern doorway before the next one begins.
+  const march = { ...NEUTRAL_INPUT, moveX: 1 };
   for (let tick = 0; tick < 12_000 && world.phase !== 'victory'; tick += 1) {
     for (const actor of world.actors) {
       if (actor.team === 'players') {
@@ -180,9 +200,13 @@ test('the complete encounter sequence can reach victory through both lesson gate
       assert.ok(selected);
       world.chooseLesson(selected);
     }
-    world.step(1 / 60, [NEUTRAL_INPUT]);
+    world.step(1 / 60, [march]);
   }
   assert.equal(world.phase, 'victory');
-  assert.equal(world.waveIndex, 6);
+  assert.deepEqual(
+    { level: world.levelIndex, wave: world.waveInLevel },
+    { level: LEVELS.length - 1, wave: (LEVELS.at(-1)?.waves.length ?? 1) - 1 },
+    'the run ends on the last fight of the last place'
+  );
   assert.equal(world.lessons.size, 6);
 });

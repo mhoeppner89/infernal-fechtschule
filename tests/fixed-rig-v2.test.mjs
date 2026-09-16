@@ -18,9 +18,9 @@ test('the whole cast uses the complete fixed-rig v2 inventory with one display s
   const pilot = ANIMATION_MANIFEST.filter(
     (clip) => ['meyer', 'thug', 'spear', 'captain', 'wretch', 'grotesque'].includes(clip.archetype)
   );
-  assert.equal(pilot.length, 101);
+  assert.equal(pilot.length, 124);
   assert.equal(ANIMATION_MANIFEST.filter((clip) => clip.availability !== 'ready').length, 0);
-  const expectedCounts = { meyer: 50, thug: 14, spear: 8, captain: 11, wretch: 8, grotesque: 10 };
+  const expectedCounts = { meyer: 73, thug: 14, spear: 8, captain: 11, wretch: 8, grotesque: 10 };
   for (const [archetype, count] of Object.entries(expectedCounts)) {
     assert.equal(
       pilot.filter((clip) => clip.archetype === archetype).length,

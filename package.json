@@ -5,8 +5,10 @@
   "type": "module",
   "description": "Mobile-first historical fencing horde-brawler vertical slice set on Meyer’s journey into Italy.",
   "scripts": {
-    "build": "tsc -p tsconfig.json && node tools/write-service-worker.mjs",
+    "build": "tsc -p tsconfig.json && node tools/write-service-worker.mjs && node tools/preview-sync.mjs",
     "start": "node tools/serve.mjs",
+    "preview:status": "node tools/preview-sync.mjs --status",
+    "measure": "node tools/encounter-measure.mjs",
     "test": "npm run build && node --test tests/*.test.mjs",
     "check": "npm run test"
   },

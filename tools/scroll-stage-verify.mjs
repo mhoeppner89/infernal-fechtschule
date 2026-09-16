@@ -70,11 +70,11 @@ const startState = await page.evaluate(() => {
   const snapshot = window.__FECHTSCHULE__.snapshot();
   return {
     cameraX: snapshot.cameraX,
-    stageWidth: snapshot.stageWidth,
+    roadWidth: snapshot.roadWidth,
     playerX: snapshot.actors.find((actor) => actor.team === 'players').x
   };
 });
-check(startState.stageWidth > 1280, 'the opening stage scrolls', `stageWidth ${startState.stageWidth}`);
+check(startState.roadWidth > 1280, 'the opening road scrolls', `roadWidth ${startState.roadWidth}`);
 check(startState.cameraX <= startState.playerX, 'camera starts at or west of the player', `camera ${Math.round(startState.cameraX)}, player ${Math.round(startState.playerX)}`);
 await page.screenshot({ path: `${OUT}/march-start.png` });
 
@@ -105,7 +105,7 @@ const midState = await page.evaluate(() => {
   const snapshot = window.__FECHTSCHULE__.snapshot();
   return {
     cameraX: snapshot.cameraX,
-    stageWidth: snapshot.stageWidth,
+    roadWidth: snapshot.roadWidth,
     playerX: snapshot.actors.find((actor) => actor.team === 'players').x,
     enemies: snapshot.actors.filter((actor) => actor.team === 'enemies' && actor.state !== 'dead').length,
     insideWindow: snapshot.actors.filter((actor) => actor.team === 'players').every(

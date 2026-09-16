@@ -29,6 +29,8 @@ MEYER_DUSSACK_ATTACKS = {
     "ds_l1", "ds_l2", "ds_l3", "ds_lh", "ds_l2h", "ds_h", "ds_hl",
     "ds_dodge_l", "ds_air_l", "ds_counter", "ds_switch_in", "ds_low_l", "ds_low_h",
 }
+MEYER_CLUB_ATTACKS = {"cl_l1", "cl_l2", "cl_h", "cl_throw"}
+MEYER_SPEAR_ATTACKS = {"sp_l1", "sp_h", "sp_throw"}
 MEYER_STATES = {
     "idle", "move", "crouch", "dodge", "block", "switch", "hitstun",
     "hitstun_head", "hitstun_torso", "hitstun_legs", "guardbreak", "dead",
@@ -77,6 +79,8 @@ def expected_inventory() -> dict[tuple[str, str], set[str]]:
     return {
         ("meyer", "longsword"): MEYER_STATES | MEYER_LONGSWORD_ATTACKS,
         ("meyer", "dussack"): MEYER_STATES | MEYER_DUSSACK_ATTACKS,
+        ("meyer", "club"): MEYER_STATES | MEYER_CLUB_ATTACKS,
+        ("meyer", "spear"): MEYER_STATES | MEYER_SPEAR_ATTACKS,
         ("thug", "club"): THUG_STATES | THUG_ATTACKS,
         ("spear", "spear"): SPEAR_STATES | SPEAR_ATTACKS,
         ("captain", "captain-sword"): CAPTAIN_STATES | CAPTAIN_ATTACKS,

@@ -1,11 +1,21 @@
 import { GAME_SNAPSHOT_VERSION } from '../sim/types.js';
-export const PEER_PROTOCOL_VERSION = 2;
+/**
+ * One more than the last: this build's snapshots carry the shape of the road and
+ * the fight on it (schema v9), which a peer from before cannot read. The version
+ * belongs to the *pairing*, so a mixed pair is refused at the handshake instead
+ * of silently dropping every packet.
+ */
+export const PEER_PROTOCOL_VERSION = 3;
 const PHASES = new Set(['title', 'countdown', 'wave', 'lesson', 'victory', 'defeat']);
 const TEAMS = new Set(['players', 'enemies']);
 const ARCHETYPES = new Set(['meyer', 'thug', 'spear', 'captain', 'wretch', 'grotesque']);
 const STATES = new Set(['idle', 'move', 'block', 'attack', 'dodge', 'crouch', 'jump', 'switch', 'hitstun', 'guardbreak', 'dead']);
 const HIT_ZONES = new Set(['head', 'torso', 'legs']);
-const WEAPONS = new Set(['longsword', 'dussack']);
+// Anything Meyer can be holding, including the finds he picks up off the road.
+const WEAPONS = new Set(['longsword', 'dussack', 'club', 'spear']);
+const FENCING_WEAPONS = new Set(['longsword', 'dussack']);
+const ITEM_KINDS = new Set(['longsword', 'dussack', 'club', 'spear', 'potion']);
+const SCENERY = new Set(['cobbled-streets', 'town-gate', 'sala-darmi', 'castello']);
 const LESSONS = new Set([
     'ls-crossing',
     'ls-threefold',
@@ -59,17 +69,58 @@ function isSnapshot(value) {
         return false;
     if (typeof value.phase !== 'string' || !PHASES.has(value.phase))
         return false;
-    if (!isIntegerInRange(value.waveIndex, -1, 64) || typeof value.waveTitle !== 'string' || value.waveTitle.length > 160)
+    if (typeof value.waveTitle !== 'string' || value.waveTitle.length > 160)
+        return false;
+    if (typeof value.waveLabel !== 'string' || value.waveLabel.length > 64)
+        return false;
+    // The place a wave belongs to travels with it: it is what names the fight in
+    // the HUD and picks the scenery, so a guest draws the same road as the host.
+    if (!isIntegerInRange(value.levelIndex, 0, 8) || typeof value.levelName !== 'string' || value.levelName.length > 64)
+        return false;
+    if (value.scenery !== null && !SCENERY.has(value.scenery))
+        return false;
+    if (!isIntegerInRange(value.waveInLevel, 0, 64) || !isIntegerInRange(value.wavesInLevel, 1, 64))
         return false;
     if (!isFiniteNumber(value.score) || !isIntegerInRange(value.bossPhase, 0, 16))
         return false;
-    if (!isFiniteNumber(value.cameraX) || !isFiniteNumber(value.stageWidth) || value.stageWidth <= 0)
+    if (!isFiniteNumber(value.cameraX) || !isFiniteNumber(value.roadWidth) || value.roadWidth <= 0)
+        return false;
+    // The shape of the road is what the guest clamps movement and draws the funnel
+    // from, so it travels with the snapshot rather than being looked up per client.
+    if (!isLane(value.lane))
+        return false;
+    // The open doorway is level state the guest draws, so it has to travel.
+    if (typeof value.exitOpen !== 'boolean')
+        return false;
+    // And so is the stand clock, which the guest's HUD counts down.
+    if (!isFiniteNumber(value.holdRemaining) || value.holdRemaining < 0)
         return false;
     if (!isLessonArray(value.lessons) || !isLessonArray(value.offeredLessons))
         return false;
     if (!Array.isArray(value.actors) || value.actors.length > 128)
         return false;
-    return value.actors.every(isActorSnapshot);
+    if (!Array.isArray(value.items) || value.items.length > 64)
+        return false;
+    return value.actors.every(isActorSnapshot) && value.items.every(isItemSnapshot);
+}
+function isLane(value) {
+    if (value === null)
+        return true;
+    if (!isRecord(value))
+        return false;
+    return isFiniteNumber(value.from) && isFiniteNumber(value.to) &&
+        isFiniteNumber(value.minZ) && isFiniteNumber(value.maxZ) &&
+        isFiniteNumber(value.approach) && value.approach >= 0;
+}
+function isItemSnapshot(value) {
+    if (!isRecord(value))
+        return false;
+    return isIntegerInRange(value.id, 0, Number.MAX_SAFE_INTEGER) &&
+        typeof value.kind === 'string' && ITEM_KINDS.has(value.kind) &&
+        isFiniteNumber(value.x) && isFiniteNumber(value.z) && isFiniteNumber(value.y) &&
+        isIntegerInRange(value.durability, 0, 99) &&
+        typeof value.thrown === 'boolean' &&
+        isFiniteNumber(value.age) && value.age >= 0;
 }
 function isActorSnapshot(value) {
     if (!isRecord(value))
@@ -91,6 +142,8 @@ function isActorSnapshot(value) {
         isAxis(value.stateMoveX) && isAxis(value.stateMoveZ) &&
         typeof value.weapon === 'string' && WEAPONS.has(value.weapon) &&
         typeof value.desiredWeapon === 'string' && WEAPONS.has(value.desiredWeapon) &&
+        typeof value.stowedWeapon === 'string' && FENCING_WEAPONS.has(value.stowedWeapon) &&
+        isIntegerInRange(value.durability, 0, 99) &&
         (value.attackId === null || (typeof value.attackId === 'string' && value.attackId.length <= 64)) &&
         isFiniteNumber(value.attackElapsed) &&
         isFiniteNumber(value.invulnerable) && isFiniteNumber(value.openingTimer) &&

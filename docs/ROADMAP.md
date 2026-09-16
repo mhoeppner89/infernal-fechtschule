@@ -88,6 +88,10 @@ Exit criteria:
 
 Goal: estimate the true cost of one complete master.
 
+This milestone is specified in detail in the [art overhaul work order](ART_OVERHAUL.md):
+style block, frame contract, the three signature longsword combos, the road, the backdrop
+hangings, and the batch order. Its numbered work list below is unchanged.
+
 Work:
 
 1. Approve Meyer’s production silhouette and palette.

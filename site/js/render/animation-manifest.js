@@ -15,13 +15,9 @@ const LONGSWORD_ATTACKS = [
     'ls_l1',
     'ls_l2',
     'ls_l3',
-    'ls_lh',
-    'ls_l2h',
     'ls_h',
-    'ls_hl',
     'ls_dodge_l',
     'ls_low_l',
-    'ls_low_h',
     'ls_air_l',
     'ls_counter',
     'ls_switch_in'
@@ -30,17 +26,16 @@ const DUSSACK_ATTACKS = [
     'ds_l1',
     'ds_l2',
     'ds_l3',
-    'ds_lh',
-    'ds_l2h',
     'ds_h',
-    'ds_hl',
     'ds_dodge_l',
     'ds_low_l',
-    'ds_low_h',
     'ds_air_l',
     'ds_counter',
     'ds_switch_in'
 ];
+/** The finds: a picked-up cudgel and spear, used but never trained with. */
+const CLUB_ATTACKS = ['cl_l1', 'cl_l2', 'cl_h', 'cl_throw'];
+const SPEAR_ATTACKS = ['sp_l1', 'sp_h', 'sp_throw'];
 /**
  * The complete art contract for the current vertical slice. This inventory is
  * deliberately separate from asset readiness: a declared clip may still be planned.
@@ -48,6 +43,8 @@ const DUSSACK_ATTACKS = [
 export const ANIMATION_INVENTORY = Object.freeze([
     { archetype: 'meyer', weapon: 'longsword', states: MEYER_STATES, attacks: LONGSWORD_ATTACKS },
     { archetype: 'meyer', weapon: 'dussack', states: MEYER_STATES, attacks: DUSSACK_ATTACKS },
+    { archetype: 'meyer', weapon: 'club', states: MEYER_STATES, attacks: CLUB_ATTACKS },
+    { archetype: 'meyer', weapon: 'spear', states: MEYER_STATES, attacks: SPEAR_ATTACKS },
     {
         archetype: 'thug',
         weapon: null,
@@ -236,10 +233,7 @@ for (const state of [
 for (const attack of [
     { id: 'ls_l2', holds: [4, 4, 2, 7] },
     { id: 'ls_l3', holds: [7, 8, 3, 10] },
-    { id: 'ls_lh', holds: [9, 10, 3, 11] },
-    { id: 'ls_l2h', holds: [12, 14, 3, 14] },
     { id: 'ls_h', holds: [14, 16, 3, 16] },
-    { id: 'ls_hl', holds: [5, 4, 2, 8] },
     { id: 'ls_dodge_l', holds: [3, 3, 2, 7] },
     { id: 'ls_air_l', holds: [5, 5, 3, 9] },
     { id: 'ls_counter', holds: [2, 2, 2, 7] },
@@ -292,10 +286,7 @@ for (const attack of [
     { id: 'ds_l1', holds: [3, 3, 2, 6] },
     { id: 'ds_l2', holds: [3, 3, 2, 6] },
     { id: 'ds_l3', holds: [5, 6, 2, 8] },
-    { id: 'ds_lh', holds: [7, 7, 3, 9] },
-    { id: 'ds_l2h', holds: [8, 9, 3, 11] },
     { id: 'ds_h', holds: [9, 10, 3, 12] },
-    { id: 'ds_hl', holds: [4, 4, 2, 7] },
     { id: 'ds_dodge_l', holds: [2, 3, 2, 6] },
     { id: 'ds_air_l', holds: [4, 4, 2, 8] },
     { id: 'ds_counter', holds: [1, 2, 2, 6] },
@@ -409,6 +400,8 @@ function registerV2MeyerKit(weapon, attacks) {
 }
 registerV2MeyerKit('longsword', LONGSWORD_ATTACKS);
 registerV2MeyerKit('dussack', DUSSACK_ATTACKS);
+registerV2MeyerKit('club', CLUB_ATTACKS);
+registerV2MeyerKit('spear', SPEAR_ATTACKS);
 const V2_NPC_DISPLAY = Object.freeze({
     thug: v2Display(174),
     spear: v2Display(DEFAULT_DISPLAY.spear.height),
