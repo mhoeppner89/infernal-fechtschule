@@ -6,3 +6,9 @@ coverage/
 playtest-output/
 __pycache__/
 *.pyc
+
+# Local review, browser evidence, scratch output, and linked development modules.
+/node_modules
+/reviews/
+/test-results/
+/output/

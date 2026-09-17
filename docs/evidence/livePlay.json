@@ -1,0 +1,161 @@
+{
+  "browser": "153.0.8010.47",
+  "targetDurationSeconds": 30,
+  "errors": [],
+  "observations": [
+    {
+      "tick": 4,
+      "phase": "wave",
+      "score": 0,
+      "health": 110,
+      "actors": 1
+    },
+    {
+      "tick": 116,
+      "phase": "wave",
+      "score": 0,
+      "health": 110,
+      "actors": 3
+    },
+    {
+      "tick": 238,
+      "phase": "wave",
+      "score": 0,
+      "health": 96,
+      "actors": 3
+    },
+    {
+      "tick": 349,
+      "phase": "wave",
+      "score": 0,
+      "health": 82,
+      "actors": 3
+    },
+    {
+      "tick": 461,
+      "phase": "wave",
+      "score": 0,
+      "health": 74,
+      "actors": 3
+    },
+    {
+      "tick": 573,
+      "phase": "wave",
+      "score": 80,
+      "health": 64,
+      "actors": 2
+    },
+    {
+      "tick": 685,
+      "phase": "wave",
+      "score": 80,
+      "health": 54,
+      "actors": 4
+    },
+    {
+      "tick": 797,
+      "phase": "wave",
+      "score": 80,
+      "health": 49,
+      "actors": 4
+    },
+    {
+      "tick": 908,
+      "phase": "wave",
+      "score": 240,
+      "health": 39,
+      "actors": 4
+    },
+    {
+      "tick": 1020,
+      "phase": "wave",
+      "score": 240,
+      "health": 39,
+      "actors": 2
+    },
+    {
+      "tick": 1131,
+      "phase": "wave",
+      "score": 240,
+      "health": 39,
+      "actors": 2
+    },
+    {
+      "tick": 1243,
+      "phase": "wave",
+      "score": 320,
+      "health": 39,
+      "actors": 3
+    },
+    {
+      "tick": 1354,
+      "phase": "wave",
+      "score": 320,
+      "health": 39,
+      "actors": 2
+    },
+    {
+      "tick": 1466,
+      "phase": "wave",
+      "score": 320,
+      "health": 39,
+      "actors": 2
+    },
+    {
+      "tick": 1578,
+      "phase": "wave",
+      "score": 400,
+      "health": 39,
+      "actors": 3
+    },
+    {
+      "tick": 1689,
+      "phase": "wave",
+      "score": 400,
+      "health": 39,
+      "actors": 2
+    },
+    {
+      "tick": 1801,
+      "phase": "wave",
+      "score": 400,
+      "health": 39,
+      "actors": 2
+    }
+  ],
+  "checks": [
+    {
+      "name": "normal live play advances with physical input",
+      "pass": true,
+      "detail": "{\"phase\":\"wave\",\"tick\":1808,\"score\":400,\"health\":39}"
+    },
+    {
+      "name": "normal live play remains finite",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "restart returns to a live clock",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "no exceptions during live play and restart",
+      "pass": true,
+      "detail": ""
+    }
+  ],
+  "frames": {
+    "count": 2044,
+    "medianMs": 16.659999999999854,
+    "p95Ms": 17.459999999999127,
+    "over50ms": 0
+  },
+  "actualDurationSeconds": 30.058,
+  "final": {
+    "phase": "wave",
+    "tick": 1808,
+    "score": 400,
+    "health": 39
+  }
+}

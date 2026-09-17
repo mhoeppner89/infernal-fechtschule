@@ -103,6 +103,9 @@ function createActor(config) {
         comboCount: 0,
         comboHits: 0,
         comboLull: 0,
+        actionBuffer: null,
+        guardCommand: null,
+        chainLength: 0,
         reactionZone: null,
         scoreValue: config.scoreValue
     };

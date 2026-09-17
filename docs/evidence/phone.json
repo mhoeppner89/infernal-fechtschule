@@ -1,0 +1,336 @@
+{
+  "base": "http://localhost:4187",
+  "baseline": false,
+  "engine": "chromium",
+  "version": "153.0.8010.47",
+  "checks": [
+    {
+      "name": "title has actionable play button",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "keyboard moves player horizontally",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "pause freezes simulation",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "resume advances simulation",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "keyboard cut begins attack",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "844x390 primary touch targets >=48px",
+      "pass": true,
+      "detail": "[{\"button\":\"stick\",\"x\":10,\"y\":266,\"w\":88,\"h\":88,\"visible\":true},{\"button\":\"mobility\",\"x\":770,\"y\":234,\"w\":64,\"h\":64,\"visible\":true},{\"button\":\"light\",\"x\":690,\"y\":154,\"w\":64,\"h\":64,\"visible\":true},{\"button\":\"heavy\",\"x\":770,\"y\":154,\"w\":64,\"h\":64,\"visible\":true},{\"button\":\"guard\",\"x\":690,\"y\":234,\"w\":64,\"h\":64,\"visible\":true},{\"button\":\"switch\",\"x\":730,\"y\":314,\"w\":64,\"h\":48,\"visible\":true}]"
+    },
+    {
+      "name": "844x390 controls within viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "844x390 no horizontal page overflow",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "844x390 portrait/landscape play not blocked",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "844x390 touch hit regions do not overlap",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "844x390 no controls cover the playfield",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "844x390 button centers dispatch to correct controls",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "844x390 undistorted procedural viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "844x390 move guide pauses the fight",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "844x390 closing guide resumes",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "844x390 simultaneous stick + cut",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "844x390 releasing touch clears movement/attack",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "667x375 primary touch targets >=48px",
+      "pass": true,
+      "detail": "[{\"button\":\"stick\",\"x\":10,\"y\":251,\"w\":88,\"h\":88,\"visible\":true},{\"button\":\"mobility\",\"x\":593,\"y\":219,\"w\":64,\"h\":64,\"visible\":true},{\"button\":\"light\",\"x\":513,\"y\":139,\"w\":64,\"h\":64,\"visible\":true},{\"button\":\"heavy\",\"x\":593,\"y\":139,\"w\":64,\"h\":64,\"visible\":true},{\"button\":\"guard\",\"x\":513,\"y\":219,\"w\":64,\"h\":64,\"visible\":true},{\"button\":\"switch\",\"x\":553,\"y\":299,\"w\":64,\"h\":48,\"visible\":true}]"
+    },
+    {
+      "name": "667x375 controls within viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "667x375 no horizontal page overflow",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "667x375 portrait/landscape play not blocked",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "667x375 touch hit regions do not overlap",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "667x375 no controls cover the playfield",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "667x375 button centers dispatch to correct controls",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "667x375 undistorted procedural viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "667x375 move guide pauses the fight",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "667x375 closing guide resumes",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "667x375 simultaneous stick + cut",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "667x375 releasing touch clears movement/attack",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "932x430 primary touch targets >=48px",
+      "pass": true,
+      "detail": "[{\"button\":\"stick\",\"x\":10,\"y\":306,\"w\":88,\"h\":88,\"visible\":true},{\"button\":\"mobility\",\"x\":858,\"y\":274,\"w\":64,\"h\":64,\"visible\":true},{\"button\":\"light\",\"x\":778,\"y\":194,\"w\":64,\"h\":64,\"visible\":true},{\"button\":\"heavy\",\"x\":858,\"y\":194,\"w\":64,\"h\":64,\"visible\":true},{\"button\":\"guard\",\"x\":778,\"y\":274,\"w\":64,\"h\":64,\"visible\":true},{\"button\":\"switch\",\"x\":818,\"y\":354,\"w\":64,\"h\":48,\"visible\":true}]"
+    },
+    {
+      "name": "932x430 controls within viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "932x430 no horizontal page overflow",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "932x430 portrait/landscape play not blocked",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "932x430 touch hit regions do not overlap",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "932x430 no controls cover the playfield",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "932x430 button centers dispatch to correct controls",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "932x430 undistorted procedural viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "932x430 move guide pauses the fight",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "932x430 closing guide resumes",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "932x430 simultaneous stick + cut",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "932x430 releasing touch clears movement/attack",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "390x844 primary touch targets >=48px",
+      "pass": true,
+      "detail": "[{\"button\":\"stick\",\"x\":18,\"y\":678,\"w\":112,\"h\":112,\"visible\":true},{\"button\":\"mobility\",\"x\":310,\"y\":702,\"w\":64,\"h\":64,\"visible\":true},{\"button\":\"light\",\"x\":230,\"y\":622,\"w\":64,\"h\":64,\"visible\":true},{\"button\":\"heavy\",\"x\":310,\"y\":622,\"w\":64,\"h\":64,\"visible\":true},{\"button\":\"guard\",\"x\":230,\"y\":702,\"w\":64,\"h\":64,\"visible\":true},{\"button\":\"switch\",\"x\":270,\"y\":782,\"w\":64,\"h\":48,\"visible\":true}]"
+    },
+    {
+      "name": "390x844 controls within viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "390x844 no horizontal page overflow",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "390x844 portrait/landscape play not blocked",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "390x844 touch hit regions do not overlap",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "390x844 no controls cover the playfield",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "390x844 button centers dispatch to correct controls",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "390x844 undistorted procedural viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "390x844 portrait field >=320px tall",
+      "pass": true,
+      "detail": "520px"
+    },
+    {
+      "name": "390x844 move guide pauses the fight",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "390x844 closing guide resumes",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "360x740 primary touch targets >=48px",
+      "pass": true,
+      "detail": "[{\"button\":\"stick\",\"x\":18,\"y\":574,\"w\":112,\"h\":112,\"visible\":true},{\"button\":\"mobility\",\"x\":280,\"y\":598,\"w\":64,\"h\":64,\"visible\":true},{\"button\":\"light\",\"x\":200,\"y\":518,\"w\":64,\"h\":64,\"visible\":true},{\"button\":\"heavy\",\"x\":280,\"y\":518,\"w\":64,\"h\":64,\"visible\":true},{\"button\":\"guard\",\"x\":200,\"y\":598,\"w\":64,\"h\":64,\"visible\":true},{\"button\":\"switch\",\"x\":240,\"y\":678,\"w\":64,\"h\":48,\"visible\":true}]"
+    },
+    {
+      "name": "360x740 controls within viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "360x740 no horizontal page overflow",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "360x740 portrait/landscape play not blocked",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "360x740 touch hit regions do not overlap",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "360x740 no controls cover the playfield",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "360x740 button centers dispatch to correct controls",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "360x740 undistorted procedural viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "360x740 portrait field >=320px tall",
+      "pass": true,
+      "detail": "416px"
+    },
+    {
+      "name": "360x740 move guide pauses the fight",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "360x740 closing guide resumes",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "zero runtime sprite/background bitmap downloads",
+      "pass": true,
+      "detail": "0 raster requests including icons"
+    },
+    {
+      "name": "no browser JavaScript errors",
+      "pass": true,
+      "detail": ""
+    }
+  ],
+  "errors": [],
+  "assets": [],
+  "measurements": []
+}

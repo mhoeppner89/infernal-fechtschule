@@ -1,0 +1,193 @@
+{
+  "version": "153.0.8010.47",
+  "checks": [
+    {
+      "name": "longsword: Cut starts basic opener",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "longsword: early follow-up is captured",
+      "pass": true,
+      "detail": "light"
+    },
+    {
+      "name": "longsword: confirmed opener links without lessons",
+      "pass": true,
+      "detail": "ls_l1, ls_l2"
+    },
+    {
+      "name": "longsword facing 1: Guard/forward/Cut",
+      "pass": true,
+      "detail": "ls_guard_forward"
+    },
+    {
+      "name": "longsword facing 1: Guard/back/Cut",
+      "pass": true,
+      "detail": "ls_guard_back"
+    },
+    {
+      "name": "longsword facing 1: Guard/up/Cut",
+      "pass": true,
+      "detail": "ls_guard_up"
+    },
+    {
+      "name": "longsword facing 1: Guard/down/Cut",
+      "pass": true,
+      "detail": "ls_guard_down"
+    },
+    {
+      "name": "longsword facing -1: Guard/forward/Cut",
+      "pass": true,
+      "detail": "ls_guard_forward"
+    },
+    {
+      "name": "longsword facing -1: Guard/back/Cut",
+      "pass": true,
+      "detail": "ls_guard_back"
+    },
+    {
+      "name": "longsword facing -1: Guard/up/Cut",
+      "pass": true,
+      "detail": "ls_guard_up"
+    },
+    {
+      "name": "longsword facing -1: Guard/down/Cut",
+      "pass": true,
+      "detail": "ls_guard_down"
+    },
+    {
+      "name": "dussack: Cut starts basic opener",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "dussack: early follow-up is captured",
+      "pass": true,
+      "detail": "light"
+    },
+    {
+      "name": "dussack: confirmed opener links without lessons",
+      "pass": true,
+      "detail": "ds_l1, ds_l2"
+    },
+    {
+      "name": "dussack facing 1: Guard/forward/Cut",
+      "pass": true,
+      "detail": "ds_guard_forward"
+    },
+    {
+      "name": "dussack facing 1: Guard/back/Cut",
+      "pass": true,
+      "detail": "ds_guard_back"
+    },
+    {
+      "name": "dussack facing 1: Guard/up/Cut",
+      "pass": true,
+      "detail": "ds_guard_up"
+    },
+    {
+      "name": "dussack facing 1: Guard/down/Cut",
+      "pass": true,
+      "detail": "ds_guard_down"
+    },
+    {
+      "name": "dussack facing -1: Guard/forward/Cut",
+      "pass": true,
+      "detail": "ds_guard_forward"
+    },
+    {
+      "name": "dussack facing -1: Guard/back/Cut",
+      "pass": true,
+      "detail": "ds_guard_back"
+    },
+    {
+      "name": "dussack facing -1: Guard/up/Cut",
+      "pass": true,
+      "detail": "ds_guard_up"
+    },
+    {
+      "name": "dussack facing -1: Guard/down/Cut",
+      "pass": true,
+      "detail": "ds_guard_down"
+    },
+    {
+      "name": "holding Cut does not automatically repeat",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "expired Guard command returns to ordinary Cut",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "early Step/Cut enters passing cut",
+      "pass": true,
+      "detail": "ls_dodge_l"
+    },
+    {
+      "name": "timed parry opens counter for KeyJ",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "held Guard allows KeyJ counter",
+      "pass": true,
+      "detail": "ls_counter"
+    },
+    {
+      "name": "timed parry opens counter for KeyK",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "held Guard allows KeyK counter",
+      "pass": true,
+      "detail": "ls_counter"
+    },
+    {
+      "name": "heavy windup/active cannot be cancelled by Cut",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "early heavy follow-up expires rather than firing much later",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "focus loss clears input movement",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "network text entry cannot trigger game actions",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "17-actor render remains below 50ms p95 on test Mac",
+      "pass": true,
+      "detail": "{\"actors\":17,\"medianMs\":1.4900000095367432,\"p95Ms\":39.769999980926514,\"maximumMs\":100.01999998092651,\"canvas\":{\"width\":1140,\"height\":652}}"
+    },
+    {
+      "name": "no browser exceptions in runtime audit",
+      "pass": true,
+      "detail": ""
+    }
+  ],
+  "errors": [],
+  "samples": {
+    "render": {
+      "actors": 17,
+      "medianMs": 1.4900000095367432,
+      "p95Ms": 39.769999980926514,
+      "maximumMs": 100.01999998092651,
+      "canvas": {
+        "width": 1140,
+        "height": 652
+      }
+    }
+  }
+}

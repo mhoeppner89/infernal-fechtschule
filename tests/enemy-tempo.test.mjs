@@ -2,11 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { ATTACKS, ENEMY_TEMPO, attackDuration, getAttack } from '../site/js/sim/attacks.js';
-import { createEnemy } from '../site/js/sim/factories.js';
+import { createEnemy, createPlayer } from '../site/js/sim/factories.js';
 import { GameWorld } from '../site/js/sim/world.js';
 import { NEUTRAL_INPUT } from '../site/js/sim/types.js';
-import { ANIMATION_MANIFEST } from '../site/js/render/animation-manifest.js';
-import { SpriteAnimationCatalog, attackAnimationFrameIndex } from '../site/js/render/animation-catalog.js';
+import { attackMotionFor, poseForActor } from '../site/js/render/procedural-rig.js';
 
 /**
  * An archetype's identity is its cadence: how fast it decides, whether it
@@ -158,53 +157,33 @@ test('each archetype owns a kit the others cannot field', () => {
   );
 });
 
-test('a borrowed clip keeps the borrowing row inside its own active window', () => {
+test('an aliased attack row keeps its own procedural active window', () => {
   const aliases = Object.values(ATTACKS).filter((definition) => definition.animation);
-  assert.ok(aliases.length >= 4, 'the new rows have no borrowed art');
+  assert.ok(aliases.length >= 4, 'the new rows have no procedural aliases');
 
-  // The renderer has to follow the alias too, or a new tempo renders as the
-  // placeholder clip.
-  const catalog = new SpriteAnimationCatalog();
   for (const definition of aliases) {
-    const resolved = catalog.lookupActor({
-      archetype: definition.owner,
-      weapon: null,
-      desiredWeapon: null,
+    const actor = definition.owner === 'player'
+      ? createPlayer(1, 0, 400, 420)
+      : createEnemy(2, definition.owner, 400, 420);
+    const weapon = definition.weapon ?? actor.weapon;
+    const attackElapsed = definition.startup + definition.active * 0.5;
+    const snapshot = {
+      ...actor,
+      weapon,
+      desiredWeapon: weapon,
       state: 'attack',
+      stateElapsed: attackElapsed,
+      stateDuration: attackDuration(definition),
       attackId: definition.id,
+      attackElapsed,
       reactionZone: null
-    });
-    assert.equal(
-      resolved?.id,
-      `${definition.owner}:default:${definition.animation}`,
-      `${definition.id} does not resolve to its borrowed art`
-    );
-  }
-
-  for (const definition of aliases) {
-    const borrowedRows = Object.values(ATTACKS).filter((other) => other.id === definition.animation);
-    assert.equal(borrowedRows.length, 1, `${definition.id} aliases an unknown row`);
-
-    const clip = ANIMATION_MANIFEST.find((candidate) => candidate.availability === 'ready'
-      && candidate.state === 'attack'
-      && candidate.attackId === definition.animation
-      && candidate.archetype === definition.owner);
-    assert.ok(clip, `${definition.id} borrows ${definition.animation}, which has no ready clip for ${definition.owner}`);
-
-    // The clip is only borrowed for its poses: the row's own timing must still
-    // put the contact key exactly inside its active frames.
-    const activeStart = definition.startup;
-    const activeEnd = definition.startup + definition.active;
-    for (let milliseconds = 0; milliseconds <= Math.ceil(attackDuration(definition) * 1000); milliseconds += 1) {
-      const elapsed = milliseconds / 1000;
-      const frame = clip.frames[attackAnimationFrameIndex(clip, definition.id, elapsed)];
-      const expected = elapsed >= activeStart && elapsed < activeEnd;
-      assert.equal(
-        frame?.cue === 'contact',
-        expected,
-        `${definition.id} shows ${frame?.cue} at ${elapsed.toFixed(3)}s`
-      );
-    }
+    };
+    const motion = attackMotionFor(snapshot);
+    assert.equal(motion.definition?.id, definition.id, `${definition.id} lost its attack definition`);
+    assert.equal(motion.phase, 'contact', `${definition.id} does not reach its active phase`);
+    assert.equal(motion.active, true, `${definition.id} is not active at its contact midpoint`);
+    assert.ok(Number.isFinite(motion.angle), `${definition.id} has no finite blade angle`);
+    assert.ok(Number.isFinite(poseForActor(snapshot).blade.tip.x), `${definition.id} has no finite pose`);
   }
 });
 
@@ -304,6 +283,12 @@ function pressCaptain(seed, button, seconds) {
 
   for (let frame = 0; frame < frames(seconds); frame += 1) {
     pinAsDummy(world, player);
+    if (player.state === 'hitstun' || player.state === 'guardbreak') {
+      player.state = 'idle';
+      player.stateElapsed = 0;
+      player.stateDuration = 0;
+      player.attack = null;
+    }
     captain.x = 400 + 74;
     captain.z = 420;
     captain.health = 1e6;

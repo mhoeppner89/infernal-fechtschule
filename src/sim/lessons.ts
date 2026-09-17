@@ -9,52 +9,52 @@ export interface LessonDefinition {
 }
 
 /**
- * The run's combo unlocks. Meyer starts with only his basic cuts; every lesson
- * opens new chained routes (exact inputs are listed per card from
- * LESSON_ROUTES in attacks.ts).
+ * The run's combat upgrades. The complete short chain and the four guard
+ * commands are available immediately; lessons make an existing route sharper
+ * instead of withholding its basic inputs.
  */
 export const LESSONS: Readonly<Record<LessonId, LessonDefinition>> = Object.freeze({
   'ls-crossing': {
     id: 'ls-crossing',
     title: 'The Crossing Hew',
     school: 'Longsword',
-    description: 'Chain a second cut after the Opening Hew.',
-    detail: 'Unlocks: Crossing Hew (J·J).'
+    description: 'Sharpen the confirmed link into the Crossing Hew.',
+    detail: 'Upgrade: the second cut keeps more pressure in a hit-confirmed string.'
   },
   'ls-threefold': {
     id: 'ls-threefold',
     title: 'The Threefold Cut',
     school: 'Longsword',
-    description: 'Extend the longsword chain to its threefold head-cut conclusion.',
-    detail: 'Unlocks: Threefold Cut (J·J·J).'
+    description: 'Make the available threefold chain finish with authority.',
+    detail: 'Upgrade: Threefold Cut carries a stronger finishing knockback.'
   },
   'ls-provoker': {
     id: 'ls-provoker',
     title: 'Provocation Mastered',
     school: 'Longsword',
-    description: 'A provoking cut that meets a guard may recover straight into defense.',
-    detail: 'Unlocks: hold Guard after a blocked provoke to cancel into it.'
+    description: 'Turn a blocked committed cut into a stronger opening next time.',
+    detail: 'Upgrade: a heavy that finds an opening hits harder after a provocation.'
   },
   'ds-backhand': {
     id: 'ds-backhand',
     title: 'The Backhand Cut',
     school: 'Dussack',
-    description: 'Chain a backhand after the Forehand Cut.',
-    detail: 'Unlocks: Backhand Cut (J·J).'
+    description: 'Sharpen the confirmed Forehand-to-Backhand link.',
+    detail: 'Upgrade: Backhand Cut puts more strain on a guarded target.'
   },
   'ds-wheel': {
     id: 'ds-wheel',
     title: 'Complete the Wheel',
     school: 'Dussack',
-    description: 'Extend the dussack chain into the wheel that turns back on itself.',
-    detail: 'Unlocks: Circular Pursuit (J·J·J·J).'
+    description: 'Close the available dussack wheel before it gives the target room.',
+    detail: 'Upgrade: Circular Pursuit gets a clearer knockback finish.'
   },
   'switch-flourish': {
     id: 'switch-flourish',
     title: 'The Flourish',
     school: 'Shared',
-    description: 'Switching mid-combo flows into entry strikes with routes of their own.',
-    detail: 'Unlocks: switch right after a confirmed hit.'
+    description: 'Make a confirmed mid-combo switch flow into an entry strike.',
+    detail: 'Upgrade: confirmed Switch recovery shortens into the entry.'
   }
 });
 

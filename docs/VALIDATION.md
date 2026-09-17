@@ -1,59 +1,52 @@
-# Build validation
+# Procedural edition validation
 
-## Completed in the package build environment
+**Date:** 17 September 2026. **Edition:** 0.2.0. **Base:** `fc6588fe85a0785ad1f005c52b51e98daaf1d137`.
 
-Date: 2026-08-30
+Implementation and browser execution used the connected Mac through Remote Desktop Commander. The test environment was macOS 14.6, Node v25.6.1, and installed Google Chrome 153.0.8010.47. Browser tests used Playwright 1.63.0. Both headed and headless Chrome sessions were exercised.
 
-- TypeScript strict compilation completed successfully.
-- Service worker was regenerated with every compiled JavaScript module and static shell file in its precache.
-- Fifteen Node tests passed:
-  - UI identifiers match the shipped HTML shell
-  - compiled ES-module imports resolve
-  - service-worker precache entries exist
-  - PWA manifest assets resolve
-  - soft-target depth preference and target stickiness
-  - weapon-specific combo routes
-  - behavioral lesson transformations
-  - wave progression through lesson selection
-  - JSON-serializable two-player snapshots
-  - fixed-seed/input determinism
-  - complete run progression through both lesson gates to victory
-  - peer input message validation
-  - authoritative snapshot validation
-  - upgrade/start protocol range validation
-  - shared pause-message validation
-- The zero-dependency local server returned HTTP 200 for the game shell and all 26 precached URLs.
-- Compiled output is included under `site/`; GitHub Pages deployment does not require a package install.
+## Results
 
-Run the same checks with:
+| Check group | Result | Scope |
+|---|---:|---|
+| Unit / simulation / input / packaging | **151 / 151 passed** | Combat states, command windows, adjacent physical edges, items, AI, deterministic campaign flow, pointer ownership, viewport rig geometry, cache integrity, and preview safety. |
+| Live Chrome phone/UI checks | **65 / 65 passed** | Desktop plus five emulated phone sizes; actual multi-touch, overlap/field obstruction, hit-target ownership, scale, portrait height, guide pause/resume, input release, and no raster-art requests. |
+| Live browser combat audit | **35 / 35 passed** | Both weapons and facings, all directional guard commands, fast Cut links, expiry, hold suppression, parry answers, Step/Cut, heavy commitment, focus loss, and a render stress fixture. |
+| Offline / peer audit | **7 / 7 passed** | Cold offline reload after caching, cache contents, manual WebRTC pairing, two-player snapshots, and guest input reaching the authoritative host. |
+| Headed live play / restart | **4 / 4 passed** | Normal physical keyboard input, finite state, restart to the live clock, and no browser exceptions. |
+| Scenery captures | **4 distinct frames; 0 exceptions** | Actual procedural renderer in four authored setting/equipment fixtures. |
 
-```bash
-npm test
-npm start
-```
+The machine-readable [summary](evidence/summary.json) and per-suite JSON reports are checked in. These groups overlap in coverage and are not summed into a claim of that many independent requirements.
 
-## Still requires external verification
+## Phone coverage
 
-The build container’s managed Chromium policy blocks all navigated URLs. As a result, an end-to-end browser screenshot/playthrough could not be completed in that environment even though the local HTTP server was reachable through command-line requests.
+Emulated sizes: **844×390, 667×375, 932×430, 390×844, and 360×740**, with touch enabled and device scale factor 2. Desktop coverage used 1440×900. Chrome DevTools Protocol delivered simultaneous stick and Cut touch contacts, rather than replacing touch with keyboard-only tests.
 
-The following remain required before calling the slice externally validated:
+The primary actions are 64×64 CSS pixels; Swap is 64×48. Checks verified distinct non-overlapping hit regions, correct element ownership at button centers, no controls over the fighting field, no horizontal page overflow, uniform canvas scaling, and at least 320 CSS pixels of portrait field height. Lifecycle regressions cover blur, pointer cancellation, rotation/reset, and text-field isolation.
 
-- Visual browser playthrough on an ordinary desktop browser
-- iOS Safari and Android Chrome physical-device tests
-- Tilt permission/calibration behavior on real sensors
-- Safe-area and landscape layout review
-- Installed PWA/offline relaunch
-- Audio unlock behavior on target browsers
-- Two-phone manual WebRTC connection and a complete co-op run
-- Performance, thermal, and memory profiling
-- Accessibility and reduced-motion review
+## Payload and runtime measurements
 
-## Known prototype limitations
+The build's precache list fell from **974 entries / 22,811,596 bytes** to **30 entries / 487,123 bytes**, excluding the duplicate root-document alias in both byte totals. The actual populated new browser cache contained **500,871 bytes** including that alias. Runtime requests for sprite/background bitmaps: **zero**. The build identifier is `infernal-fechtschule-0.2.0-681d94d034`.
 
-- Procedural silhouettes are graybox art, not historically reviewed character designs.
-- Move labels are working names.
-- Guest-side prediction, interpolation, defensive rewind, reconnect, and TURN relay support are incomplete.
-- Lesson choice is shared and host-controlled in co-op.
-- Run state and profile progression are not saved.
-- Gamepad mapping and left-handed/custom touch layouts are planned but not implemented.
-- Browser orientation lock is requested through the PWA manifest; the rotate overlay is the reliable fallback.
+The final normal live-play sample lasted **30.058 seconds**. Across its captured frame intervals, the median was **16.66 ms**, the 95th percentile **17.46 ms**, and none exceeded 50 ms. This is a measurement on this Mac in that scene, **not a physical-phone performance guarantee**. The separate 17-actor stress fixture and its full timing distribution are in `evidence/combat.json`.
+
+## Review and screenshot evidence
+
+Three separate read-only review sessions examined the baseline, the first visual/mobile candidate, and the revised combat code. They identified defects that a green first test run had missed. See [review resolutions](PROCEDURAL_REWORK.md) and the reports under `docs/reviews/`. No independent final historical or physical-device sign-off is implied.
+
+![Landscape phone view](evidence/phone-landscape.png)
+
+![Portrait phone view](evidence/phone-portrait.png)
+
+Additional captures show the [previous phone view](evidence/before-phone.png), [title](evidence/title-desktop.png), [normal live combat](evidence/live-combat.png), and authored [street](evidence/cobbled-streets.png), [gate](evidence/town-gate.png), [fencing hall](evidence/sala-darmi.png), and [castle](evidence/castello.png) fixtures. Fixture screenshots are labelled as such; they are not presented as evidence of a human campaign playthrough.
+
+## Explicit limitations
+
+**Safari/WebKit:** a Playwright WebKit installation was downloaded, but the browser did not complete launch. The stalled test processes were terminated. No WebKit/Safari checks passed or were counted.
+
+**Physical phones:** none were available through the connection. iPhone Safari, Android hardware performance, thermals, battery use, motion permissions, and two-device co-op remain unverified.
+
+**Historical fidelity:** the code reviewers were software reviewers. No specialist HEMA review or source-by-source pose reconstruction was completed. The game identifies its fencing as arcade adaptation.
+
+**Visual judgment:** procedural illustration and LF2-like feel have a subjective component. Passing geometry, input, and performance checks does not establish photorealism, exact historical movement, or equivalence to LF2. The screenshots show the implemented art direction.
+
+**CI/public deployment:** these results describe the connected-Mac working tree and included compiled build. They do not claim an unobserved GitHub Actions result or deployment of this branch to the main Pages site.

@@ -121,3 +121,13 @@ At minimum, obtain:
 - Sensitivity/context review where national, religious, racialized, or demonic imagery could be misread
 
 Record disagreements and the production decision. A reviewer credit must not imply endorsement beyond the material they reviewed.
+
+## Procedural edition: move-source notes (17 September 2026)
+
+Primary reference: Joachim Meyer, *Gründtliche Beschreibung der Kunst des Fechtens* (1570), longsword chapter 4, with the German transcription and Rebecca L. R. Garber's English translation available at [Diestro](https://www.sprechfenster.org/meyer/1570/longsword-chapter-4-the-cuts/).
+
+The diagonal, horizontal, descending and rising blade paths take their broad distinctions from the principal cuts in folios I.10v–I.11v. The high-cover crosscut refers to the Zwerchhau discussion in I.12v. A rising Unterhau originates below; its name does not make it a blow aimed at the legs. The game retains a separately labelled low attack for that arcade function.
+
+Every playable route remains **adapted**: button sequences, fixed input windows, hit-stop, health/guard points, invulnerable steps, multi-target hits and knockback are game rules. The long-point entry is also an arcade adaptation. It should not be read as a claim that Meyer's contemporary longsword school curriculum used thrusts identically to earlier sharp fencing; he distinguishes those contexts at I.10v.1.
+
+The articulated poses and clothing are original illustrations made from geometry. They have not received a specialist HEMA reconstruction review. Automated code reviewers are credited as software reviewers only. No historical scan, copyrighted translation passage, LF2 asset or external font is shipped with this edition.

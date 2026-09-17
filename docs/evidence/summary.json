@@ -1,0 +1,59 @@
+{
+  "date": "2026-09-17",
+  "edition": "0.2.0",
+  "baseCommit": "fc6588fe85a0785ad1f005c52b51e98daaf1d137",
+  "macOS": "14.6",
+  "node": "v25.6.1",
+  "chrome": "153.0.8010.47",
+  "unit": {
+    "tests": 151,
+    "pass": 151,
+    "fail": 0
+  },
+  "payloadBefore": {
+    "entries": 974,
+    "bytes": 22811596
+  },
+  "payloadAfter": {
+    "entries": 30,
+    "bytes": 487123
+  },
+  "webKit": {
+    "status": "unverified",
+    "reason": "Browser launch stalled; own test processes terminated. No Safari checks completed."
+  },
+  "physicalPhonesTested": false,
+  "phone": {
+    "passed": 65,
+    "total": 65,
+    "errors": 0
+  },
+  "combat": {
+    "passed": 35,
+    "total": 35,
+    "errors": 0
+  },
+  "offlinePeer": {
+    "passed": 7,
+    "total": 7,
+    "errors": 0
+  },
+  "livePlay": {
+    "passed": 4,
+    "total": 4,
+    "errors": 0
+  },
+  "scenery": {
+    "distinctFrames": 4,
+    "errors": []
+  },
+  "cache": "infernal-fechtschule-0.2.0-681d94d034",
+  "actualOfflineBytes": 500871,
+  "liveFrameIntervals": {
+    "count": 2044,
+    "medianMs": 16.659999999999854,
+    "p95Ms": 17.459999999999127,
+    "over50ms": 0
+  },
+  "liveDurationSeconds": 30.058
+}

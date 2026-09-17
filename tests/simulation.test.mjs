@@ -65,23 +65,24 @@ test('the shared combo grammar resolves weapon-specific routes', () => {
   assert.equal(resolvePlayerAttack('dussack', 'heavy', null, true, allLessons), 'ds_counter');
 });
 
-test('combo lessons gate chained routes until learned', () => {
+test('the basic chain is available immediately and lessons upgrade it', () => {
   const none = new Set();
-  // Without lessons only the basic starters are reachable: chains fall back.
-  assert.equal(resolvePlayerAttack('longsword', 'light', 'ls_l1', false, none), 'ls_l1');
-  assert.equal(resolvePlayerAttack('dussack', 'light', 'ds_l1', false, none), 'ds_l1');
-  // Learning ls-crossing opens the crossing route; the dussack chain stays locked.
+  assert.equal(resolvePlayerAttack('longsword', 'light', 'ls_l1', false, none), 'ls_l2');
+  assert.equal(resolvePlayerAttack('longsword', 'light', 'ls_l2', false, none), 'ls_l3');
+  assert.equal(resolvePlayerAttack('dussack', 'light', 'ds_l1', false, none), 'ds_l2');
+  assert.equal(resolvePlayerAttack('dussack', 'light', 'ds_l2', false, none), 'ds_l3');
+
+  // Lessons no longer decide whether a starter route exists. They sharpen the
+  // same cuts when learned, while weapon schools remain independent.
   const crossing = new Set(['ls-crossing']);
   assert.equal(resolvePlayerAttack('longsword', 'light', 'ls_l1', false, crossing), 'ls_l2');
-  assert.equal(resolvePlayerAttack('longsword', 'light', 'ls_l2', false, crossing), 'ls_l1');
-  // The threefold link needs its own lesson even with crossing learned.
+  assert.equal(resolvePlayerAttack('longsword', 'light', 'ls_l2', false, crossing), 'ls_l3');
   const crossingAndThreefold = new Set(['ls-crossing', 'ls-threefold']);
   assert.equal(resolvePlayerAttack('longsword', 'light', 'ls_l2', false, crossingAndThreefold), 'ls_l3');
 
-  // Dussack lessons do not unlock longsword chains.
   const dussackOnly = new Set(['ds-backhand']);
   assert.equal(resolvePlayerAttack('dussack', 'light', 'ds_l1', false, dussackOnly), 'ds_l2');
-  assert.equal(resolvePlayerAttack('longsword', 'light', 'ls_l1', false, dussackOnly), 'ls_l1');
+  assert.equal(resolvePlayerAttack('longsword', 'light', 'ls_l1', false, dussackOnly), 'ls_l2');
 });
 
 test('wave flow reaches a lesson choice and resumes after selecting it', () => {

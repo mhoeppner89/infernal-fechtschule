@@ -1,155 +1,99 @@
-# The Infernal Fechtschule — vertical slice
+# The Infernal Fechtschule — Procedural Edition
 
-A GitHub Pages-ready, mobile-first historical-arcade horde brawler prototype. On his journey into Italy, Joachim Meyer fights through cobbled streets, a town gate, a fencing hall, and a castle court with a longsword and dussack, chooses behavioral lessons between major waves, and confronts a chained grotesque loosed from the castle crypt.
+A browser fencing brawler with a Little Fighter 2–inspired rhythm: depth-lane movement, responsive cut chains, readable anticipation, group hits, and committed finishers. The player is a fictionalized Joachim Meyer, fighting through a Renaissance setting with a longsword, dussack, and improvised weapons.
 
-This repository contains a playable vertical slice, its TypeScript source, a progressive web app shell, an experimental two-phone WebRTC mode, tests, deployment automation, the proposed full-game layout, and a staged production roadmap.
+**Version 0.2.0.** This is a playable historical-arcade vertical slice. The fencing and narrative are adaptations, not a training simulator or a verified reconstruction.
 
-> **Project status:** combat prototype / vertical slice. The art, move names, tuning, historical annotations, accessibility pass, and online connection flow are placeholders for testing.
+## The overhaul
 
-## What is playable
+Every fighter, weapon, environment, combat effect, and interface illustration is generated from code. The renderer uses articulated poses, analytic two-bone inverse kinematics, tapered cloth geometry, shaded faces and steel, layered architecture, deterministic masonry, and cached code-drawn scenery. There are no character sprites, sprite sheets, bitmap backgrounds, external fonts, or downloaded game textures. Install icons are reproducibly generated from the checked-in SVG.
 
-- Arena movement on horizontal and depth axes, with soft automatic alignment when attacks start
-- Tilt movement in landscape orientation, plus virtual stick, keyboard, and gamepad-ready input boundaries
-- Joachim Meyer with freely switchable longsword and dussack kits, plus a short improvised kit for any weapon he picks up
-- Light, heavy, mobility, guard/parry, and weapon-switch actions
-- Dropped arms and health draughts on the road: the road marks what your hands can take, and Switch picks it up — press it again to hurl the find, which splits after a few landed blows
-- Short buffered combo routes and hit-confirmed switch entries
-- A Provoke → Take → Hit doctrine that rewards provoking attacks, parries/interceptions, and committed finishers
-- Four enemy archetypes: thugs, spear soldiers, an armoured captain, and a two-phase grotesque boss
-- Five levels over seven waves, each wave one idea: a crowd, a gate, a duel, a trap, a flood, a stand, and the thing the castle bound. A level is a place — one road, one setting — and its waves are fought along it; only its last wave opens the doorway east
-- Two lesson choices, drawn from six behavioral upgrades
-- Solo play and experimental host-authoritative two-phone co-op
-- Procedural placeholder art and Web Audio cues; no external game assets are required
-- Installable/offline-capable PWA packaging after the first successful load
+Phone play has a dedicated movement rail and separated Cut, Finish, Guard, Step, and Swap controls. Landscape keeps both thumbs outside the field. Portrait uses a tall, undistorted viewport rather than shrinking the game into a small widescreen strip. The camera frames the local player and the controls respect safe-area insets.
 
-## Run it
+The core remains deterministic TypeScript with a Canvas 2D view, DOM menus/HUD, Web Audio effects, and no runtime framework dependency. The previous sprite/background pipeline and 952 tracked art files have been removed; their history remains in Git.
 
-The compiled site is already included. No installation is required for ordinary play.
+## Play locally
 
-```bash
-cd infernal-fechtschule-vertical-slice
+The compiled `site/` directory is included:
+
+```sh
 node tools/serve.mjs
 ```
 
-Open `http://localhost:4173`. A local server is required because browser modules, service workers, motion permission, and WebRTC do not behave reliably from `file://` URLs.
+Open `http://localhost:4173`. Use a local HTTP server rather than opening the HTML with `file://`. For a different port:
 
-To edit the TypeScript source:
-
-```bash
-npm install
-npm run build
-npm test
-npm start
+```sh
+PORT=4187 node tools/serve.mjs
 ```
 
-`npm run build` compiles `src/` into `site/js/`, regenerates the service worker's complete precache list, and refreshes an armed preview copy (see `.freebuff/run.md`).
+For source changes, run `npm ci`, `npm run build`, and `npm test`. The build compiles `src/` into `site/js/`, generates the versioned offline cache, and updates an explicitly armed preview copy.
 
-`npm run measure` plays the campaign with two bot policies and reports what each encounter costs — a wave's difficulty is a property of its shape rather than of a number, so it is measured rather than asserted (`--fresh` refills the bar at every wave line, `--seeds` and `--json` for more evidence).
+## Controls and routes
 
-## Levels and waves
-
-A level is one place: a road, a setting, and the waves fought along it. Its waves arrive in order — nobody is ever placed inside the picture, so every fighter walks in from off the edge of the screen — and clearing one only brings the next on: the road, the view and anything the fallen dropped stay exactly where they were. A level does not end when its last opponent falls either: its eastern doorway bars itself for as long as anyone is standing, opens once the place is clear, and the level ends when Meyer walks out through it. The next level starts at its own western end, so each place is walked left to right and everything left on the road (cudgels, shafts, a captain's steel, a draught) can be taken up before moving on.
-
-## Controls
-
-| Action | Phone | Keyboard |
+| Action | Touch | Keyboard |
 |---|---|---|
-| Move | Tilt or virtual stick | WASD or arrow keys |
-| Light attack | **L** button | J or Z |
-| Heavy attack | **H** button | K or X |
-| Duck / directional dodge | **MOVE** button | L or C |
-| Hold guard / timed parry | **GUARD** button | I, V, or Shift |
-| Switch blade / take / throw | **SWITCH** button | U or Space |
-| Pause | HUD pause button | Escape |
+| Move | Virtual stick; optional calibrated tilt | Arrow keys or W A S D |
+| Quick cut | CUT | J / Z |
+| Committed attack | FINISH | K / X |
+| Guard / timed parry | GUARD | I / V / Shift |
+| Crouch / directional step | STEP | L / C |
+| Swap / take marked item / throw | SWAP / TAKE | U / Space |
+| Pause | Pause button | Escape |
 
-Useful routes:
+Basic **Cut → Cut → Cut** and **Cut → Cut → Finish** chains work from the first wave. Confirmed light hits can link out of recovery. A whiff, a blocked cut, and a committed heavy retain their recovery costs. Strings have a four-cut cap; holding Cut does not repeat attacks.
 
-- Light → Light → Heavy
-- Heavy → Light → Heavy
-- Duck, then Light/Heavy for a low attack
-- Direction + Mobility → dodge → Light
-- Timed Guard → Heavy
-- Confirmed hit → Weapon switch
+A fresh follow-up occupies one expiring **260 ms** slot. Separate taps on adjacent simulation ticks remain separate. A simultaneous Cut + Finish chord chooses Cut. Hit-stop ages the buffer, preventing a stale tap from executing much later.
 
-On mobile, tap **Enable tilt** from the title screen, hold the phone at a comfortable landscape angle, then use **Recenter** whenever posture changes. The virtual stick remains available as a fallback.
+The longsword's **Guard → direction → Cut** routes are available within **450 ms** of the Guard tap:
 
-## Two-phone co-op lab
+| Direction | Arcade adaptation |
+|---|---|
+| Forward | Long-point entry |
+| Up | High-cover crosscut — Zwerchhau |
+| Down | Rising cut from below — Unterhau |
+| Back | Retreating cut — Abzug |
 
-The title screen includes a manual WebRTC pairing flow that avoids any signaling backend:
+Directions are relative to facing at the Guard tap. The dussack has its own shorter one-handed variants. Direction + Step → Cut produces a passing cut; neutral Step → Cut/Finish attacks low. A timed parry grants a Cut or Finish answer, including while Guard remains held. Each timed parry is consumed once and cannot be armed during an attack, switch, dodge, hit reaction, or guard break.
 
-1. Host creates an invitation token and sends it to the guest.
-2. Guest pastes it, creates an answer token, and returns that token.
-3. Host applies the answer and starts the run once the connection is ready.
+The in-game **Move guide** explains the routes and pauses the fight. Lessons improve the starting repertoire. Marked items can be collected before taking an open exit; improvised weapons can break or be thrown. Active stick input takes priority over optional tilt.
 
-Use the same Wi-Fi network or a phone hotspot for the most useful test. The host owns enemies, random state, hits, level and wave flow, and upgrades. The guest sends inputs and renders host snapshots — snapshots that describe the whole fight, so both phones draw the same road.
+## Campaign and co-op
 
-Manual token exchange is a laboratory interface. The production plan replaces it with QR/room-code signaling while retaining peer-to-peer gameplay where network conditions permit. See [Networking](docs/NETWORKING.md).
+The existing five-level, seven-wave campaign remains, with four visual settings: cobbled streets, town gate, fencing hall, and castle court. Enemies include cudgel fighters, spear soldiers, armoured captains, and the invented grotesque boss. Clear a place, collect what remains on the road, and walk through its eastern exit. Two lesson choices provide six possible upgrades.
 
-## Deploy to GitHub Pages
+The Co-op screen retains manual, host-authoritative WebRTC pairing. The host creates an invitation; the guest creates an answer; the host applies that answer and starts. Two isolated browser peers were tested on one Mac. This does not establish cross-network reliability or performance on two physical phones. HTTPS/localhost is needed for secure-context browser features; network conditions may prevent direct peer connectivity.
 
-1. Create a GitHub repository and add these files.
-2. Push to the `main` branch.
-3. In **Settings → Pages**, choose **GitHub Actions** as the source.
-4. The included workflow uploads the prebuilt `site/` directory.
+## Testing
 
-The workflow deliberately deploys prebuilt files, so a public build does not depend on a package registry. GitHub Pages serves the game over HTTPS, which is required for several mobile browser capabilities.
-
-## Debugging
-
-Add query parameters to the local or deployed URL:
-
-- `?debug=1` — show combat/debug overlays
-- `?autostart=1` — enter solo play automatically
-- `?autostart=1&skipCountdown=1` — enter the first wave immediately
-
-In the browser console, `window.__FECHTSCHULE__.snapshot()` returns the current serializable game snapshot.
-
-## Repository map
-
-```text
-site/                       Prebuilt GitHub Pages/PWA output
-  index.html                Game shell and overlays
-  styles.css                Responsive mobile/desktop UI
-  js/                       Compiled ES modules
-  assets/                   Original placeholder mark
-  icons/                    PWA icons
-src/
-  app/                      Run loop and mode orchestration
-  audio/                    Procedural Web Audio feedback
-  input/                    Tilt, touch, and keyboard action mapping
-  network/                  Manual WebRTC and protocol definitions
-  render/                   Disposable Canvas 2D view adapter
-  sim/                      Deterministic combat, AI, waves, and progression
-  ui/                       DOM interface: the fight's cues, menus, lessons, pairing
-tests/                      Deterministic simulation tests
-tools/                      Static server and service-worker generator
-docs/                       Design, architecture, roadmap, and validation
-.github/workflows/           GitHub Pages deployment
+```sh
+npm test
+npm run test:browser       # live Chrome / emulated phone layouts
+npm run test:runtime       # actual browser input and combat state transitions
+node tools/offline-peer-audit.mjs
+node tools/live-soak.mjs --headed
+npm run test:webkit       # requires a working Playwright WebKit installation
 ```
 
-## Renderer choice
+The browser scripts expect `http://localhost:4187` and Google Chrome. Start `PORT=4187 node tools/serve.mjs` first. The first three browser audits support `BASE_URL`; the live-soak script uses the local test address. Playwright is a development dependency only. Emulation checks pointer events, viewport geometry, safe layout, and browser behavior; it is not a physical-device benchmark.
 
-The slice uses a small Canvas 2D renderer so the downloadable build is self-contained, dependency-free at runtime, and immediately deployable. Game rules do not live in the renderer. A production team can retain this renderer or replace it with Phaser while preserving the simulation, input actions, content data, networking protocol, and DOM interface. The migration boundary is described in [Architecture](docs/ARCHITECTURE.md).
+See [validation and evidence](docs/VALIDATION.md) and [review resolutions](docs/PROCEDURAL_REWORK.md). Browser screenshots are essential: the first automated pass missed toy-like anatomy, overlapping controls, and a postage-stamp portrait field. Independent review and subsequent live testing prompted additional changes.
 
-## Documentation
+## Deployment and debugging
 
-- [Product decision log](docs/DECISION_LOG.md)
-- [Vertical-slice specification](docs/VERTICAL_SLICE.md)
-- [Full game layout](docs/FULL_GAME_LAYOUT.md)
-- [Technical architecture](docs/ARCHITECTURE.md)
-- [Networking plan](docs/NETWORKING.md)
-- [Art overhaul work order](docs/ART_OVERHAUL.md)
-- [Historical method](docs/HISTORICAL_METHOD.md)
-- [Playtest plan](docs/PLAYTEST_PLAN.md)
-- [Roadmap and next issues](docs/ROADMAP.md)
-- [Build validation](docs/VALIDATION.md)
+GitHub Pages continues to deploy the prebuilt `site/` tree through the existing workflow. The content-hashed service worker caches only the procedural runtime and generated install icons; it looks up its own cache and ignores URL query strings. No game-art downloads are needed. Older caches are retained rather than deleting other stored builds; their storage can be managed through browser site settings.
 
-## Intellectual-property and historical boundary
+Useful local query parameters: `?debug=1`, `?autostart=1`, and `?autostart=1&skipCountdown=1&seed=17`. `window.__FECHTSCHULE__.snapshot()` returns serializable state. `window.advanceTime(ms)` switches the current run to deterministic test stepping; restarting restores the live clock.
 
-The code, interface, procedural visuals, and audio in this repository are original. *Little Fighter 2* is a genre and pacing reference only; no LF2 code, characters, art, audio, stages, or interface assets are included.
+## Source map
 
-Historical people and treatises require source review before publication. The fiction should distinguish documented material, mechanically adapted material, and invented supernatural narrative. The chained grotesques and infernal crypt are invented fiction, and Meyer’s journey into Italy itself is a scholarly hypothesis rather than a documented itinerary; neither is presented as a historical claim.
+`src/sim/` owns combat, AI, commands, items, and progression. `src/render/` owns procedural rigs, scenery, projection, and effects. `src/input/` owns physical edges and pointer ownership. `src/ui/` owns the menus and HUD. `src/network/` retains peer transport, and `src/app/` coordinates fixed-step updates, pause, lifecycle, and rendering. The compiled mirror lives in `site/js/`.
+
+## Historical and intellectual-property boundaries
+
+The cuts refer to broad distinctions in Meyer's 1570 text. Health, guard points, button commands, invulnerable steps, group hits, knockback, and the supernatural story are arcade inventions or adaptations. The journey in this game is fiction, not a documented itinerary. [Historical method and move-source notes](docs/HISTORICAL_METHOD.md) identify the source and limits. No professional HEMA reconstruction review has been performed.
+
+Little Fighter 2 is a pacing and genre reference. No LF2 code, characters, art, music, stages, or interface assets are included. The graphics and synthesized audio are original code-generated work. The result is stylized 2D procedural illustration, not photorealistic 3D rendering.
 
 ## License
 
-MIT for the included code and original placeholder assets. Historical source images, commissioned art, translations, fonts, music, and sound libraries added later require their own documented licenses.
+MIT for the included code and original illustrations. Historical scans, translations, fonts, or commissioned assets added later require their own license review. No font files or historical source images are distributed here.

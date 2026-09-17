@@ -7,6 +7,7 @@ import {
   isImprovisedWeapon,
   resolveCrouchAttack,
   resolveDodgeAttack,
+  resolveGuardAttack,
   resolvePlayerAttack,
   resolveSwitchAttack,
   throwAttackFor
@@ -17,12 +18,22 @@ import { clamp, damp, normalize2 } from './math.js';
 import { Rng } from './rng.js';
 import { chooseSoftTarget } from './targeting.js';
 import { LESSON_OFFERS } from './lessons.js';
+import {
+  ageActionBuffer,
+  FOLLOW_UP_BUFFER_SECONDS,
+  guardDirectionFromInput,
+  GUARD_COMMAND_WINDOW_SECONDS,
+  MAX_PLAYER_CHAIN_LENGTH,
+  writeActionBuffer
+} from './combo.js';
+import type { BufferedCombatAction } from './combo.js';
 import { ATTACK_SLOTS, ENCOUNTER_LABELS, LEVELS, laneNarrowingAt } from './waves.js';
 import type { AmbushWave, DuelWave, FloodWave, HoldWave, SpawnSpec, WaveDefinition } from './waves.js';
 import type {
   Actor,
   ActorSnapshot,
   ActorState,
+  ActionName,
   Archetype,
   AttackDefinition,
   GameEvent,
@@ -348,6 +359,18 @@ export const COMBO_HITSTUN_FLOOR = 0.4;
  * the player experiences as one string.
  */
 export const COMBO_LINK_GRACE_SECONDS = 0.36;
+/** Non-combat transport (item reach, guard edge, and Duck) may cross a short
+ * reaction, but it still expires instead of surviving a whole encounter. */
+export const INPUT_EDGE_BUFFER_SECONDS = 0.55;
+/** Earliest safe frame at which a directional dodge may become a cut. */
+export const DODGE_CUT_MIN_SECONDS = 0.045;
+/** Last useful frame for the short step-to-cut tap. */
+export const DODGE_CUT_MAX_SECONDS = 0.26;
+/** A confirmed light may deliberately leave its late recovery for guard/step. */
+export const LIGHT_RECOVERY_CANCEL_FRACTION = 0.45;
+// Re-export the combat timing contract from the small command module so hosts
+// and tests can inspect it without depending on the internal implementation.
+export { FOLLOW_UP_BUFFER_SECONDS, GUARD_COMMAND_WINDOW_SECONDS, MAX_PLAYER_CHAIN_LENGTH };
 const MOVE_INPUT_DEADZONE = 0.1;
 const DODGE_INPUT_DEADZONE = 0.15;
 
@@ -373,7 +396,7 @@ interface SpawnEntry {
 
 export class GameWorld {
   readonly actors: Actor[] = [];
-  /** Lessons learned this run; each unlocks a set of chained attacks. */
+  /** Lessons learned this run; each sharpens an already available route. */
   readonly lessons = new Set<LessonId>();
 
   phase: GamePhase = 'title';
@@ -405,6 +428,8 @@ export class GameWorld {
   readonly items: Item[] = [];
   private nextItemId = 1;
   private readonly pendingPlayerEdges: InputFrame[] = [];
+  /** Age of the non-combat edge transport retained through a reaction/hit-stop. */
+  private readonly pendingPlayerEdgeAges: number[] = [];
   private waveResolved = false;
   /** Seconds the eastern doorway has been open, counted down from its grace. */
   private exitTimer = 0;
@@ -446,6 +471,7 @@ export class GameWorld {
         420 + index * 54
       ));
       this.pendingPlayerEdges.push({ ...NEUTRAL_INPUT });
+      this.pendingPlayerEdgeAges.push(Number.POSITIVE_INFINITY);
     }
 
     // The journey opens standing at the near end of the first level's road, so
@@ -460,6 +486,7 @@ export class GameWorld {
   step(dt: number, inputs: readonly InputFrame[]): void {
     const safeDt = clamp(dt, 0, 1 / 20);
     this.tick += 1;
+    const sampledInputs = this.samplePlayerInputs(inputs);
 
     if (this.phase === 'countdown') {
       this.countdownTimer -= safeDt;
@@ -469,8 +496,12 @@ export class GameWorld {
 
     if (this.phase !== 'wave') return;
 
+    this.agePendingPlayerEdges(safeDt);
+    this.agePlayerActionBuffers(safeDt);
+
     if (this.hitStop > 0) {
-      this.bufferPlayerEdges(inputs);
+      this.bufferPlayerEdges(sampledInputs);
+      this.bufferPlayerActionsDuringHitStop(sampledInputs);
       this.hitStop -= safeDt;
       return;
     }
@@ -484,7 +515,7 @@ export class GameWorld {
     const players = this.playerActors();
     for (const player of players) {
       const playerIndex = player.playerIndex ?? 0;
-      const input = this.consumePlayerInput(playerIndex, inputs[playerIndex] ?? NEUTRAL_INPUT);
+      const input = this.consumePlayerInput(playerIndex, sampledInputs[playerIndex] ?? NEUTRAL_INPUT);
       this.updatePlayer(player, input, safeDt);
     }
 
@@ -617,6 +648,10 @@ export class GameWorld {
       actor.aiThink = Math.max(0, actor.aiThink - dt);
       actor.answerCooldown = Math.max(0, actor.answerCooldown - dt);
       actor.urgency = Math.max(0, actor.urgency - dt);
+      if (actor.guardCommand) {
+        actor.guardCommand.elapsed += dt;
+        if (actor.guardCommand.elapsed > GUARD_COMMAND_WINDOW_SECONDS) actor.guardCommand = null;
+      }
       // The answer stays armed for a moment after the shrug; if it runs out,
       // the captain simply never got the chance to reply.
       actor.answerTimer = Math.max(0, actor.answerTimer - dt);
@@ -640,11 +675,16 @@ export class GameWorld {
 
   private updatePlayer(actor: Actor, input: InputFrame, dt: number): void {
     actor.lastInput = { ...input };
-    if (actor.state === 'dead') return;
+    if (actor.state === 'dead') {
+      this.clearActionBuffer(actor);
+      actor.guardCommand = null;
+      return;
+    }
 
-    // The parry window is armed first so a reach can never eat it: the two are
-    // different buttons, and a player who pressed both meant both.
-    if (input.guardPressed) actor.parryWindow = 0.17;
+    // A guard edge is intentionally separate from held Guard. It gives one
+    // short parry window; holding the button never refreshes it.
+    if (input.guardPressed && actor.guard > 0 && ['idle', 'move', 'block', 'crouch'].includes(actor.state)) actor.parryWindow = 0.17;
+    this.updateGuardCommand(actor, input);
 
     // A reach down to the road, before anything else claims the press: the
     // thing the cue is offering is taken by the same button that would otherwise
@@ -653,6 +693,7 @@ export class GameWorld {
     if (input.switchPressed && this.reachForItem(actor)) return;
 
     if (actor.state === 'hitstun' || actor.state === 'guardbreak') {
+      this.captureActionEdges(actor, input, 'light-heavy');
       actor.stateElapsed += dt;
       actor.x += actor.vx * dt;
       actor.z += actor.vz * dt;
@@ -685,43 +726,82 @@ export class GameWorld {
     }
 
     if (actor.state === 'dodge') {
+      this.captureActionEdges(actor, input, 'light');
       actor.stateElapsed += dt;
       const remaining = 1 - actor.stateElapsed / actor.stateDuration;
       actor.x += actor.stateMoveX * 470 * Math.max(0.35, remaining) * dt;
       actor.z += actor.stateMoveZ * 330 * Math.max(0.35, remaining) * dt;
       this.clampActor(actor);
-      if (input.lightPressed && actor.stateElapsed > 0.045 && actor.stateElapsed < 0.22) {
+      if (
+        this.peekBufferedAction(actor) === 'light' &&
+        actor.stateElapsed >= DODGE_CUT_MIN_SECONDS &&
+        actor.stateElapsed <= DODGE_CUT_MAX_SECONDS
+      ) {
+        this.consumeBufferedAction(actor);
         this.startAttack(actor, resolveDodgeAttack(actor.weapon));
-        if (actor.weapon === 'dussack' && this.lessons.has('ds-wheel')) actor.invulnerable = 0.24;
+        // The step owns its brief invulnerability. Starting the cut does not
+        // extend it into an exploitable dussack loop.
+        actor.invulnerable = Math.min(actor.invulnerable, 0.08);
         return;
       }
-      if (actor.stateElapsed >= actor.stateDuration) this.enterNeutral(actor);
+      if (actor.stateElapsed >= actor.stateDuration) {
+        this.clearActionBuffer(actor);
+        this.enterNeutral(actor);
+      }
       return;
     }
 
     if (actor.state === 'crouch') {
+      if (actor.stateElapsed <= CROUCH_ATTACK_WINDOW_SECONDS) {
+        this.captureActionEdges(actor, input, 'light-heavy');
+      }
       actor.stateElapsed += dt;
       actor.vx = 0;
       actor.vz = 0;
       if (
-        (input.lightPressed || input.heavyPressed) &&
+        this.peekBufferedAction(actor) !== null &&
         actor.stateElapsed <= CROUCH_ATTACK_WINDOW_SECONDS
       ) {
-        const action = input.lightPressed ? 'light' : 'heavy';
+        const action = this.consumeBufferedAction(actor);
+        if (action !== 'light' && action !== 'heavy') {
+          this.enterNeutral(actor);
+          return;
+        }
         this.startAttack(actor, resolveCrouchAttack(actor.weapon, action));
         return;
       }
+      if (actor.stateElapsed > CROUCH_ATTACK_WINDOW_SECONDS) this.clearActionBuffer(actor);
       if (actor.stateElapsed >= actor.stateDuration) this.enterNeutral(actor);
       return;
     }
 
     if (actor.state === 'block') {
+      this.captureActionEdges(actor, input, 'light-heavy');
       actor.stateElapsed += dt;
+      // Switch remains a supported action while guarding, but it must first
+      // leave the held guard. Item reach was already given first refusal above.
+      if (input.switchPressed) {
+        this.clearActionBuffer(actor);
+        this.enterNeutral(actor);
+        this.startSwitch(actor, false);
+        return;
+      }
+      if (input.mobilityPressed) {
+        this.leaveGuardForMobility(actor, input);
+        return;
+      }
+      const action = this.peekBufferedAction(actor);
+      if (action === 'light' || action === 'heavy') {
+        this.consumeBufferedAction(actor);
+        this.startPlayerAction(actor, action);
+        return;
+      }
       if (!input.guardHeld || actor.guard <= 0) {
         this.enterNeutral(actor);
-      } else {
-        this.moveActor(actor, input.moveX, input.moveZ, 0.31, dt);
+        return;
       }
+      this.moveActor(actor, input.moveX, input.moveZ, 0.31, dt);
+      if (actor.guardCommand) actor.facing = actor.guardCommand.referenceFacing;
       return;
     }
 
@@ -731,17 +811,15 @@ export class GameWorld {
     }
 
     if (input.mobilityPressed) {
-      const rawMagnitude = Math.hypot(input.moveX, input.moveZ);
-      const direction = rawMagnitude > DODGE_INPUT_DEADZONE
-        ? normalize2(input.moveX, input.moveZ)
-        : { x: 0, y: 0 };
-      if (rawMagnitude > DODGE_INPUT_DEADZONE) this.startDodge(actor, direction.x, direction.y);
-      else if (input.lightPressed || input.heavyPressed) {
-        const action = input.lightPressed ? 'light' : 'heavy';
-        this.startAttack(actor, resolveCrouchAttack(actor.weapon, action));
-      } else {
-        this.startCrouch(actor);
-      }
+      this.leaveGuardForMobility(actor, input);
+      return;
+    }
+
+    this.captureActionEdges(actor, input, 'light-heavy');
+    const action = this.peekBufferedAction(actor);
+    if (action === 'light' || action === 'heavy') {
+      this.consumeBufferedAction(actor);
+      this.startPlayerAction(actor, action);
       return;
     }
 
@@ -757,20 +835,103 @@ export class GameWorld {
       return;
     }
 
-    if (input.lightPressed || input.heavyPressed) {
-      const action = input.lightPressed ? 'light' : 'heavy';
-      const id = resolvePlayerAttack(actor.weapon, action, null, actor.counterWindow > 0, this.lessons);
-      if (action === 'heavy' && actor.counterWindow > 0) actor.counterWindow = 0;
-      this.startAttack(actor, id);
-      return;
-    }
-
     this.moveActor(actor, input.moveX, input.moveZ, 1, dt);
     this.updateContinuousState(
       actor,
       Math.hypot(input.moveX, input.moveZ) > MOVE_INPUT_DEADZONE ? 'move' : 'idle',
       dt
     );
+  }
+
+  /**
+   * Records the first directional guard intent and lets a later Cut consume it
+   * for 450 ms. The reference facing is frozen at the guard edge, so walking
+   * backward while holding guard cannot silently change what "back" means.
+   */
+  private updateGuardCommand(actor: Actor, input: InputFrame): void {
+    if (!['idle', 'move', 'block', 'crouch'].includes(actor.state)) return;
+    if (input.guardPressed) {
+      actor.guardCommand = {
+        direction: guardDirectionFromInput(input.moveX, input.moveZ, actor.facing),
+        referenceFacing: actor.facing,
+        elapsed: 0
+      };
+      return;
+    }
+    // A guard tap may be released before the direction sample arrives. Keep
+    // the recognizer alive for its short command window so touch and keyboard
+    // sequencing have the same result. Once that window expires, a fresh Guard
+    // edge is required; holding Guard and a direction cannot refresh it.
+    if (!input.guardHeld && !actor.guardCommand) return;
+    const direction = guardDirectionFromInput(
+      input.moveX,
+      input.moveZ,
+      actor.guardCommand?.referenceFacing ?? actor.facing
+    );
+    if (!direction) return;
+    if (!actor.guardCommand) {
+      if (!input.guardPressed) return;
+      actor.guardCommand = { direction, referenceFacing: actor.facing, elapsed: 0 };
+    } else if (!actor.guardCommand.direction) {
+      actor.guardCommand.direction = direction;
+    }
+  }
+
+  /** Handles a directional step from neutral or from a held guard. */
+  private leaveGuardForMobility(actor: Actor, input: InputFrame): void {
+    const rawMagnitude = Math.hypot(input.moveX, input.moveZ);
+    const direction = rawMagnitude > DODGE_INPUT_DEADZONE
+      ? normalize2(input.moveX, input.moveZ)
+      : { x: 0, y: 0 };
+    if (rawMagnitude > DODGE_INPUT_DEADZONE) {
+      // Duck/Step + Cut on one sampled frame is a step first. The Cut occupies
+      // the same bounded action slot and becomes available on the early dodge
+      // frames instead of being discarded by the state transition.
+      if (input.lightPressed) this.captureActionEdges(actor, input, 'light');
+      this.startDodge(actor, direction.x, direction.y);
+      return;
+    }
+    const bufferedAction = this.peekBufferedAction(actor);
+    if (input.lightPressed || input.heavyPressed || bufferedAction === 'light' || bufferedAction === 'heavy') {
+      const action = input.lightPressed || bufferedAction === 'light' ? 'light' : 'heavy';
+      if (bufferedAction === 'light' || bufferedAction === 'heavy') this.consumeBufferedAction(actor);
+      this.startAttack(actor, resolveCrouchAttack(actor.weapon, action));
+      return;
+    }
+    this.startCrouch(actor);
+  }
+
+  /** Starts a player action, giving explicit guard and parry answers priority. */
+  private startPlayerAction(actor: Actor, action: 'light' | 'heavy', currentAttackId: string | null = null, chain = false): void {
+    const command = actor.guardCommand;
+    if (action === 'light' && command?.direction) {
+      // The command's relative direction is defined at the Guard edge. Restore
+      // that facing before the cut starts even if the direction sample itself
+      // was released and ordinary movement briefly turned the fighter around.
+      actor.facing = command.referenceFacing;
+      const attackId = resolveGuardAttack(actor.weapon, command.direction);
+      const explicitTarget = command.direction === 'back' ? null : undefined;
+      actor.counterWindow = 0;
+      actor.parryWindow = 0;
+      actor.guardCommand = null;
+      this.clearActionBuffer(actor);
+      this.startAttack(actor, attackId, explicitTarget, { chain, preserveFacing: true });
+      return;
+    }
+
+    const afterParry = actor.counterWindow > 0;
+    const attackId = resolvePlayerAttack(
+      actor.weapon,
+      action,
+      currentAttackId,
+      afterParry,
+      this.lessons
+    );
+    if (afterParry) actor.counterWindow = 0;
+    actor.parryWindow = 0;
+    actor.guardCommand = null;
+    this.clearActionBuffer(actor);
+    this.startAttack(actor, attackId, undefined, { chain });
   }
 
   private updatePlayerAttack(actor: Actor, input: InputFrame, dt: number): void {
@@ -781,6 +942,22 @@ export class GameWorld {
     }
     const definition = getAttack(runtime.id);
 
+    // Older callers may construct an AttackRuntime with only its public queue
+    // field. Hydrate the internal slot once so the bounded-lifetime rule still
+    // applies to those runs and to replay fixtures.
+    if (
+      actor.actionBuffer === null &&
+      runtime.queuedAction !== null &&
+      runtime.queuedAction !== 'mobility'
+    ) {
+      actor.actionBuffer = {
+        action: runtime.queuedAction,
+        age: runtime.queuedActionAge ?? 0
+      };
+    }
+    this.captureActionEdges(actor, input, 'light-heavy');
+    if (input.switchPressed && runtime.hitConfirmed) this.writeAction(actor, 'switch');
+
     runtime.elapsed += dt;
     actor.stateElapsed = runtime.elapsed;
 
@@ -789,7 +966,6 @@ export class GameWorld {
       if (target && target.state !== 'dead') {
         const depthError = target.z - actor.z;
         actor.z += clamp(depthError, -92 * dt, 92 * dt);
-        if (Math.abs(target.x - actor.x) > 6) actor.facing = target.x >= actor.x ? 1 : -1;
       }
     }
 
@@ -810,26 +986,29 @@ export class GameWorld {
       this.releaseCarriedWeapon(actor);
     }
 
-    const queueOpen = runtime.elapsed >= definition.startup * 0.45;
-    if (queueOpen) {
-      if (input.lightPressed) runtime.queuedAction = 'light';
-      else if (input.heavyPressed) runtime.queuedAction = 'heavy';
-      else if (input.switchPressed && runtime.hitConfirmed) runtime.queuedAction = 'switch';
-    }
-
-    if (
-      runtime.blocked &&
-      definition.provoke &&
-      this.lessons.has('ls-provoker') &&
-      input.guardHeld &&
-      runtime.elapsed >= definition.startup + definition.active
-    ) {
-      actor.attack = null;
-      actor.state = 'block';
-      actor.stateElapsed = 0;
-      actor.stateDuration = 0;
-      actor.reactionZone = null;
-      return;
+    const activeEnd = definition.startup + definition.active;
+    const lateCancelOpen = !definition.heavy &&
+      runtime.hitConfirmed &&
+      runtime.elapsed >= activeEnd + definition.recovery * LIGHT_RECOVERY_CANCEL_FRACTION &&
+      runtime.elapsed < attackDuration(definition);
+    // Recovery cancels are explicit edges, and only confirmed lights may leave
+    // their late recovery. A committed heavy never turns into a guard or step.
+    if (lateCancelOpen && this.peekBufferedAction(actor) === null) {
+      if (input.mobilityPressed && Math.hypot(input.moveX, input.moveZ) > DODGE_INPUT_DEADZONE) {
+        this.startDodgeFromLightRecovery(actor, input);
+        return;
+      }
+      if (input.guardPressed && input.guardHeld) {
+        this.clearActionBuffer(actor);
+        actor.parryWindow = 0;
+        actor.guardCommand = null;
+        actor.attack = null;
+        actor.state = 'block';
+        actor.stateElapsed = 0;
+        actor.stateDuration = 0;
+        actor.reactionZone = null;
+        return;
+      }
     }
 
     // The Little Fighter 2 link: a cut that actually connects releases the rest
@@ -840,10 +1019,12 @@ export class GameWorld {
     // fastest available button.
     const linkOpen = !definition.heavy
       && runtime.hitConfirmed
-      && runtime.elapsed >= definition.startup + definition.active;
-    if (runtime.elapsed < attackDuration(definition) && !(linkOpen && runtime.queuedAction !== null)) return;
+      && runtime.elapsed >= activeEnd
+      && actor.chainLength < MAX_PLAYER_CHAIN_LENGTH;
+    const queuedAction = this.peekBufferedAction(actor);
+    if (runtime.elapsed < attackDuration(definition) && !(linkOpen && queuedAction !== null)) return;
 
-    const queued = runtime.queuedAction;
+    const queued = this.consumeBufferedAction(actor);
     const hitConfirmed = runtime.hitConfirmed;
     const currentId = runtime.id;
     actor.attack = null;
@@ -854,9 +1035,14 @@ export class GameWorld {
     }
 
     if (queued === 'light' || queued === 'heavy') {
-      const next = resolvePlayerAttack(actor.weapon, queued, currentId, actor.counterWindow > 0, this.lessons);
-      if (queued === 'heavy' && actor.counterWindow > 0) actor.counterWindow = 0;
-      this.startAttack(actor, next);
+      // A whiff or block can still accept a later button, but it starts a fresh
+      // action after the full recovery; it never secretly becomes a link.
+      if (queued === 'light' && hitConfirmed && actor.chainLength >= MAX_PLAYER_CHAIN_LENGTH) {
+        this.enterNeutral(actor);
+        return;
+      }
+      const canLink = hitConfirmed && !definition.heavy && actor.chainLength < MAX_PLAYER_CHAIN_LENGTH;
+      this.startPlayerAction(actor, queued, canLink ? currentId : null, canLink);
       return;
     }
 
@@ -1519,7 +1705,7 @@ export class GameWorld {
     const fromFront = (attacker.x - target.x) * target.facing >= -18;
     if (!fromFront) return false;
 
-    const timedParry = target.parryWindow > 0;
+    const timedParry = target.parryWindow > 0 && ['idle', 'move', 'block', 'crouch'].includes(target.state);
     let deflected = timedParry;
     if (!deflected && target.attack) {
       const targetDef = getAttack(target.attack.id);
@@ -1533,7 +1719,10 @@ export class GameWorld {
       }
     }
     if (!deflected) return false;
+    if (timedParry) target.parryWindow = 0; // One timed parry per deliberate Guard edge.
 
+    this.clearActionBuffer(attacker);
+    attacker.guardCommand = null;
     attacker.attack = null;
     attacker.state = 'hitstun';
     attacker.stateElapsed = 0;
@@ -1544,6 +1733,7 @@ export class GameWorld {
     target.counterWindow = 1.05;
     target.openingTimer = Math.max(target.openingTimer, target.provokeTimer > 0 ? 2.5 : 1.6);
     target.provokeTimer = 0;
+    target.guardCommand = null;
     target.flashTimer = 0.08;
     this.hitStop = Math.max(this.hitStop, 0.075);
     this.emit({
@@ -1579,6 +1769,9 @@ export class GameWorld {
       target.state = 'guardbreak';
       target.stateElapsed = 0;
       target.stateDuration = target.archetype === 'grotesque' ? 0.48 : 0.9;
+      this.clearActionBuffer(target);
+      target.guardCommand = null;
+      target.parryWindow = 0;
       target.attack = null;
       this.emit({
         type: 'guardbreak',
@@ -1620,6 +1813,19 @@ export class GameWorld {
     }
 
     let damage = definition.damage * multiplier;
+    if (attacker.team === 'players') {
+      // Lessons are upgrades to the starter routes, not keys that decide
+      // whether a route exists at all.
+      if (definition.id === 'ls_l2' && this.lessons.has('ls-crossing')) damage *= 1.1;
+      if (definition.id === 'ds_l2' && this.lessons.has('ds-backhand')) damage *= 1.1;
+      if (definition.id === 'ls_l3' && this.lessons.has('ls-threefold')) damage *= 1.12;
+      if (definition.id === 'ds_l3' && this.lessons.has('ds-wheel')) damage *= 1.1;
+    }
+    const knockback = attacker.team === 'players' && definition.id === 'ls_l3' && this.lessons.has('ls-threefold')
+      ? definition.knockback * 1.16
+      : attacker.team === 'players' && definition.id === 'ds_l3' && this.lessons.has('ds-wheel')
+        ? definition.knockback * 1.14
+        : definition.knockback;
     let appliedHitstun = definition.hitstun;
 
     const absorbedByArmor = target.armor > 0;
@@ -1673,11 +1879,14 @@ export class GameWorld {
         if (answer) target.answerTimer = Math.max(target.answerTimer, answer.window);
       }
     } else {
+      this.clearActionBuffer(target);
+      target.guardCommand = null;
+      target.parryWindow = 0;
       target.attack = null;
       // A mate's queued swing dies with the man who was about to take it.
       target.pairBeatTimer = 0;
-      target.vx = attacker.facing * definition.knockback;
-      target.vz += Math.sign(target.z - attacker.z || 1) * definition.knockback * 0.18;
+      target.vx = attacker.facing * knockback;
+      target.vz += Math.sign(target.z - attacker.z || 1) * knockback * 0.18;
     }
 
     attacker.attack!.hitConfirmed = true;
@@ -1688,7 +1897,7 @@ export class GameWorld {
       target.stateElapsed = 0;
       target.stateDuration = 1.15;
       target.deathTimer = 0;
-      target.vx = attacker.facing * definition.knockback * 1.2;
+      target.vx = attacker.facing * knockback * 1.2;
       this.dropLoot(target);
       this.score += target.scoreValue;
       this.emit({
@@ -1728,15 +1937,33 @@ export class GameWorld {
     this.hitStop = Math.max(this.hitStop, definition.hitStop * (thirdIntention ? 1.3 : 1));
   }
 
-  private startAttack(actor: Actor, attackId: string, explicitTarget?: Actor): void {
+  private startAttack(
+    actor: Actor,
+    attackId: string,
+    explicitTarget?: Actor | null,
+    options: { chain?: boolean; preserveFacing?: boolean } = {}
+  ): void {
     const definition = getAttack(attackId);
-    const target = explicitTarget ?? chooseSoftTarget(actor, this.actors, {
-      maxForward: definition.reach + 74,
-      maxDepth: Math.max(96, definition.depth + 68),
-      previousTargetId: actor.attack?.targetId ?? null
-    });
+    const target = explicitTarget === undefined
+      ? chooseSoftTarget(actor, this.actors, {
+        maxForward: definition.reach + 74,
+        maxDepth: Math.max(96, definition.depth + 68),
+        previousTargetId: actor.attack?.targetId ?? null
+      })
+      : explicitTarget;
 
-    if (target) actor.facing = target.x >= actor.x ? 1 : -1;
+    // A target is a soft lane assist, not permission to turn around after a
+    // move has started. Back-command cuts intentionally pass null here so their
+    // authored rear allowance remains behind the reference facing.
+    if (target && !options.preserveFacing) {
+      const forward = (target.x - actor.x) * actor.facing;
+      if (forward >= -18) actor.facing = target.x >= actor.x ? 1 : -1;
+    }
+    if (actor.team === 'players') {
+      actor.chainLength = options.chain ? actor.chainLength + 1 : 1;
+      actor.guardCommand = null;
+      actor.parryWindow = 0;
+    }
     actor.attack = {
       id: attackId,
       elapsed: 0,
@@ -1766,6 +1993,8 @@ export class GameWorld {
     actor.stateMoveX = moveX;
     actor.stateMoveZ = moveZ;
     actor.invulnerable = 0.18;
+    actor.guardCommand = null;
+    actor.parryWindow = 0;
     actor.reactionZone = null;
     if (Math.abs(moveX) > 0.15) actor.facing = moveX >= 0 ? 1 : -1;
   }
@@ -1776,10 +2005,12 @@ export class GameWorld {
     actor.stateDuration = CROUCH_DURATION_SECONDS;
     actor.vx = 0;
     actor.vz = 0;
+    actor.guardCommand = null;
     actor.reactionZone = null;
   }
 
   private startSwitch(actor: Actor, fromHit: boolean): void {
+    this.clearActionBuffer(actor);
     // With a find in hand there is nothing to switch to: the same button hurls
     // it instead, which is how a thug's club stops being your problem.
     if (isImprovisedWeapon(actor.weapon)) {
@@ -1795,6 +2026,10 @@ export class GameWorld {
     actor.attack = null;
     actor.comboCount = fromHit ? actor.comboCount : 0;
     actor.comboHits = fromHit ? actor.comboHits : 0;
+    actor.chainLength = 0;
+    actor.guardCommand = null;
+    actor.parryWindow = 0;
+    actor.guardCommand = null;
     actor.reactionZone = null;
   }
 
@@ -1808,6 +2043,7 @@ export class GameWorld {
     // Idling out of a move is what ends a chain, so the next cut starts fresh
     // with undecayed hitstun.
     actor.comboHits = 0;
+    actor.chainLength = 0;
     actor.reactionZone = null;
   }
 
@@ -1839,56 +2075,177 @@ export class GameWorld {
     return getAttack(actor.attack.id).crouchedPosture === true;
   }
 
-  private bufferPlayerEdges(inputs: readonly InputFrame[]): void {
+  /** Edge-filter the caller sample once, so a held button cannot repeat at any
+   * caller refresh rate. InputHub already emits edges, but the simulation also
+   * enforces that contract for direct hosts, tests, and older clients. */
+  private samplePlayerInputs(inputs: readonly InputFrame[]): InputFrame[] {
+    // These flags already represent fresh physical edges, not held states.
+    // Consecutive true samples can be two intentional taps; deduplicating here
+    // loses real input. InputHub and the controller own held-key suppression.
+    return Array.from({ length: this.playerCount }, (_, index) => ({ ...(inputs[index] ?? NEUTRAL_INPUT) }));
+  }
+
+  private agePendingPlayerEdges(dt: number): void {
     for (let index = 0; index < this.playerCount; index += 1) {
       const pending = this.pendingPlayerEdges[index];
-      if (pending) this.mergePlayerEdges(pending, inputs[index] ?? NEUTRAL_INPUT);
+      if (!pending) continue;
+      const age = (this.pendingPlayerEdgeAges[index] ?? Number.POSITIVE_INFINITY) + dt;
+      if (age <= INPUT_EDGE_BUFFER_SECONDS) {
+        this.pendingPlayerEdgeAges[index] = age;
+        continue;
+      }
+      pending.mobilityPressed = false;
+      pending.switchPressed = false;
+      pending.guardPressed = false;
+      pending.moveX = 0;
+      pending.moveZ = 0;
+      this.pendingPlayerEdgeAges[index] = Number.POSITIVE_INFINITY;
     }
+  }
+
+  private agePlayerActionBuffers(dt: number): void {
+    for (const actor of this.playerActors()) {
+      // Keep replay fixtures and older hosts that still write the public queue
+      // on the same bounded clock as the internal slot.
+      if (
+        actor.actionBuffer === null &&
+        actor.attack?.queuedAction !== null &&
+        actor.attack?.queuedAction !== undefined &&
+        actor.attack.queuedAction !== 'mobility'
+      ) {
+        actor.actionBuffer = {
+          action: actor.attack.queuedAction,
+          age: actor.attack.queuedActionAge ?? 0
+        };
+      }
+      if (!actor.actionBuffer) continue;
+      actor.actionBuffer = ageActionBuffer(actor.actionBuffer, dt, FOLLOW_UP_BUFFER_SECONDS);
+      if (!actor.actionBuffer) {
+        this.clearActionBuffer(actor);
+      } else if (actor.attack) {
+        actor.attack.queuedAction = actor.actionBuffer.action;
+        actor.attack.queuedActionAge = actor.actionBuffer.age;
+      }
+    }
+  }
+
+  private bufferPlayerActionsDuringHitStop(inputs: readonly InputFrame[]): void {
+    for (let index = 0; index < this.playerCount; index += 1) {
+      const actor = this.actors.find((candidate) => candidate.playerIndex === index);
+      const input = inputs[index] ?? NEUTRAL_INPUT;
+      if (!actor || actor.state === 'dead') continue;
+      if (actor.state === 'dodge') this.captureActionEdges(actor, input, 'light');
+      else this.captureActionEdges(actor, input, 'light-heavy');
+    }
+  }
+
+  /** Stores only the combat actions that can occupy the one follow-up slot. */
+  private captureActionEdges(
+    actor: Actor,
+    input: Readonly<InputFrame>,
+    mode: 'light' | 'light-heavy'
+  ): void {
+    if (mode === 'light') {
+      if (input.lightPressed) this.writeAction(actor, 'light');
+      return;
+    }
+    // Light wins a same-frame chord, matching InputHub's attack ordering and
+    // making a Guard + direction + Cut sample unambiguous.
+    if (input.lightPressed) this.writeAction(actor, 'light');
+    else if (input.heavyPressed) this.writeAction(actor, 'heavy');
+  }
+
+  private writeAction(actor: Actor, action: BufferedCombatAction): void {
+    actor.actionBuffer = writeActionBuffer(action);
+    if (actor.attack) {
+      actor.attack.queuedAction = action;
+      actor.attack.queuedActionAge = 0;
+    }
+  }
+
+  private peekBufferedAction(actor: Actor): ActionName | null {
+    return actor.actionBuffer?.action ?? null;
+  }
+
+  private consumeBufferedAction(actor: Actor): ActionName | null {
+    const action = actor.actionBuffer?.action ?? null;
+    this.clearActionBuffer(actor);
+    return action;
+  }
+
+  private clearActionBuffer(actor: Actor): void {
+    actor.actionBuffer = null;
+    if (actor.attack) {
+      actor.attack.queuedAction = null;
+      delete actor.attack.queuedActionAge;
+    }
+  }
+
+  private startDodgeFromLightRecovery(actor: Actor, input: InputFrame): void {
+    const direction = normalize2(input.moveX, input.moveZ);
+    this.clearActionBuffer(actor);
+    actor.parryWindow = 0;
+    this.startDodge(actor, direction.x, direction.y);
+  }
+
+  private bufferPlayerEdges(inputs: readonly InputFrame[]): void {
+    for (let index = 0; index < this.playerCount; index += 1) {
+      this.bufferPlayerEdge(index, inputs[index] ?? NEUTRAL_INPUT);
+    }
+  }
+
+  private bufferPlayerEdge(playerIndex: number, source: Readonly<InputFrame>): void {
+    const pending = this.pendingPlayerEdges[playerIndex];
+    if (!pending) return;
+    let stored = false;
+    if (source.mobilityPressed) {
+      const actor = this.actors.find((candidate) => candidate.playerIndex === playerIndex);
+      const actionAlreadyWaiting = actor?.actionBuffer?.action === 'light' || actor?.actionBuffer?.action === 'heavy';
+      if (!pending.mobilityPressed && !actionAlreadyWaiting) {
+        pending.mobilityPressed = true;
+        pending.moveX = source.moveX;
+        pending.moveZ = source.moveZ;
+      }
+      stored = pending.mobilityPressed;
+    }
+    if (source.switchPressed) {
+      pending.switchPressed = true;
+      stored = true;
+    }
+    if (source.guardPressed) {
+      pending.guardPressed = true;
+      stored = true;
+    }
+    if (stored) this.pendingPlayerEdgeAges[playerIndex] = 0;
   }
 
   private consumePlayerInput(playerIndex: number, current: Readonly<InputFrame>): InputFrame {
     const pending = this.pendingPlayerEdges[playerIndex];
-    if (!pending) return { ...current };
-    this.mergePlayerEdges(pending, current);
     const actor = this.actors.find((candidate) => candidate.playerIndex === playerIndex);
+    this.bufferPlayerEdge(playerIndex, current);
     if (actor && (actor.state === 'hitstun' || actor.state === 'guardbreak')) {
       // Reaction states cannot act this step; keep edges queued so the press
-      // fires on recovery instead of being consumed and silently dropped.
+      // fires on recovery instead of being consumed and silently dropped. Light
+      // and Heavy are retained in actor.actionBuffer separately.
       return { ...current };
     }
+    if (!pending) return { ...current };
     const useMobilityEdgeAxes = pending.mobilityPressed;
     const merged: InputFrame = {
       ...current,
       moveX: useMobilityEdgeAxes ? pending.moveX : current.moveX,
       moveZ: useMobilityEdgeAxes ? pending.moveZ : current.moveZ,
-      lightPressed: pending.lightPressed,
-      heavyPressed: pending.heavyPressed,
-      mobilityPressed: pending.mobilityPressed,
-      switchPressed: pending.switchPressed,
-      guardPressed: pending.guardPressed
+      mobilityPressed: current.mobilityPressed || pending.mobilityPressed,
+      switchPressed: current.switchPressed || pending.switchPressed,
+      guardPressed: current.guardPressed || pending.guardPressed
     };
-    pending.lightPressed = false;
-    pending.heavyPressed = false;
     pending.mobilityPressed = false;
     pending.switchPressed = false;
     pending.guardPressed = false;
     pending.moveX = 0;
     pending.moveZ = 0;
+    this.pendingPlayerEdgeAges[playerIndex] = Number.POSITIVE_INFINITY;
     return merged;
-  }
-
-  private mergePlayerEdges(target: InputFrame, source: Readonly<InputFrame>): void {
-    const mobilityAlreadyPending = target.mobilityPressed;
-    const attackAlreadyPending = target.lightPressed || target.heavyPressed;
-    target.lightPressed ||= source.lightPressed;
-    target.heavyPressed ||= source.heavyPressed;
-    if (!attackAlreadyPending && source.mobilityPressed && !mobilityAlreadyPending) {
-      target.mobilityPressed = true;
-      target.moveX = source.moveX;
-      target.moveZ = source.moveZ;
-    }
-    target.switchPressed ||= source.switchPressed;
-    target.guardPressed ||= source.guardPressed;
   }
 
   private clampActor(actor: Actor): void {
@@ -2255,6 +2612,7 @@ export class GameWorld {
     this.exitTimer = 0;
     this.waveResolved = false;
     this.offeredLessons = [];
+    this.resetPlayerCommandState();
     if (definition.kind === 'boss') this.bossPhase = 1;
 
     // Whichever kind authored a lane gets it: the road narrows if the wave says
@@ -2404,6 +2762,29 @@ export class GameWorld {
       this.enterNeutral(player);
       // Placed on a road they have not walked yet, facing the way it runs.
       this.clampActor(player);
+    }
+  }
+
+  /** Clears non-snapshot command state at a clean wave boundary. */
+  private resetPlayerCommandState(): void {
+    for (let index = 0; index < this.playerCount; index += 1) {
+      const player = this.actors.find((actor) => actor.playerIndex === index);
+      if (player) {
+        this.clearActionBuffer(player);
+        player.guardCommand = null;
+        player.parryWindow = 0;
+        player.counterWindow = 0;
+        player.chainLength = 0;
+      }
+      const pending = this.pendingPlayerEdges[index];
+      if (pending) {
+        pending.mobilityPressed = false;
+        pending.switchPressed = false;
+        pending.guardPressed = false;
+        pending.moveX = 0;
+        pending.moveZ = 0;
+      }
+      this.pendingPlayerEdgeAges[index] = Number.POSITIVE_INFINITY;
     }
   }
 

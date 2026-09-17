@@ -3,17 +3,19 @@ import { LESSON_ROUTES } from '../sim/attacks.js';
 import { ITEM_REACH_STATES, itemWithinReach } from '../sim/world.js';
 import type { ActorSnapshot, GameSnapshot, ItemKind, ItemSnapshot, LessonId } from '../sim/types.js';
 
-/**
- * What the Switch button means when the road is offering something, spelled out
- * per item: the caret over the thing says there is a take, and this says what
- * the take is, so the button's meaning is declared before it is pressed.
- */
 const ITEM_TAKE_LABELS: Readonly<Record<ItemKind, string>> = Object.freeze({
   potion: 'DRINK DRAUGHT',
   club: 'TAKE CUDGEL',
   spear: 'TAKE SHAFT',
   longsword: 'TAKE LONGSWORD',
   dussack: 'TAKE DUSSACK'
+});
+
+const WEAPON_LABELS: Readonly<Record<ActorSnapshot['weapon'], string>> = Object.freeze({
+  longsword: 'LONGSWORD',
+  dussack: 'DUSSACK',
+  club: 'CUDGEL',
+  spear: 'SPEAR'
 });
 
 export interface UiCallbacks {
@@ -38,11 +40,26 @@ export class GameUI {
   private readonly bannerTitle = requireElement<HTMLElement>('banner-title');
   private readonly bannerSubtitle = requireElement<HTMLElement>('banner-subtitle');
   private readonly bannerNote = requireElement<HTMLElement>('banner-note');
+  private readonly waveLabel = requireElement<HTMLElement>('wave-label');
+  private readonly waveContext = requireElement<HTMLElement>('wave-context');
   private readonly waveObjective = requireElement<HTMLElement>('wave-objective');
   private readonly wavePrompt = requireElement<HTMLElement>('wave-prompt');
   private readonly takePrompt = requireElement<HTMLElement>('take-prompt');
   private readonly doctrine = requireElement<HTMLElement>('doctrine');
   private readonly comboCount = requireElement<HTMLElement>('combo-count');
+  private readonly routeCue = requireElement<HTMLElement>('route-cue');
+  private readonly playerVitals = requireElement<HTMLElement>('player-vitals');
+  private readonly playerLabel = requireElement<HTMLElement>('player-label');
+  private readonly playerWeapon = requireElement<HTMLElement>('player-weapon');
+  private readonly healthBar = requireElement<HTMLElement>('health-bar');
+  private readonly healthFill = requireElement<HTMLElement>('health-fill');
+  private readonly healthValue = requireElement<HTMLElement>('health-value');
+  private readonly guardBar = requireElement<HTMLElement>('guard-bar');
+  private readonly guardFill = requireElement<HTMLElement>('guard-fill');
+  private readonly guardValue = requireElement<HTMLElement>('guard-value');
+  private readonly switchButton = requireElement<HTMLButtonElement>('switch-button');
+  private readonly switchLabel = requireElement<HTMLElement>('switch-label');
+  private readonly uiAnnouncer = requireElement<HTMLElement>('ui-announcer');
   private readonly lessonOverlay = requireElement<HTMLElement>('lesson-overlay');
   private readonly lessonCards = requireElement<HTMLElement>('lesson-cards');
   private readonly endOverlay = requireElement<HTMLElement>('end-overlay');
@@ -50,6 +67,8 @@ export class GameUI {
   private readonly endCopy = requireElement<HTMLElement>('end-copy');
   private readonly pauseOverlay = requireElement<HTMLElement>('pause-overlay');
   private readonly networkOverlay = requireElement<HTMLElement>('network-overlay');
+  private readonly guideOverlay = requireElement<HTMLElement>('guide-overlay');
+  private readonly guideClose = requireElement<HTMLButtonElement>('close-guide');
   private readonly networkStatus = requireElement<HTMLElement>('network-status');
   private readonly hostOffer = requireElement<HTMLTextAreaElement>('host-offer');
   private readonly hostAnswer = requireElement<HTMLTextAreaElement>('host-answer');
@@ -61,12 +80,26 @@ export class GameUI {
 
   private callbacks: UiCallbacks | null = null;
   private bannerTimeout = 0;
+  private guideReturnFocus: HTMLElement | null = null;
+  private guidePausedRun = false;
+  private lastAnnouncedWave = '';
+  private lastAnnouncedWeapon = '';
+  private lastRouteCue = '';
 
   bind(callbacks: UiCallbacks): void {
     this.callbacks = callbacks;
     requireElement('start-solo').addEventListener('click', () => callbacks.startSolo());
+    requireElement('practice-button').addEventListener('click', () => this.openGuide(false));
     requireElement('open-network').addEventListener('click', () => this.networkOverlay.classList.remove('is-hidden'));
     requireElement('close-network').addEventListener('click', () => this.networkOverlay.classList.add('is-hidden'));
+    requireElement('guide-button').addEventListener('click', () => this.openGuide(true));
+    this.guideClose.addEventListener('click', () => this.closeGuide());
+    window.addEventListener('keydown', (event) => {
+      if (event.code !== 'Escape' || this.guideOverlay.classList.contains('is-hidden')) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      this.closeGuide();
+    });
     requireElement('enable-tilt').addEventListener('click', async () => {
       try {
         this.setTiltStatus('Requesting motion permission…');
@@ -118,6 +151,8 @@ export class GameUI {
   }
 
   showTitle(): void {
+    this.guideOverlay.classList.add('is-hidden');
+    this.guidePausedRun = false;
     this.titleScreen.classList.remove('is-hidden');
     this.gameHud.classList.add('is-hidden');
     this.touchControls.classList.add('is-hidden');
@@ -125,6 +160,7 @@ export class GameUI {
     this.endOverlay.classList.add('is-hidden');
     this.pauseOverlay.classList.add('is-hidden');
     this.networkOverlay.classList.add('is-hidden');
+    this.resetAnnouncements();
     document.body.dataset.mode = 'title';
   }
 
@@ -135,45 +171,34 @@ export class GameUI {
     this.endOverlay.classList.add('is-hidden');
     this.pauseOverlay.classList.add('is-hidden');
     this.networkOverlay.classList.add('is-hidden');
+    this.guideOverlay.classList.add('is-hidden');
+    this.guidePausedRun = false;
     document.body.dataset.mode = 'game';
   }
 
-  /**
-   * The cues the fight itself needs — nothing is read out in a corner. Health,
-   * guard, armour, the weapon in hand and the pips left in it are drawn over the
-   * fighters; the place and the fight are announced once, by the banner; so what
-   * is left here is the handful of things the world cannot say by itself.
-   */
+  /** Update only the small, stable state readouts at the edge of the arena. */
   update(snapshot: GameSnapshot, localPlayerIndex: number): void {
     const local = snapshot.actors.find((actor) => actor.playerIndex === localPlayerIndex) ??
       snapshot.actors.find((actor) => actor.team === 'players');
-    if (local) this.updateStateCues(local);
-
-    // The one objective that cannot be read off the world: a stand is a clock, so
-    // it says so — and nothing else does, because the road already says it. The
-    // clock is the whole test: only a stand runs one, and it runs while the
-    // encounter is still owed.
-    const hold = snapshot.phase === 'wave' && snapshot.holdRemaining > 0
-      ? `${snapshot.waveLabel} · ${formatClock(snapshot.holdRemaining)}`
-      : '';
-    this.waveObjective.textContent = hold;
-    this.waveObjective.classList.toggle('is-hidden', hold === '');
-    // A cleared level stays cleared until the player walks out of it, so the cue
-    // stands for as long as the doorway is open.
-    this.wavePrompt.classList.toggle('is-hidden', !snapshot.exitOpen);
-    // And when the road offers a take, the cue names it for as long as the offer
-    // stands — the same predicate the press is decided by.
-    const offered = local ? offeredItem(snapshot, local) : null;
-    this.takePrompt.classList.toggle('is-hidden', offered === null);
-    if (offered) this.takePrompt.textContent = `⇄ ${ITEM_TAKE_LABELS[offered.kind]}`;
+    this.updateEncounter(snapshot);
+    if (local) {
+      this.updatePlayerHud(local, localPlayerIndex);
+      this.updateStateCues(local);
+      this.announceState(snapshot, local, localPlayerIndex);
+      const offered = offeredItem(snapshot, local);
+      this.takePrompt.classList.toggle('is-hidden', offered === null);
+      if (offered) this.takePrompt.textContent = `⇄ ${ITEM_TAKE_LABELS[offered.kind]}`;
+      this.switchLabel.textContent = offered ? 'TAKE' : 'SWAP';
+      this.switchButton.setAttribute(
+        'aria-label',
+        offered ? `Take ${ITEM_TAKE_LABELS[offered.kind].toLowerCase()}` : 'Swap weapon or throw the item in hand'
+      );
+    } else {
+      this.takePrompt.classList.add('is-hidden');
+      this.switchLabel.textContent = 'SWAP';
+    }
   }
 
-  /**
-   * The announcement a wave opens with: where the party is, which fight of that
-   * place this is, what the fight is called and what it is asking. It is the only
-   * place the journey's place names appear, which is why it lingers long enough
-   * to be read (`durationMs`) rather than flashing past like a hit marker.
-   */
   showBanner(title: string, subtitle = '', durationMs = 600, note = ''): void {
     window.clearTimeout(this.bannerTimeout);
     this.bannerNote.textContent = note;
@@ -187,7 +212,7 @@ export class GameUI {
     }, durationMs);
   }
 
-  /** Lesson cards teach the exact button routes each unlock adds. */
+  /** Lesson cards teach the exact button routes each new lesson adds. */
   showLesson(ids: readonly LessonId[], interactive: boolean): void {
     this.lessonCards.replaceChildren();
     this.lessonWaiting.classList.toggle('is-hidden', interactive);
@@ -238,25 +263,98 @@ export class GameUI {
     this.networkOverlay.classList.toggle('is-connected', connected);
   }
 
-  /**
-   * The two things a fighter's own state says that the world does not: how long
-   * the chain he is in has run, and where he stands in the provoke-take-hit
-   * moment. Only the second is ever hidden — a chain counter appears with the
-   * chain it counts.
-   */
+  private updateEncounter(snapshot: GameSnapshot): void {
+    const waveNumber = snapshot.wavesInLevel > 0 ? snapshot.waveInLevel + 1 : 0;
+    this.waveLabel.textContent = snapshot.phase === 'title' ? 'READY' : (snapshot.waveTitle || 'THE ROAD');
+    this.waveContext.textContent = snapshot.levelName
+      ? `${snapshot.levelName} · ${waveNumber}/${snapshot.wavesInLevel}`
+      : 'MEYER’S ROAD';
+
+    const hold = snapshot.phase === 'wave' && snapshot.holdRemaining > 0
+      ? `${snapshot.waveLabel} · ${formatClock(snapshot.holdRemaining)}`
+      : snapshot.exitOpen ? 'EXIT OPEN · WALK EAST' : '';
+    this.waveObjective.textContent = hold;
+    this.waveObjective.classList.toggle('is-hidden', hold === '');
+    this.wavePrompt.classList.toggle('is-hidden', !snapshot.exitOpen);
+  }
+
+  private updatePlayerHud(player: ActorSnapshot, localPlayerIndex: number): void {
+    const healthRatio = clampRatio(player.health, player.maxHealth);
+    const guardRatio = clampRatio(player.guard, player.maxGuard);
+    const playerNumber = (player.playerIndex ?? localPlayerIndex) + 1;
+    this.playerLabel.textContent = `MEYER · P${playerNumber}`;
+    this.playerWeapon.textContent = WEAPON_LABELS[player.weapon];
+    this.playerVitals.dataset.state = player.state;
+    this.healthFill.style.width = `${healthRatio * 100}%`;
+    this.guardFill.style.width = `${guardRatio * 100}%`;
+    this.healthValue.textContent = `${Math.max(0, Math.ceil(player.health))}`;
+    this.guardValue.textContent = `${Math.max(0, Math.ceil(player.guard))}`;
+    this.healthBar.setAttribute('aria-valuenow', String(Math.max(0, Math.round(player.health))));
+    this.guardBar.setAttribute('aria-valuenow', String(Math.max(0, Math.round(player.guard))));
+  }
+
   private updateStateCues(player: ActorSnapshot): void {
     const chained = player.comboCount > 1 ? `${player.comboCount} HIT` : '';
     this.comboCount.textContent = chained;
     this.comboCount.classList.toggle('is-hidden', chained === '');
 
-    // The doctrine line is state, not chrome: it is on screen only while a
-    // provoke or an opening is live, and invisible the rest of the time.
     const provoked = player.provokeTimer > 0;
     const opening = player.openingTimer > 0;
     this.doctrine.classList.toggle('is-live', provoked || opening);
     requireElement<HTMLElement>('doctrine-provoke').classList.toggle('is-active', provoked);
     requireElement<HTMLElement>('doctrine-take').classList.toggle('is-active', opening);
     requireElement<HTMLElement>('doctrine-hit').classList.toggle('is-active', opening && player.state === 'attack');
+
+    const cue = routeCue(player);
+    if (cue !== this.lastRouteCue) {
+      this.routeCue.textContent = cue;
+      this.lastRouteCue = cue;
+    }
+  }
+
+  private announceState(snapshot: GameSnapshot, player: ActorSnapshot, localPlayerIndex: number): void {
+    const waveKey = `${snapshot.levelIndex}:${snapshot.waveInLevel}:${snapshot.phase}`;
+    if (waveKey !== this.lastAnnouncedWave) {
+      this.lastAnnouncedWave = waveKey;
+      this.announce(`${snapshot.waveTitle || snapshot.phase}. ${snapshot.levelName || 'The road'}.`);
+    }
+    const weaponKey = `${localPlayerIndex}:${player.weapon}`;
+    if (weaponKey !== this.lastAnnouncedWeapon) {
+      this.lastAnnouncedWeapon = weaponKey;
+      this.announce(`${WEAPON_LABELS[player.weapon]} in hand.`);
+    }
+  }
+
+  private openGuide(pauseRun: boolean): void {
+    if (!this.guideOverlay.classList.contains('is-hidden')) return;
+    const active = document.activeElement;
+    this.guideReturnFocus = active instanceof HTMLElement ? active : null;
+    this.guidePausedRun = pauseRun && document.body.dataset.mode === 'game' &&
+      this.pauseOverlay.classList.contains('is-hidden');
+    if (this.guidePausedRun) this.callbacks?.togglePause();
+    this.guideOverlay.classList.remove('is-hidden');
+    this.guideClose.focus({ preventScroll: true });
+  }
+
+  private closeGuide(): void {
+    if (this.guideOverlay.classList.contains('is-hidden')) return;
+    const resume = this.guidePausedRun;
+    this.guidePausedRun = false;
+    this.guideOverlay.classList.add('is-hidden');
+    this.guideReturnFocus?.focus({ preventScroll: true });
+    this.guideReturnFocus = null;
+    if (resume) this.callbacks?.togglePause();
+  }
+
+  private announce(message: string): void {
+    this.uiAnnouncer.textContent = message;
+  }
+
+  private resetAnnouncements(): void {
+    this.lastAnnouncedWave = '';
+    this.lastAnnouncedWeapon = '';
+    this.lastRouteCue = '';
+    this.uiAnnouncer.textContent = '';
   }
 
   private selectNetworkTab(name: string): void {
@@ -292,6 +390,25 @@ function offeredItem(snapshot: GameSnapshot, local: ActorSnapshot): ItemSnapshot
   return best;
 }
 
+function routeCue(player: ActorSnapshot): string {
+  if (player.state === 'crouch') return 'STEP READY · CUT / FINISH';
+  if (player.state === 'dodge') return 'STEP · DODGE';
+  if (player.state === 'block') return 'GUARD + DIRECTION → CUT';
+  if (player.state === 'hitstun' || player.state === 'guardbreak') return 'RECOVER';
+  if (player.state === 'attack') {
+    const attackId = player.attackId ?? '';
+    if (attackId.includes('low')) return 'STEP → CUT';
+    if (attackId.endsWith('_h') || attackId.includes('finish')) return 'FINISH';
+    return 'CUT';
+  }
+  return 'READY · CUT / FINISH';
+}
+
+function clampRatio(value: number, maximum: number): number {
+  if (!Number.isFinite(value) || !Number.isFinite(maximum) || maximum <= 0) return 0;
+  return Math.min(1, Math.max(0, value / maximum));
+}
+
 function requireElement<T extends HTMLElement = HTMLElement>(id: string): T {
   const element = document.getElementById(id);
   if (!element) throw new Error(`Missing UI element #${id}`);
@@ -303,4 +420,3 @@ function formatClock(seconds: number): string {
   const minutes = Math.floor(whole / 60);
   return `${minutes}:${String(whole % 60).padStart(2, '0')}`;
 }
-

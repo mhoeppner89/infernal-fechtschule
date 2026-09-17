@@ -1,31 +1,27 @@
-import { attackDuration, getAttack } from '../sim/attacks.js';
+import { ATTACKS } from '../sim/attacks.js';
 import { clamp } from '../sim/math.js';
-import { laneDepthRange, levelExitX, roadBounds } from '../sim/world.js';
-import { laneNarrowingAt } from '../sim/waves.js';
-import { ITEM_LIFETIME_SECONDS, ITEM_REACH_STATES, itemWithinReach } from '../sim/world.js';
+import { ITEM_LIFETIME_SECONDS, ITEM_REACH_STATES, itemWithinReach, levelExitX } from '../sim/world.js';
 import type {
-  SceneryId,
   ActorSnapshot,
   Archetype,
   GameEvent,
   GameSnapshot,
   HitZone,
-  ItemSnapshot
+  ItemSnapshot,
+  Weapon
 } from '../sim/types.js';
 import {
-  animationTransitionSpec,
-  sameAnimationFrame,
-  SpriteAnimationCatalog,
-  type AnimationReadinessReport,
-  type ResolvedAnimationFrame
-} from './animation-catalog.js';
+  attackMotionFor,
+  clamp01,
+  poseForActor,
+  type BladeGeometry,
+  type ProceduralPose,
+  type RigPoint
+} from './procedural-rig.js';
 import {
-  BackgroundCatalog,
-  sceneryIndexOf,
-  type BackgroundLayerOrder,
-  type BackgroundReadinessReport,
-  type ResolvedBackgroundLayer
-} from './background-catalog.js';
+  ProceduralSceneRenderer,
+  type ProceduralDrawingContext
+} from './procedural-scene.js';
 
 interface Particle {
   x: number;
@@ -37,6 +33,7 @@ interface Particle {
   size: number;
   color: string;
   gravity: number;
+  shape: 'dot' | 'shard' | 'ember';
 }
 
 interface FloatingText {
@@ -60,20 +57,31 @@ interface ImpactMark {
   angle: number;
 }
 
-interface ActorAnimationVisual {
-  current: ResolvedAnimationFrame;
-  previous: ResolvedAnimationFrame | null;
-  transitionElapsed: number;
-  transitionDuration: number;
-  previousOpacity: number;
-  archetype: ActorSnapshot['archetype'];
-  team: ActorSnapshot['team'];
+interface BladeHistory {
+  readonly x: number;
+  readonly y: number;
+  readonly facing: -1 | 1;
 }
 
+interface Palette {
+  body: string;
+  bodyLight: string;
+  dark: string;
+  accent: string;
+  cream: string;
+  skin: string;
+  skinShadow: string;
+  steel: string;
+  leather: string;
+}
+
+export type ProceduralAnimationReadiness = typeof PROCEDURAL_ANIMATION_READINESS;
+
+export type ProceduralBackgroundReadiness = typeof PROCEDURAL_BACKGROUND_READINESS;
+
 /**
- * Head height in sprite space per archetype: the authored display height plus a
- * small margin, so a bar clears the tallest pose instead of sitting across the
- * fighter's chest.
+ * The lift is deliberately larger than the procedural rig's tallest body. It
+ * also preserves the exported measurement used by existing HUD/debug checks.
  */
 export const BAR_LIFT: Readonly<Record<Archetype, number>> = Object.freeze({
   meyer: 200,
@@ -84,1431 +92,1144 @@ export const BAR_LIFT: Readonly<Record<Archetype, number>> = Object.freeze({
   grotesque: 356
 });
 
+const MAX_PARTICLES = 260;
+const MAX_FLOATING_TEXTS = 24;
+const MAX_IMPACT_MARKS = 32;
+const TAU = Math.PI * 2;
+
+const PROCEDURAL_ANIMATION_READINESS = Object.freeze({
+  declaredClips: 1,
+  readyClips: 1,
+  plannedClips: 1,
+  declaredAssets: 0,
+  loadedAssets: 0,
+  pendingAssets: 0,
+  failedAssets: 0,
+  unsupportedAssets: 0,
+  normalizedClips: 1,
+  unnormalizedClipIds: Object.freeze([]),
+  minScaleCorrection: 1,
+  maxScaleCorrection: 1,
+  failures: Object.freeze([]),
+  source: 'procedural',
+  rasterDependencies: 0
+});
+
+const PROCEDURAL_BACKGROUND_READINESS = Object.freeze({
+  declared: 4,
+  loaded: 4,
+  pending: 0,
+  failed: 0,
+  source: 'procedural',
+  rasterDependencies: 0
+});
+
 export class CanvasRenderer {
-  readonly width = 1280;
+  width = 1280;
   readonly height = 720;
 
   private readonly context: CanvasRenderingContext2D;
-  private readonly animations = new SpriteAnimationCatalog();
-  private readonly backgrounds = new BackgroundCatalog();
+  private scene: ProceduralSceneRenderer;
   private readonly particles: Particle[] = [];
   private readonly floatingTexts: FloatingText[] = [];
   private readonly impactMarks: ImpactMark[] = [];
-  private readonly actorAnimationVisuals = new Map<number, ActorAnimationVisual>();
-  /** The place being drawn, and the one being cross-faded out of. */
-  private backgroundScenery: SceneryId | null = null;
-  private previousBackgroundScenery: SceneryId | null = null;
-  private backgroundTransition = 1;
+  private readonly bladeHistory = new Map<number, BladeHistory>();
   private shake = 0;
-  /** Screen-space offset applied to world-space drawing (negative camera x). */
   private cameraOffsetX = 0;
+
   constructor(canvas: HTMLCanvasElement, private readonly debug = false) {
+    const dpr = this.renderDpr();
+    canvas.width = Math.round(this.width * dpr);
+    canvas.height = Math.round(this.height * dpr);
     const context = canvas.getContext('2d', { alpha: false });
     if (!context) throw new Error('Canvas 2D is unavailable.');
     this.context = context;
-    canvas.width = this.width;
-    canvas.height = this.height;
+    context.setTransform(dpr, 0, 0, dpr, 0, 0);
     context.imageSmoothingEnabled = true;
-    this.animations.preload();
-    this.backgrounds.preload();
+    this.scene = new ProceduralSceneRenderer(this.width, this.height);
+    this.scene.setContext(context);
   }
 
-  getAnimationReadiness(): AnimationReadinessReport {
-    return this.animations.getReadiness();
+  getAnimationReadiness(): ProceduralAnimationReadiness {
+    return PROCEDURAL_ANIMATION_READINESS;
   }
 
-  getBackgroundReadiness(): BackgroundReadinessReport {
-    return this.backgrounds.readiness();
+  getBackgroundReadiness(): ProceduralBackgroundReadiness {
+    return PROCEDURAL_BACKGROUND_READINESS;
   }
 
   handle(event: GameEvent): void {
-    const x = event.x ?? this.width / 2;
-    const y = event.z ?? this.height / 2;
-    const contactY = y
-      + this.hitZoneOffset(event.hitZone)
-      + this.crouchedContactOffset(event.hitZone, event.targetCrouched === true);
-    const impactKind = this.impactKind(event);
-    if (impactKind) {
-      const count = impactKind === 'guardbreak' ? 16
-        : impactKind === 'parry' || impactKind === 'interception' ? 14
-          : impactKind === 'heavy' ? 10 : 7;
-      const color = impactKind === 'parry' ? '#f3d778'
-        : impactKind === 'interception' ? '#f0ead3'
-          : impactKind === 'blocked' ? '#d8d2b8'
-            : impactKind === 'armor' ? '#b8d1d4'
-              : impactKind === 'guardbreak' ? '#e7c37a' : '#b83a2f';
-      const seedAngle = ((event.actorId ?? 1) * 1.37 + (event.targetId ?? 0) * 0.71) % (Math.PI * 2);
-      for (let index = 0; index < count; index += 1) {
-        const angle = seedAngle + index / count * Math.PI * 2;
-        const variance = ((index * 47) % 13) / 12;
-        const speed = 55 + variance * (impactKind === 'heavy' || impactKind === 'guardbreak' ? 155 : 105);
-        const particleLife = impactKind === 'guardbreak'
-          ? 0.1 + variance * 0.16
-          : 0.07 + variance * 0.07;
-        this.particles.push({
-          x,
-          y: contactY,
-          vx: Math.cos(angle) * speed,
-          vy: Math.sin(angle) * speed - 50,
-          life: particleLife,
-          maxLife: impactKind === 'guardbreak' ? 0.26 : 0.14,
-          size: 1.5 + variance * 3.2,
-          color,
-          gravity: 360
-        });
-      }
-      const maxLife = impactKind === 'guardbreak' ? 0.26
-        : impactKind === 'heavy' ? 0.13
-          : impactKind === 'parry' || impactKind === 'interception' ? 0.22 : 0.12;
-      this.impactMarks.push({ x, y: contactY, life: maxLife, maxLife, kind: impactKind, angle: seedAngle * 0.17 });
-      const shake = impactKind === 'guardbreak' ? 15
-        : impactKind === 'heavy' ? 10
-          : impactKind === 'interception' ? 8
-            : impactKind === 'parry' ? 7
-              : impactKind === 'armor' ? 6 : 4;
-      this.shake = Math.max(this.shake, shake);
-    }
-    if (event.type === 'boss-phase') this.shake = Math.max(this.shake, 15);
+    const x = finite(event.x, this.width * 0.5);
+    const y = finite(event.z, this.height * 0.5);
+    const contactY = y + this.hitZoneOffset(event.hitZone) + this.crouchedContactOffset(event.hitZone, event.targetCrouched === true);
+    const kind = this.impactKind(event);
+    if (kind) this.spawnImpact(x, contactY, kind, event);
+
+    if (event.type === 'boss-phase') this.shake = Math.max(this.shake, 16);
     if (event.type === 'death') {
-      const deathSeed = ((event.actorId ?? 1) * 0.913 + (event.targetId ?? 0) * 0.371) % 1;
-      for (let index = 0; index < 18; index += 1) {
-        const angle = (deathSeed + index * 0.61803398875) * Math.PI * 2;
-        const variance = ((index * 37 + (event.actorId ?? 0) * 11) % 19) / 18;
-        this.particles.push({
+      const seed = ((event.actorId ?? 1) * 0.913 + (event.targetId ?? 0) * 0.371) % 1;
+      for (let index = 0; index < 20; index += 1) {
+        const angle = (seed + index * 0.61803398875) * TAU;
+        const variation = ((index * 37 + (event.actorId ?? 0) * 11) % 19) / 18;
+        this.pushParticle({
           x,
-          y: y - 35,
-          vx: Math.cos(angle) * (45 + variance * 95),
-          vy: -60 - Math.abs(Math.sin(angle)) * 140,
-          life: 0.45 + variance * 0.42,
-          maxLife: 0.88,
-          size: 3 + variance * 8,
-          color: '#211d1b',
-          gravity: 270
+          y: y - 34,
+          vx: Math.cos(angle) * (45 + variation * 112),
+          vy: -70 - Math.abs(Math.sin(angle)) * 150,
+          life: 0.46 + variation * 0.42,
+          maxLife: 0.9,
+          size: 2.5 + variation * 6,
+          color: variation > 0.55 ? '#c6a35f' : '#263a40',
+          gravity: 285,
+          shape: variation > 0.6 ? 'shard' : 'dot'
         });
       }
     }
     if (event.type === 'signature' && event.text) {
-      this.floatingTexts.push({ x, y: y - 95, text: event.text, delay: 0, life: 0.32, maxLife: 0.32, large: true });
+      this.pushText({ x, y: y - 102, text: event.text, delay: 0, life: 0.38, maxLife: 0.38, large: true });
     } else if ((event.type === 'parry' || event.type === 'interception' || event.type === 'guardbreak') && event.text) {
-      this.floatingTexts.push({ x, y: y - 82, text: event.text, delay: 0, life: 0.5, maxLife: 0.5, large: false });
+      this.pushText({ x, y: y - 84, text: event.text, delay: 0, life: 0.54, maxLife: 0.54, large: false });
     } else if ((event.type === 'hit' || event.type === 'heavy-hit') && event.amount) {
-      // Show damage one rendered frame after the contact silhouette, then clear
-      // it quickly so recovery reads as a distinct beat.
-      this.floatingTexts.push({ x, y: contactY - 20, text: String(event.amount), delay: 1 / 30, life: 0.12, maxLife: 0.12, large: false });
+      this.pushText({ x, y: contactY - 22, text: String(event.amount), delay: 1 / 60, life: 0.18, maxLife: 0.18, large: false });
     } else if (event.type === 'item-heal' && event.amount) {
-      // A draught is announced in the same place damage is, or the player never
-      // learns what the flask on the floor did for him.
-      this.floatingTexts.push({ x, y: y - 74, text: `+${event.amount}`, delay: 0, life: 0.42, maxLife: 0.42, large: true });
+      this.pushText({ x, y: y - 76, text: `+${event.amount}`, delay: 0, life: 0.42, maxLife: 0.42, large: true });
     } else if (event.type === 'weapon-break' && event.text) {
-      this.floatingTexts.push({ x, y: y - 66, text: `${event.text.toUpperCase()} SPLITS`, delay: 0, life: 0.45, maxLife: 0.45, large: false });
-      // The find comes apart in his hands: a spray of splinters where it broke.
-      for (let index = 0; index < 12; index += 1) {
-        const angle = index / 12 * Math.PI * 2 + 0.4;
-        this.particles.push({
+      this.pushText({ x, y: y - 68, text: `${event.text.toUpperCase()} SPLITS`, delay: 0, life: 0.46, maxLife: 0.46, large: false });
+      for (let index = 0; index < 14; index += 1) {
+        const angle = index / 14 * TAU + 0.4;
+        this.pushParticle({
           x,
-          y: y - 48,
-          vx: Math.cos(angle) * (50 + (index % 5) * 22),
-          vy: Math.sin(angle) * 70 - 40,
+          y: y - 44,
+          vx: Math.cos(angle) * (48 + (index % 5) * 24),
+          vy: Math.sin(angle) * 72 - 50,
           life: 0.3 + (index % 4) * 0.06,
           maxLife: 0.5,
           size: 2 + (index % 3),
-          color: '#6b4a2c',
-          gravity: 420
+          color: '#8f6645',
+          gravity: 430,
+          shape: 'shard'
         });
       }
-      this.shake = Math.max(this.shake, 6);
+      this.shake = Math.max(this.shake, 7);
     } else if (event.type === 'item-pickup' && event.text) {
-      this.floatingTexts.push({ x, y: y - 78, text: event.text.toUpperCase(), delay: 0, life: 0.3, maxLife: 0.3, large: false });
+      this.pushText({ x, y: y - 80, text: event.text.toUpperCase(), delay: 0, life: 0.34, maxLife: 0.34, large: false });
+    } else if (event.type === 'weapon-switch') {
+      for (let index = 0; index < 7; index += 1) {
+        const angle = index / 7 * TAU;
+        this.pushParticle({
+          x,
+          y: y - 68,
+          vx: Math.cos(angle) * 36,
+          vy: Math.sin(angle) * 30 - 34,
+          life: 0.22,
+          maxLife: 0.22,
+          size: 2,
+          color: '#e7d39a',
+          gravity: 120,
+          shape: 'shard'
+        });
+      }
     }
   }
 
-  render(snapshot: GameSnapshot, dt: number): void {
-    this.updateEffects(dt);
-    // Scenery belongs to the level, not the wave: the view only changes when the
-    // journey crosses into a new place, and which place that is travels in the
-    // snapshot rather than being looked up in the campaign from here.
-    this.updateBackground(snapshot.scenery, dt);
-    this.updateActorAnimationVisuals(snapshot.actors, dt);
-
-    // The sim owns the camera; on the title screen (or a stale guest packet)
-    // the window rests at the default position.
-    const cameraX = Number.isFinite(snapshot.cameraX) ? snapshot.cameraX : 0;
+  render(snapshot: GameSnapshot, dt: number, focusPlayerIndex = 0): void {
+    this.synchronizeViewport();
+    const safeDt = Number.isFinite(dt) ? Math.max(0, dt) : 0;
+    this.updateEffects(safeDt);
+    const focus = snapshot.actors.find(a => a.team === 'players' && a.playerIndex === focusPlayerIndex) ?? snapshot.actors.find(a => a.team === 'players');
+    const cameraX = focus && snapshot.phase !== 'title'
+      ? clamp(focus.x - this.width * 0.42, 0, Math.max(0, levelExitX(snapshot.roadWidth) + 100 - this.width))
+      : finite(snapshot.cameraX, 0);
     this.cameraOffsetX = -cameraX;
+    const shakeX = this.shake > 0 ? Math.sin(snapshot.tick * 2.399) * this.shake * 0.5 : 0;
+    const shakeY = this.shake > 0 ? Math.cos(snapshot.tick * 1.731) * this.shake * 0.28 : 0;
+    this.shake = Math.max(0, this.shake - 48 * safeDt);
 
     const context = this.context;
-    const shakeX = this.shake > 0 ? Math.sin(snapshot.tick * 2.399) * this.shake * 0.5 : 0;
-    const shakeY = this.shake > 0 ? Math.cos(snapshot.tick * 1.731) * this.shake * 0.275 : 0;
-    this.shake = Math.max(0, this.shake - 48 * dt);
-
     context.save();
     context.translate(shakeX, shakeY);
-    this.drawBackground(snapshot);
-
-    // The wall stays at distance, while the road is a world-space surface. The
-    // close market dressing is drawn after the road so its posts and awnings can
-    // overlap the far edge without carrying a second ground plane.
-    context.save();
-    context.translate(this.cameraOffsetX * 0.25, 0);
-    this.drawBackgroundAtmosphere(snapshot);
-    context.restore();
+    this.scene.setContext(context);
+    this.scene.draw(snapshot, cameraX, safeDt);
 
     context.save();
     context.translate(this.cameraOffsetX, 0);
-    this.drawRoad(snapshot);
-    this.drawPlayfieldFocus(snapshot);
-    context.restore();
+    const visibleActors = snapshot.actors.filter((actor) => this.isOnscreen(actor.x, cameraX, actor.radius + 170));
+    const visibleItems = snapshot.items.filter((item) => this.isOnscreen(item.x, cameraX, 120));
+    const sortedActors = [...visibleActors].sort((left, right) => left.z - right.z || left.id - right.id);
+    for (const actor of sortedActors) this.drawShadow(actor);
+    for (const item of visibleItems) this.drawItemShadow(item);
+    this.drawItemOffers(snapshot, cameraX);
 
-    this.drawBackgroundForeground();
-
-    context.save();
-    context.translate(this.cameraOffsetX, 0);
-    this.drawRoadBounds(snapshot);
-    // Furniture goes under the cast: a fighter leaving through the doorway, or
-    // filing through a gate, stands in front of what he is passing.
-    this.drawRoadLane(snapshot);
-    this.drawLevelExit(snapshot);
-
-    const sorted = [...snapshot.actors].sort((left, right) => left.z - right.z || left.id - right.id);
-    for (const actor of sorted) this.drawShadow(actor);
-    for (const item of snapshot.items) this.drawItemShadow(item);
-    // The offer goes down before the objects: a thing on the road is asked for,
-    // not stumbled over, so the road has to say which things it is offering.
-    this.drawItemOffers(snapshot);
-    // Weapons on the floor sort into the same depth order as the cast, so a
-    // cudgel lying behind a fighter is covered by him and one lying in front
-    // of him is not.
-    const attackingPlayers = sorted.filter((actor) => actor.team === 'players' && actor.state === 'attack');
-    const drawOrder: Array<{ depth: number; order: number; actor?: ActorSnapshot; item?: ItemSnapshot }> = [
-      ...sorted.map((actor, index) => ({ depth: actor.z, order: index, actor })),
-      ...snapshot.items.map((item, index) => ({ depth: item.z, order: 1000 + index, item }))
+    const entries: Array<{ depth: number; order: number; actor?: ActorSnapshot; item?: ItemSnapshot }> = [
+      ...sortedActors.map((actor, index) => ({ depth: finite(actor.z, 0), order: index, actor })),
+      ...visibleItems.map((item, index) => ({ depth: finite(item.z, 0), order: 1000 + index, item }))
     ];
-    drawOrder.sort((left, right) => left.depth - right.depth || left.order - right.order);
-    for (const entry of drawOrder) {
+    entries.sort((left, right) => left.depth - right.depth || left.order - right.order);
+    const visibleIds = new Set<number>();
+    for (const entry of entries) {
       if (entry.actor) {
-        // During an attack the local fighter is the subject of the frame; his
-        // own sprite is lifted above everything else at his depth.
-        if (attackingPlayers.includes(entry.actor)) continue;
-        this.drawActor(entry.actor);
+        visibleIds.add(entry.actor.id);
+        this.drawActor(entry.actor, snapshot.time);
       } else if (entry.item) {
         this.drawItem(entry.item, snapshot.time);
       }
     }
-    for (const actor of attackingPlayers) this.drawActor(actor);
-    // The mark is deliberately compact, so it can sit above both silhouettes
-    // and pinpoint the blade/body intersection without hiding either fighter.
+    for (const id of this.bladeHistory.keys()) {
+      if (!visibleIds.has(id)) this.bladeHistory.delete(id);
+    }
     this.drawImpactMarks();
     this.drawParticles();
     this.drawFloatingTexts();
     if (this.debug) this.drawDebug(snapshot);
     context.restore();
-
-    this.drawOffscreenIndicators(snapshot);
+    this.drawOffscreenIndicators(snapshot, cameraX);
     context.restore();
   }
 
-  private drawRoad(snapshot: GameSnapshot): void {
-    const road = this.backgrounds.resolveRoad(this.backgroundScenery);
-    if (!road) return;
+  private synchronizeViewport(): void {
+    const canvas = this.context.canvas;
+    if (typeof canvas.getBoundingClientRect !== 'function') return;
+    const rect = canvas.getBoundingClientRect();
+    if (rect.width < 1 || rect.height < 1) return;
+    const ratio = typeof window === 'undefined' ? 1 : Math.max(1, window.devicePixelRatio || 1);
+    const dpr = Math.min(2, ratio, Math.sqrt(2_000_000 / (rect.width * rect.height)));
+    const pixelsW = Math.max(1, Math.round(rect.width * dpr));
+    const pixelsH = Math.max(1, Math.round(rect.height * dpr));
+    const logicalWidth = pixelsW * this.height / pixelsH;
+    if (canvas.width !== pixelsW || canvas.height !== pixelsH || Math.abs(this.width - logicalWidth) > 0.1) {
+      canvas.width = pixelsW; canvas.height = pixelsH; this.width = logicalWidth;
+      this.scene = new ProceduralSceneRenderer(this.width, this.height);
+    }
+    const scale = pixelsH / this.height;
+    this.context.setTransform(scale, 0, 0, scale, 0, 0);
+    this.context.imageSmoothingEnabled = true;
+  }
 
+  private renderDpr(): number {
+    const ratio = typeof window !== 'undefined' && Number.isFinite(window.devicePixelRatio)
+      ? Math.max(1, window.devicePixelRatio)
+      : 1;
+    const pixelCap = Math.sqrt(2_000_000 / (this.width * this.height));
+    return Math.min(2, pixelCap, ratio);
+  }
+
+  private isOnscreen(x: number, cameraX: number, margin: number): boolean {
+    const screenX = x - cameraX;
+    return screenX >= -margin && screenX <= this.width + margin;
+  }
+
+  private spawnImpact(x: number, y: number, kind: ImpactKind, event: GameEvent): void {
+    const count = kind === 'guardbreak' ? 18 : kind === 'parry' || kind === 'interception' ? 15 : kind === 'heavy' ? 11 : 8;
+    const color = kind === 'parry' ? '#f6d879'
+      : kind === 'interception' ? '#e5ece1'
+        : kind === 'blocked' ? '#ced2c1'
+          : kind === 'armor' ? '#a9cad0'
+            : kind === 'guardbreak' ? '#e7b85f' : '#d9664e';
+    const seed = ((event.actorId ?? 1) * 1.37 + (event.targetId ?? 0) * 0.71) % TAU;
+    for (let index = 0; index < count; index += 1) {
+      const angle = seed + index / count * TAU;
+      const variation = ((index * 47) % 13) / 12;
+      const speed = 55 + variation * (kind === 'heavy' || kind === 'guardbreak' ? 165 : 112);
+      this.pushParticle({
+        x,
+        y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - 58,
+        life: kind === 'guardbreak' ? 0.12 + variation * 0.16 : 0.08 + variation * 0.08,
+        maxLife: kind === 'guardbreak' ? 0.28 : 0.16,
+        size: 1.5 + variation * 3.8,
+        color,
+        gravity: 370,
+        shape: kind === 'parry' || kind === 'interception' ? 'shard' : 'dot'
+      });
+    }
+    const maxLife = kind === 'guardbreak' ? 0.3 : kind === 'heavy' ? 0.16 : kind === 'parry' || kind === 'interception' ? 0.24 : 0.14;
+    this.pushImpactMark({ x, y, life: maxLife, maxLife, kind, angle: seed * 0.17 });
+    const shake = kind === 'guardbreak' ? 16 : kind === 'heavy' ? 10 : kind === 'interception' ? 8 : kind === 'parry' ? 7 : kind === 'armor' ? 5 : 4;
+    this.shake = Math.max(this.shake, shake);
+  }
+
+  private pushParticle(particle: Particle): void {
+    this.particles.push(particle);
+    if (this.particles.length > MAX_PARTICLES) this.particles.splice(0, this.particles.length - MAX_PARTICLES);
+  }
+
+  private pushText(text: FloatingText): void {
+    this.floatingTexts.push(text);
+    if (this.floatingTexts.length > MAX_FLOATING_TEXTS) this.floatingTexts.splice(0, this.floatingTexts.length - MAX_FLOATING_TEXTS);
+  }
+
+  private pushImpactMark(mark: ImpactMark): void {
+    this.impactMarks.push(mark);
+    if (this.impactMarks.length > MAX_IMPACT_MARKS) this.impactMarks.splice(0, this.impactMarks.length - MAX_IMPACT_MARKS);
+  }
+
+  private drawActor(actor: ActorSnapshot, time: number): void {
+    const pose = poseForActor(actor, time);
+    const scale = this.depthScale(actor.z) * pose.scale;
+    const deathFade = actor.state === 'dead'
+      ? clamp01(1 - actor.stateElapsed / Math.max(0.01, actor.stateDuration))
+      : 1;
     const context = this.context;
-    const bounds = roadBounds(snapshot.roadWidth);
-    const roadWidth = bounds.maxX - bounds.minX;
-    const top = 232;
-    const roadHeight = this.height - top;
-
-    context.save();
-    context.beginPath();
-    context.rect(bounds.minX, top, roadWidth, roadHeight);
-    context.clip();
-    context.fillStyle = '#4c4339';
-    context.fillRect(bounds.minX, top, roadWidth, roadHeight);
-
-    if (road.spec.repeatX) {
-      const firstTile = Math.floor(bounds.minX / road.spec.width) * road.spec.width;
-      for (let x = firstTile; x < bounds.maxX; x += road.spec.width) {
-        context.drawImage(road.image, x, top, road.spec.width, roadHeight);
-      }
-    } else {
-      context.drawImage(road.image, bounds.minX, top, roadWidth, roadHeight);
-    }
-    context.restore();
-
-    // A quiet shoulder keeps the perspective tile tied to the existing stage
-    // bounds without flattening the stone texture into a painted rectangle.
-    context.strokeStyle = 'rgba(32,24,19,0.62)';
-    context.lineWidth = 4;
-    context.beginPath();
-    context.moveTo(bounds.minX, top + 2);
-    context.lineTo(bounds.maxX, top + 2);
-    context.stroke();
-  }
-
-  private drawRoadBounds(snapshot: GameSnapshot): void {
-    const context = this.context;
-    // The boundary posts mark the road's true extent in world space — they
-    // scroll away with the march instead of framing the camera window, where
-    // a frame edge mid-road would read as an invisible wall.
-    const bounds = roadBounds(snapshot.roadWidth);
-    const left = bounds.minX - 18;
-    const width = bounds.maxX - bounds.minX + 36;
-    context.strokeStyle = 'rgba(235,217,174,0.32)';
-    context.lineWidth = 3;
-    context.strokeRect(left, 232, width, 392);
-    if (snapshot.bossPhase >= 1) this.drawInfernalCorruption(snapshot.bossPhase);
-  }
-
-  /**
-   * A narrowing of the road, drawn as the bollards and barrels that squeeze it.
-   *
-   * The lane is not decoration: the sim clamps every actor to the depth this
-   * funnel describes (`laneDepthRange`), so a choke is painted with the same
-   * geometry it is played with — posts follow the narrowing curve on both
-   * shoulders of the road, and a crowd queued at the mouth is visibly queued.
-   */
-  private drawRoadLane(snapshot: GameSnapshot): void {
-    // The lane is whatever the sim says is narrowing the road this frame, which
-    // is the same object it clamps every actor to — the funnel drawn is the
-    // funnel that acts, with no second look-up to drift out of step with it.
-    const lane = snapshot.lane;
-    if (!lane) return;
-    const context = this.context;
-    const bounds = roadBounds(snapshot.roadWidth);
-    const from = Math.max(bounds.minX, lane.from - lane.approach);
-    const to = Math.min(bounds.maxX, lane.to + lane.approach);
-
-    context.save();
-    // The narrow ground itself: a packed, drained surface between the stalls.
-    context.fillStyle = 'rgba(24,17,13,0.22)';
-    context.fillRect(lane.from, lane.minZ - 16, lane.to - lane.from, lane.maxZ - lane.minZ + 32);
-    context.strokeStyle = 'rgba(214,190,146,0.28)';
-    context.lineWidth = 2;
-    context.strokeRect(lane.from, lane.minZ - 16, lane.to - lane.from, lane.maxZ - lane.minZ + 32);
-
-    // Bollards along both shoulders, following the funnel in toward the mouth.
-    for (let x = from; x <= to; x += 46) {
-      const depth = laneDepthRange(x, lane);
-      const inside = x >= lane.from && x <= lane.to;
-      const radius = laneNarrowingAt(x, lane) * 4 + 6;
-      for (const edgeZ of [depth.minZ - 12, depth.maxZ + 14]) {
-        context.fillStyle = inside ? '#6b5744' : '#5a4a3b';
-        context.beginPath();
-        context.ellipse(x, edgeZ, radius, radius * 0.55, 0, 0, Math.PI * 2);
-        context.fill();
-        context.strokeStyle = 'rgba(22,15,12,0.7)';
-        context.lineWidth = 1.5;
-        context.stroke();
-      }
-    }
-    context.restore();
-  }
-
-  /**
-   * The eastern doorway, drawn shut or open.
-   *
-   * Little Fighter 2 ends a stage with a walk out of it, and the walk only
-   * teaches the rule if the way out is visible before it is usable: the gate is
-   * barred for as long as anyone is still standing, and opens with a lamp and a
-   * gold arrow once the street is clear.
-   */
-  private drawLevelExit(snapshot: GameSnapshot): void {
-    const context = this.context;
-    const bounds = roadBounds(snapshot.roadWidth);
-    const near = levelExitX(snapshot.roadWidth);
-    // The gate stands ON the road: it starts below the horizon (where the
-    // cobbles do) so it reads as stage furniture rather than a column of light
-    // hanging in the sky, and the posts rise a little above the road.
-    const top = 296;
-    const bottom = 628;
-    const postTop = 268;
-    const width = bounds.maxX - near;
-
-    context.save();
-    // The stretch of road under the gate: lit when it is the way out, shadowed
-    // while it is only the end of the street.
-    context.fillStyle = snapshot.exitOpen ? 'rgba(233,196,124,0.1)' : 'rgba(18,12,10,0.2)';
-    context.fillRect(near, top, width + 10, bottom - top);
-
-    if (snapshot.exitOpen) {
-      // Lamplight spilling onto the cobbles, brightest at the threshold.
-      const pulse = 0.5 + 0.5 * Math.sin(snapshot.time * 3.1);
-      const glow = context.createLinearGradient(0, bottom, 0, top);
-      glow.addColorStop(0, `rgba(246,227,172,${0.3 + pulse * 0.16})`);
-      glow.addColorStop(1, 'rgba(246,227,172,0)');
-      context.fillStyle = glow;
-      context.fillRect(near + 10, top, width - 20, bottom - top);
-    }
-
-    // Two stone posts frame the doorway, capped at both shoulders of the road.
-    for (const postX of [near - 16, bounds.maxX - 6]) {
-      context.fillStyle = '#5b4a3c';
-      context.fillRect(postX, postTop, 18, bottom - postTop);
-      context.fillStyle = '#7d6950';
-      context.fillRect(postX - 2, postTop, 22, 11);
-      context.fillStyle = '#8b7758';
-      context.fillRect(postX - 2, postTop - 9, 22, 9);
-      context.strokeStyle = 'rgba(24,16,14,0.7)';
-      context.lineWidth = 2;
-      context.strokeRect(postX, postTop, 18, bottom - postTop);
-    }
-
-    if (snapshot.exitOpen) {
-      // The arrow lies on the road, pointing the way the stage is walked.
-      const pulse = 0.5 + 0.5 * Math.sin(snapshot.time * 4.2);
-      const arrowX = near + 34;
-      const arrowY = 572;
-      context.globalAlpha = 0.6 + pulse * 0.4;
-      context.fillStyle = '#f6e3ac';
-      context.strokeStyle = 'rgba(32,22,16,0.85)';
-      context.lineWidth = 2;
-      context.beginPath();
-      context.moveTo(arrowX - 18, arrowY - 6);
-      context.lineTo(arrowX + 4, arrowY - 6);
-      context.lineTo(arrowX + 4, arrowY - 14);
-      context.lineTo(arrowX + 22, arrowY);
-      context.lineTo(arrowX + 4, arrowY + 14);
-      context.lineTo(arrowX + 4, arrowY + 6);
-      context.lineTo(arrowX - 18, arrowY + 6);
-      context.closePath();
-      context.fill();
-      context.stroke();
-      context.globalAlpha = 1;
-    } else {
-      // Barred: three oak planks bolted across the opening behind two iron
-      // straps, so it reads as a held gate rather than a ladder propped there.
-      const plankTop = top + 26;
-      const plankBottom = bottom - 96;
-      for (let plank = 0; plank < 3; plank += 1) {
-        const y = plankTop + plank * ((plankBottom - plankTop) / 2) - 11;
-        context.fillStyle = '#4a3324';
-        context.fillRect(near - 8, y, width + 16, 22);
-        context.strokeStyle = 'rgba(20,13,10,0.85)';
-        context.lineWidth = 2;
-        context.strokeRect(near - 8, y, width + 16, 22);
-        context.fillStyle = 'rgba(122,96,66,0.5)';
-        context.fillRect(near - 8, y + 3, width + 16, 3);
-      }
-      for (const strapX of [near + 10, near + width - 22]) {
-        context.fillStyle = '#6d6558';
-        context.fillRect(strapX, plankTop - 16, 12, plankBottom - plankTop + 18);
-        context.strokeStyle = 'rgba(22,16,12,0.85)';
-        context.lineWidth = 2;
-        context.strokeRect(strapX, plankTop - 16, 12, plankBottom - plankTop + 18);
-        context.fillStyle = '#a89c8a';
-        for (let rivet = 0; rivet < 3; rivet += 1) {
-          context.fillRect(strapX + 3, plankTop - 6 + rivet * 74, 6, 6);
-        }
-      }
-    }
-    context.restore();
-  }
-
-  /** Edge chevrons point at offscreen enemies, LF2-style, so the march stays readable. */
-  private drawOffscreenIndicators(snapshot: GameSnapshot): void {
-    const context = this.context;
-    // An open doorway off the right edge gets the same kind of chevron the
-    // enemies get, in gold: the march has somewhere to go, and it is east.
-    if (snapshot.exitOpen && levelExitX(snapshot.roadWidth) + this.cameraOffsetX > this.width - 30) {
-      const pulse = 0.55 + 0.45 * Math.sin(snapshot.time * 5);
-      context.save();
-      context.globalAlpha = pulse;
-      context.fillStyle = 'rgba(246,227,172,0.95)';
-      context.strokeStyle = 'rgba(30,20,14,0.9)';
-      context.lineWidth = 3;
-      context.beginPath();
-      context.moveTo(this.width - 18, 400);
-      context.lineTo(this.width - 48, 430);
-      context.lineTo(this.width - 18, 460);
-      context.lineTo(this.width - 2, 430);
-      context.closePath();
-      context.fill();
-      context.stroke();
-      context.restore();
-    }
-    const enemies = snapshot.actors.filter(
-      (actor) => actor.team === 'enemies' && actor.state !== 'dead'
-    );
-    for (const enemy of enemies) {
-      const screenX = enemy.x + this.cameraOffsetX;
-      let side: 'left' | 'right' | null = null;
-      if (screenX < 40) side = 'left';
-      else if (screenX > this.width - 40) side = 'right';
-      if (!side) continue;
-      const edgeX = side === 'left' ? 26 : this.width - 26;
-      const y = clamp(enemy.z - 60, 260, 640);
-      const direction = side === 'left' ? -1 : 1;
-      context.save();
-      context.globalAlpha = 0.85;
-      context.fillStyle = 'rgba(239,92,76,0.9)';
-      context.strokeStyle = 'rgba(27,20,18,0.9)';
-      context.lineWidth = 3;
-      context.beginPath();
-      context.moveTo(edgeX + direction * 10, y - 11);
-      context.lineTo(edgeX + direction * 10, y + 11);
-      context.lineTo(edgeX - direction * 9, y);
-      context.closePath();
-      context.fill();
-      context.stroke();
-      context.restore();
-    }
-  }
-
-  private drawBackground(snapshot: GameSnapshot): void {
-    const current = this.backgrounds.resolveLayers(this.backgroundScenery, 'back');
-    const previous = this.backgrounds.resolveLayers(this.previousBackgroundScenery, 'back');
-    if (current.length > 0 || previous.length > 0) {
-      this.drawBackgroundBase(snapshot);
-      if (previous.length > 0 && this.backgroundTransition < 1) {
-        this.drawBackgroundLayerSet(this.previousBackgroundScenery, 'back', 1);
-      }
-      const eased = 1 - Math.pow(1 - this.backgroundTransition, 3);
-      this.drawBackgroundLayerSet(
-        this.backgroundScenery,
-        'back',
-        previous.length > 0 ? eased : 1
-      );
-      return;
-    }
-
-    const context = this.context;
-    const gradient = context.createLinearGradient(0, 0, 0, this.height);
-    gradient.addColorStop(0, snapshot.bossPhase >= 2 ? '#241c22' : '#6f5a45');
-    gradient.addColorStop(0.42, snapshot.bossPhase >= 2 ? '#40302f' : '#ad9270');
-    gradient.addColorStop(1, '#3b3029');
-    context.fillStyle = gradient;
-    context.fillRect(0, 0, this.width, this.height);
-
-    // Fechtschule wall and timber frame.
-    context.fillStyle = snapshot.bossPhase >= 2 ? '#332829' : '#bda581';
-    context.fillRect(0, 72, this.width, 208);
-    context.fillStyle = '#4d392d';
-    context.fillRect(0, 68, this.width, 16);
-    context.fillRect(0, 266, this.width, 18);
-    for (let x = 40; x < this.width; x += 158) {
-      context.fillRect(x, 70, 14, 214);
-      context.save();
-      context.translate(x + 7, 174);
-      context.rotate(x % 316 === 40 ? -0.65 : 0.65);
-      context.fillRect(-6, -118, 12, 236);
-      context.restore();
-    }
-
-    // Practice targets and hall banners.
-    for (const x of [178, 640, 1096]) {
-      context.fillStyle = '#3a2b24';
-      context.fillRect(x - 4, 135, 8, 126);
-      context.beginPath();
-      context.arc(x, 132, 26, 0, Math.PI * 2);
-      context.fillStyle = '#8e7253';
-      context.fill();
-      context.strokeStyle = '#3b2a20';
-      context.lineWidth = 5;
-      context.stroke();
-      context.beginPath();
-      context.moveTo(x - 16, 116);
-      context.lineTo(x + 16, 148);
-      context.moveTo(x + 16, 116);
-      context.lineTo(x - 16, 148);
-      context.lineWidth = 3;
-      context.stroke();
-    }
-
-    // Arena ground.
-    const floor = context.createLinearGradient(0, 262, 0, this.height);
-    floor.addColorStop(0, snapshot.bossPhase >= 2 ? '#4d3b39' : '#9a805f');
-    floor.addColorStop(1, snapshot.bossPhase >= 2 ? '#201a1c' : '#4a3a30');
-    context.fillStyle = floor;
-    context.beginPath();
-    context.moveTo(0, 248);
-    context.lineTo(this.width, 248);
-    context.lineTo(this.width, this.height);
-    context.lineTo(0, this.height);
-    context.closePath();
-    context.fill();
-
-    context.strokeStyle = snapshot.bossPhase >= 2 ? 'rgba(205,173,160,0.16)' : 'rgba(48,35,27,0.25)';
-    context.lineWidth = 2;
-    for (let z = 292; z < 700; z += 54) {
-      context.beginPath();
-      context.moveTo(0, z);
-      context.lineTo(this.width, z);
-      context.stroke();
-    }
-    for (let x = -320; x < 1600; x += 130) {
-      context.beginPath();
-      context.moveTo(640 + (x - 640) * 0.18, 248);
-      context.lineTo(x, 720);
-      context.stroke();
-    }
-
-    // Arena bounds.
-    context.strokeStyle = 'rgba(235,217,174,0.32)';
-    context.lineWidth = 3;
-    context.strokeRect(74, 232, 1132, 392);
-
-    if (snapshot.bossPhase >= 1) this.drawInfernalCorruption(snapshot.bossPhase);
-  }
-
-  private drawPlayfieldFocus(snapshot: GameSnapshot): void {
-    const context = this.context;
-    const player = snapshot.actors.find((actor) => actor.team === 'players' && actor.state !== 'dead');
-    context.save();
-
-    // Quiet the detailed scenery only where combat happens. The clear centre
-    // around the player keeps the scene grounded without turning the floor into
-    // a flat vignette. Drawn screen-fixed (compensating the camera translate)
-    // so no interior edge of the band can read as a wall seam mid-stage.
-    const left = -this.cameraOffsetX;
-    const band = context.createLinearGradient(0, 205, 0, this.height);
-    band.addColorStop(0, 'rgba(13,10,11,0)');
-    band.addColorStop(0.22, 'rgba(13,10,11,0.16)');
-    band.addColorStop(1, 'rgba(13,10,11,0.2)');
-    context.fillStyle = band;
-    context.fillRect(left, 205, this.width, this.height - 205);
-
-    if (player) {
-      const focus = context.createRadialGradient(player.x, player.z - 48, 40, player.x, player.z - 48, 235);
-      focus.addColorStop(0, 'rgba(0,0,0,0)');
-      focus.addColorStop(0.52, 'rgba(0,0,0,0.025)');
-      focus.addColorStop(1, 'rgba(7,5,6,0.13)');
-      context.fillStyle = focus;
-      context.fillRect(left, 205, this.width, this.height - 205);
-    }
-    context.restore();
-  }
-
-  private drawBackgroundBase(snapshot: GameSnapshot): void {
-    const context = this.context;
-    const sky = context.createLinearGradient(0, 0, 0, 300);
-    sky.addColorStop(0, snapshot.bossPhase >= 2 ? '#252a34' : '#778a98');
-    sky.addColorStop(1, snapshot.bossPhase >= 2 ? '#4a3437' : '#c0ad8d');
-    context.fillStyle = sky;
-    context.fillRect(0, 0, this.width, this.height);
-
-    // Transparent middle and front planes reveal this quiet stage colour. The
-    // road is painted separately below, so no layer has to smuggle in a floor.
-    context.fillStyle = snapshot.bossPhase >= 2 ? '#30282b' : '#51483f';
-    context.fillRect(0, 232, this.width, this.height - 232);
-    context.fillStyle = snapshot.bossPhase >= 2 ? 'rgba(24,18,22,0.34)' : 'rgba(246,223,178,0.16)';
-    context.fillRect(0, 214, this.width, 28);
-  }
-
-  private drawBackgroundForeground(): void {
-    const current = this.backgrounds.resolveLayers(this.backgroundScenery, 'front');
-    const previous = this.backgrounds.resolveLayers(this.previousBackgroundScenery, 'front');
-    if (current.length === 0 && previous.length === 0) return;
-    if (previous.length > 0 && this.backgroundTransition < 1) {
-      this.drawBackgroundLayerSet(this.previousBackgroundScenery, 'front', 1);
-    }
-    const eased = 1 - Math.pow(1 - this.backgroundTransition, 3);
-    this.drawBackgroundLayerSet(
-      this.backgroundScenery,
-      'front',
-      previous.length > 0 ? eased : 1
-    );
-  }
-
-  private drawBackgroundLayerSet(
-    scenery: SceneryId | null,
-    order: BackgroundLayerOrder,
-    alpha: number
-  ): void {
-    if (!scenery || alpha <= 0) return;
-    for (const layer of this.backgrounds.resolveLayers(scenery, order)) {
-      this.drawBackgroundLayer(layer, alpha);
-    }
-  }
-
-  private drawBackgroundLayer(layer: ResolvedBackgroundLayer, alpha: number): void {
-    const context = this.context;
-    const { spec, image } = layer;
-    const travel = Math.max(0, spec.drawWidth - this.width);
-    // cameraOffsetX is negative as the party walks east. Clamping to the
-    // texture's spare width prevents transparent edges from entering the frame.
-    const offsetX = clamp(spec.originX + this.cameraOffsetX * spec.parallax, -travel, 0);
-    context.save();
-    context.globalAlpha = alpha;
-    context.drawImage(image, offsetX, spec.y, spec.drawWidth, spec.drawHeight);
-    context.restore();
-  }
-
-  private drawBackgroundAtmosphere(snapshot: GameSnapshot): void {
-    const context = this.context;
-    const time = snapshot.time;
-    context.save();
-    const scenery = sceneryIndexOf(this.backgroundScenery);
-    if (scenery === 0 || scenery === 2) {
-      context.fillStyle = scenery === 2 ? 'rgba(255,231,176,0.34)' : 'rgba(236,218,171,0.25)';
-      for (let index = 0; index < 18; index += 1) {
-        const x = (index * 173 + time * (7 + index % 3) * 4) % (this.width + 60) - 30;
-        const y = 115 + (index * 97) % 430 + Math.sin(time * 0.7 + index) * 8;
-        const size = 1 + index % 3;
-        context.globalAlpha = 0.22 + (index % 4) * 0.06;
-        context.fillRect(x, y, size, size);
-      }
-    } else if (scenery === 1) {
-      context.globalAlpha = 0.12;
-      const mist = context.createLinearGradient(0, 0, this.width, 0);
-      mist.addColorStop(0, 'rgba(220,224,214,0)');
-      mist.addColorStop(0.45, 'rgba(220,224,214,0.78)');
-      mist.addColorStop(1, 'rgba(220,224,214,0)');
-      context.fillStyle = mist;
-      const drift = Math.sin(time * 0.13) * 90;
-      context.fillRect(-180 + drift, 210, this.width + 360, 105);
-    } else if (scenery === 3) {
-      const lightning = Math.max(0, Math.sin(time * 0.72 - 1.1));
-      if (lightning > 0.985) {
-        context.globalAlpha = (lightning - 0.985) * 18;
-        context.fillStyle = '#d9d9f1';
-        context.fillRect(0, 0, this.width, this.height);
-      }
-      context.fillStyle = '#d66b38';
-      for (let index = 0; index < 14; index += 1) {
-        const x = (index * 211 + time * (11 + index % 4) * 7) % (this.width + 80) - 40;
-        const y = 560 - ((time * 26 + index * 41) % 260);
-        context.globalAlpha = 0.18 + (index % 3) * 0.1;
-        context.beginPath();
-        context.arc(x, y, 1.5 + index % 3, 0, Math.PI * 2);
-        context.fill();
-      }
-    }
-    context.restore();
-  }
-
-  private updateBackground(scenery: SceneryId | null, dt: number): void {
-    if (scenery !== this.backgroundScenery) {
-      this.previousBackgroundScenery = this.backgroundScenery;
-      this.backgroundScenery = scenery;
-      this.backgroundTransition = this.previousBackgroundScenery === null || dt === 0 ? 1 : 0;
-    } else if (this.backgroundTransition < 1) {
-      this.backgroundTransition = Math.min(1, this.backgroundTransition + dt / 0.55);
-    }
-  }
-
-  private drawInfernalCorruption(phase: number): void {
-    const context = this.context;
-    context.save();
-    // Drawn in world space (inside the camera translate): anchor the tendrils
-    // to the visible band so the corruption follows the march.
-    const left = -this.cameraOffsetX;
-    context.globalAlpha = phase >= 2 ? 0.44 : 0.2;
-    context.strokeStyle = '#171316';
-    context.lineWidth = phase >= 2 ? 10 : 5;
-    for (let index = 0; index < 8; index += 1) {
-      const y = 250 + index * 58;
-      context.beginPath();
-      context.moveTo(index % 2 === 0 ? left : left + this.width, y);
-      context.bezierCurveTo(
-        left + 260 + index * 24,
-        y - 90,
-        left + 850 - index * 31,
-        y + 110,
-        index % 2 === 0 ? left + this.width : left,
-        y + 20
-      );
-      context.stroke();
-    }
-    context.globalAlpha = phase >= 2 ? 0.18 : 0.08;
-    context.fillStyle = '#080708';
-    for (let index = 0; index < 45; index += 1) {
-      const x = (index * 239) % this.width;
-      const y = 270 + ((index * 137) % 420);
-      context.beginPath();
-      context.arc(x, y, 2 + (index % 6), 0, Math.PI * 2);
-      context.fill();
-    }
-    context.restore();
-  }
-
-  private drawShadow(actor: ActorSnapshot): void {
-    if (actor.state === 'dead' && actor.stateElapsed > 0.8) return;
-    const context = this.context;
-    const depthScale = this.depthScale(actor.z);
-    const jump = this.jumpOffset(actor);
-    // Every sprite anchors its heels at actor.z, and the sprite body covers
-    // the ground directly beneath it — so the visible part of a contact shadow
-    // is the crescent just south of the feet plus the lobes either side. LF2
-    // style: an almost-solid dark decal that crushes floor texture into a flat
-    // shape, so the actor reads as planted on ANY part of the stage.
-    const contact = actor.z + 8;
-    const radiusX = actor.radius * 1.6 * depthScale;
-    const radiusY = actor.radius * 0.52 * depthScale;
-    context.save();
-    // A soft core that still reads on the darker mid-depth art; it lifts
-    // toward nothing as the actor leaves the ground.
-    const core = clamp(0.5 - jump / 380, 0.12, 0.5);
-    const shadow = context.createRadialGradient(actor.x, contact, radiusY * 0.2, actor.x, contact, radiusX);
-    shadow.addColorStop(0, `rgba(8,6,6,${core})`);
-    shadow.addColorStop(0.75, `rgba(8,6,6,${core * 0.97})`);
-    shadow.addColorStop(1, 'rgba(8,6,6,0)');
-    context.fillStyle = shadow;
-    context.save();
-    context.translate(actor.x, contact);
-    context.scale(1, radiusY / radiusX);
-    context.translate(-actor.x, -contact);
-    context.beginPath();
-    context.arc(actor.x, contact, radiusX, 0, Math.PI * 2);
-    context.fill();
-    context.restore();
-    context.restore();
-  }
-
-  /**
-   * The floor decal under a dropped or thrown object. It shrinks and fades as
-   * the object lifts, so a hurled club reads as airborne even before it is
-   * drawn higher than the shadow it left behind.
-   */
-  private drawItemShadow(item: ItemSnapshot): void {
-    const context = this.context;
-    const scale = this.depthScale(item.z);
-    const contact = clamp(1 - item.y / 44, 0.22, 1);
-    const radiusX = (item.kind === 'spear' ? 21 : 12) * scale * contact;
-    const radiusY = radiusX * 0.34;
-    context.save();
-    context.globalAlpha = 0.34 * contact;
-    context.fillStyle = '#0a0808';
-    context.beginPath();
-    context.ellipse(item.x, item.z + 4, radiusX, radiusY, 0, 0, Math.PI * 2);
-    context.fill();
-    context.restore();
-  }
-
-  /**
-   * The offer: a ring on the ground around a thing, and a caret over it, for as
-   * long as some pair of hands could take it. Nothing is collected by walking
-   * over it any more, so this is how the road asks to be looted — and it is
-   * drawn from the very predicate the press accepts, so a caret never promises
-   * a take the hands will refuse.
-   */
-  private drawItemOffers(snapshot: GameSnapshot): void {
-    if (snapshot.items.length === 0) return;
-    const reachable = snapshot.actors.filter(
-      (actor) => actor.state !== 'dead' && ITEM_REACH_STATES.has(actor.state)
-    );
-    if (reachable.length === 0) return;
-    const context = this.context;
-    for (const item of snapshot.items) {
-      if (!reachable.some((actor) => itemWithinReach(actor, item))) continue;
-      const scale = this.depthScale(item.z);
-      const lift = item.y * scale;
-      // Deliberately slower than the draught's own bob, so the ring reads as a
-      // standing invitation rather than as part of the object.
-      const pulse = 0.5 + 0.5 * Math.sin(snapshot.time * 4.2 + item.id * 1.7);
-      context.save();
-      context.translate(item.x, item.z - lift);
-      context.scale(scale, scale);
-      context.save();
-      context.globalAlpha = 0.24 + 0.3 * pulse;
-      context.strokeStyle = '#f0d68b';
-      context.lineWidth = 2.2;
-      context.beginPath();
-      context.ellipse(0, 2, 18, 6.6, 0, 0, Math.PI * 2);
-      context.stroke();
-      context.restore();
-      context.save();
-      context.globalAlpha = 0.45 + 0.55 * pulse;
-      context.fillStyle = '#f7e6b4';
-      context.beginPath();
-      context.moveTo(-7, -42);
-      context.lineTo(7, -42);
-      context.lineTo(0, -31);
-      context.closePath();
-      context.fill();
-      context.restore();
-      context.restore();
-    }
-  }
-
-  /**
-   * One object on the road. The fixed-rig inventory covers the cast, so a cudgel
-   * or a shaft is drawn as vector art — the same silhouette whether it is in a
-   * fist or lying where it fell, which is what makes a thrown weapon readable.
-   */
-  private drawItem(item: ItemSnapshot, time: number): void {
-    const context = this.context;
-    const scale = this.depthScale(item.z);
-    // The sim's floor height is world units; the sprite scale turns it into the
-    // same pixels the cast's own jumps use.
-    const lift = item.y * scale;
-    const expiring = item.age > ITEM_LIFETIME_SECONDS - 3;
-    const alpha = expiring ? 0.35 + 0.65 * Math.abs(Math.sin(item.age * 7)) : 1;
-
-    context.save();
-    context.globalAlpha = alpha;
-    context.translate(item.x, item.z - lift);
-    context.scale(scale, scale);
-    context.lineCap = 'round';
-
-    if (item.kind === 'potion') {
-      // A draught breathes, so it is the one thing on the floor that looks alive.
-      context.translate(0, Math.sin(time * 3.1 + item.id) * 1.4 - 12);
-      const glow = context.createRadialGradient(0, 2, 1, 0, 2, 22);
-      glow.addColorStop(0, 'rgba(240,126,98,0.42)');
-      glow.addColorStop(1, 'rgba(240,126,98,0)');
-      context.fillStyle = glow;
-      context.beginPath();
-      context.arc(0, 2, 22, 0, Math.PI * 2);
-      context.fill();
-      context.fillStyle = 'rgba(230,238,224,0.82)';
-      context.beginPath();
-      context.arc(0, 3, 8.4, 0, Math.PI * 2);
-      context.fill();
-      context.fillStyle = '#bf4340';
-      context.beginPath();
-      context.arc(0, 4, 6.2, 0, Math.PI * 2);
-      context.fill();
-      context.fillStyle = 'rgba(230,238,224,0.82)';
-      context.fillRect(-3.4, -9, 6.8, 7);
-      context.fillStyle = '#7b5836';
-      context.fillRect(-4.6, -13, 9.2, 4.4);
-      context.fillStyle = 'rgba(255,255,255,0.55)';
-      context.beginPath();
-      context.arc(-2.6, 1, 2.1, 0, Math.PI * 2);
-      context.fill();
-      context.restore();
-      return;
-    }
-
-    // A weapon in the air spins; one on the ground lies where it settled.
-    const airborne = item.thrown && item.y > 6;
-    context.rotate(airborne ? item.age * 11 : -0.2 + (item.id % 3) * 0.06);
-    context.translate(-12, 0);
-    if (item.kind === 'club') this.drawCudgel();
-    else if (item.kind === 'spear') this.drawShaft();
-    else if (item.kind === 'longsword') this.drawStraightSword(70, '#e0ddcf');
-    else this.drawDussack();
-    context.restore();
-  }
-
-  private drawCudgel(): void {
-    const context = this.context;
-    context.strokeStyle = '#5f4127';
-    context.lineWidth = 7;
-    context.beginPath();
-    context.moveTo(-18, 0);
-    context.lineTo(12, 0);
-    context.stroke();
-    context.fillStyle = '#40301f';
-    context.fillRect(6, -8.5, 24, 17);
-    context.fillStyle = '#2a2019';
-    context.fillRect(24, -6, 8, 12);
-    context.strokeStyle = '#8a6a44';
-    context.lineWidth = 3;
-    context.beginPath();
-    context.moveTo(-14, -4);
-    context.lineTo(-14, 4);
-    context.stroke();
-  }
-
-  private drawShaft(): void {
-    const context = this.context;
-    context.strokeStyle = '#6b4c2c';
-    context.lineWidth = 4.4;
-    context.beginPath();
-    context.moveTo(-34, 0);
-    context.lineTo(34, 0);
-    context.stroke();
-    context.fillStyle = '#cfc9b4';
-    context.beginPath();
-    context.moveTo(52, 0);
-    context.lineTo(32, -7.5);
-    context.lineTo(32, 7.5);
-    context.closePath();
-    context.fill();
-    context.fillStyle = '#a58b4f';
-    context.fillRect(30, -3.4, 4, 6.8);
-  }
-
-  private drawActor(actor: ActorSnapshot): void {
-    const context = this.context;
-    const scale = this.depthScale(actor.z) * (actor.archetype === 'grotesque' ? 1.18 : 1);
-    const jump = this.jumpOffset(actor);
-    const deathFade = actor.state === 'dead' ? clamp(1 - actor.stateElapsed / Math.max(0.01, actor.stateDuration), 0, 1) : 1;
-
+    const previous = this.bladeHistory.get(actor.id);
     context.save();
     context.globalAlpha = deathFade;
-    context.translate(actor.x, actor.z - jump);
+    context.translate(actor.x, actor.z);
     context.scale(actor.facing * scale, scale);
-
-    const visual = this.actorAnimationVisuals.get(actor.id);
-    const sprite = visual?.current ?? null;
-    if (sprite) {
-      if (visual?.previous && visual.transitionDuration > 0 && visual.previous.frame.cue !== 'contact') {
-        const progress = clamp(visual.transitionElapsed / visual.transitionDuration, 0, 1);
-        const trailAlpha = visual.previousOpacity * Math.pow(1 - progress, 2);
-        if (trailAlpha > 0.005) this.drawSpriteActor(actor, visual.previous, trailAlpha);
-      }
-      this.drawSpriteActor(actor, sprite);
-    } else {
-      context.rotate(this.actorLean(actor));
-      if (actor.archetype === 'grotesque') this.drawGrotesque(actor);
-      else if (actor.archetype === 'wretch') this.drawWretch(actor);
-      else this.drawHumanoid(actor);
-    }
-
-    if (!sprite && actor.flashTimer > 0) {
-      context.globalCompositeOperation = 'screen';
-      context.globalAlpha = clamp(actor.flashTimer * 5, 0, 0.42);
-      context.fillStyle = '#fff0c8';
-      context.beginPath();
-      context.ellipse(0, -42, actor.radius * 0.55, 35, 0, 0, Math.PI * 2);
-      context.fill();
-    }
-    context.restore();
-
-    if (actor.state !== 'dead') this.drawActorBar(actor);
-  }
-
-  private drawSpriteActor(
-    actor: ActorSnapshot,
-    resolved: ResolvedAnimationFrame,
-    opacity = 1
-  ): void {
-    const context = this.context;
-    const { clip, image, scaleCorrection } = resolved;
-    const height = clip.display.height * scaleCorrection;
-    const width = image.naturalWidth / Math.max(1, image.naturalHeight) * height;
-    const x = -width * clip.display.anchorX + clip.display.offsetX;
-    const y = -height * clip.display.anchorY + clip.display.offsetY;
-    const filters: string[] = [];
-    if (actor.playerIndex === 1) filters.push('hue-rotate(176deg)', 'saturate(0.82)', 'brightness(1.05)');
-    if (actor.flashTimer > 0) {
-      filters.push('brightness(1.8)', 'saturate(0.28)', 'drop-shadow(0 0 4px rgba(255,244,205,0.98))');
-    }
+    context.translate(0, -pose.jump);
+    context.rotate(pose.bodyRotation);
     if (actor.team === 'players') {
-      // A restrained warm edge makes Meyer the visual anchor in busy melees.
-      const flash = actor.flashTimer > 0 ? 6 : 3;
-      filters.push(`drop-shadow(0 0 ${flash}px rgba(248,216,151,0.92))`);
+      context.shadowColor = actor.flashTimer > 0 ? 'rgba(255,241,196,0.95)' : 'rgba(231,182,100,0.55)';
+      context.shadowBlur = actor.flashTimer > 0 ? 9 : 4;
     }
-    const baseAlpha = context.globalAlpha;
-    context.globalAlpha = baseAlpha * clamp(opacity, 0, 1);
-    context.filter = filters.length > 0 ? filters.join(' ') : 'none';
-    context.drawImage(image, x, y, width, height);
-    context.filter = 'none';
-    context.globalAlpha = baseAlpha;
+    if (actor.archetype === 'grotesque') this.drawGrotesque(actor);
+    else if (actor.archetype === 'wretch') this.drawWretch(actor, pose);
+    else this.drawHumanoid(actor, pose, previous);
+    if (actor.flashTimer > 0) {
+      context.shadowBlur = 0;
+      context.globalCompositeOperation = 'screen';
+      context.globalAlpha = clamp(actor.flashTimer * 5, 0, 0.44);
+      context.fillStyle = '#fff1c4';
+      context.beginPath();
+      context.ellipse(0, -78, actor.archetype === 'grotesque' ? 55 : 30, actor.archetype === 'grotesque' ? 80 : 56, 0, 0, TAU);
+      context.fill();
+    }
+    context.restore();
+    this.bladeHistory.set(actor.id, { x: pose.blade.tip.x, y: pose.blade.tip.y, facing: actor.facing });
+    if (actor.team === 'enemies' && actor.state !== 'dead') this.drawActorBar(actor, pose, scale);
   }
 
-  private updateActorAnimationVisuals(actors: readonly ActorSnapshot[], dt: number): void {
-    const visibleIds = new Set<number>();
-    const elapsed = Number.isFinite(dt) ? Math.max(0, dt) : 0;
-
-    for (const actor of actors) {
-      visibleIds.add(actor.id);
-      const resolved = this.animations.resolveActorFrame(actor);
-      if (!resolved) {
-        this.actorAnimationVisuals.delete(actor.id);
-        continue;
-      }
-
-      const existing = this.actorAnimationVisuals.get(actor.id);
-      if (!existing || existing.archetype !== actor.archetype || existing.team !== actor.team) {
-        this.actorAnimationVisuals.set(actor.id, {
-          current: resolved,
-          previous: null,
-          transitionElapsed: 0,
-          transitionDuration: 0,
-          previousOpacity: 0,
-          archetype: actor.archetype,
-          team: actor.team
-        });
-        continue;
-      }
-
-      if (existing.previous) {
-        existing.transitionElapsed += elapsed;
-        if (existing.transitionElapsed >= existing.transitionDuration) {
-          existing.previous = null;
-          existing.transitionDuration = 0;
-          existing.previousOpacity = 0;
-        }
-      }
-
-      const transition = animationTransitionSpec(existing.current, resolved);
-      if (sameAnimationFrame(existing.current, resolved) && transition.duration <= 0) {
-        // Scale calibration can settle while assets finish loading, so retain
-        // the newest resolved metadata even when the authored key is unchanged.
-        existing.current = resolved;
-        continue;
-      }
-
-      existing.previous = transition.duration > 0 ? existing.current : null;
-      existing.current = resolved;
-      existing.transitionElapsed = 0;
-      existing.transitionDuration = transition.duration;
-      existing.previousOpacity = transition.previousOpacity;
-    }
-
-    for (const actorId of this.actorAnimationVisuals.keys()) {
-      if (!visibleIds.has(actorId)) this.actorAnimationVisuals.delete(actorId);
-    }
-  }
-
-  private drawHumanoid(actor: ActorSnapshot): void {
-    const context = this.context;
+  private drawHumanoid(actor: ActorSnapshot, pose: ProceduralPose, previous: BladeHistory | undefined): void {
     const palette = this.palette(actor);
-    const attackPhase = this.attackMotion(actor);
-    const stride = actor.state === 'move' ? Math.sin(actor.stateElapsed * 12) * 7 : 0;
-    const crouch = actor.state === 'crouch' ? 30 : actor.state === 'block' ? 5 : 0;
+    this.drawStowedWeapon(actor, palette);
+    this.drawLimb(pose.rearHip, pose.rearKnee, pose.rearFoot, 12, palette.dark, palette.body);
+    this.drawBoot(pose.rearFoot, palette.dark, -0.08);
+    this.drawLimb(pose.frontHip, pose.frontKnee, pose.frontFoot, 13, palette.dark, palette.bodyLight);
+    this.drawBoot(pose.frontFoot, palette.dark, 0.08);
+    this.drawTailoredBody(actor, pose, palette);
+    this.drawLimb(pose.rearArm.root, pose.rearArm.elbow, pose.rearArm.end, 10, palette.dark, palette.body);
+    this.drawArmCuff(pose.rearArm.end, palette.accent);
+    if (actor.archetype === 'captain') this.drawShield(pose, palette);
+    this.drawWeaponTrail(actor, pose, previous);
+    this.drawWeapon(actor, pose, palette);
+    this.drawLimb(pose.frontArm.root, pose.frontArm.elbow, pose.frontArm.end, 10.5, palette.dark, palette.bodyLight);
+    this.drawArmCuff(pose.frontArm.end, palette.accent);
+    this.drawHand(pose.frontHand, palette.skin, palette.dark, 5.5);
+    if (pose.twoHanded) this.drawHand(pose.rearHand, palette.skin, palette.dark, 5.2);
+    else this.drawHand(pose.supportHand, palette.skin, palette.dark, 5);
+    this.drawFace(actor, pose, palette);
+  }
 
-    // Legs.
-    context.strokeStyle = palette.dark;
-    context.lineWidth = 9;
-    context.lineCap = 'round';
-    context.beginPath();
-    context.moveTo(-8, -18 + crouch);
-    context.lineTo(-12 + stride, 17);
-    context.moveTo(8, -18 + crouch);
-    context.lineTo(13 - stride, 17);
-    context.stroke();
-
-    // Coat / torso.
-    context.fillStyle = palette.body;
-    context.beginPath();
-    context.moveTo(-21, -74 + crouch);
-    context.quadraticCurveTo(0, -89 + crouch, 22, -72 + crouch);
-    context.lineTo(18, -18 + crouch);
-    context.quadraticCurveTo(0, -7 + crouch, -18, -18 + crouch);
-    context.closePath();
-    context.fill();
-    context.strokeStyle = palette.dark;
-    context.lineWidth = 4;
-    context.stroke();
-
-    // Belt.
-    context.strokeStyle = palette.accent;
-    context.lineWidth = 6;
-    context.beginPath();
-    context.moveTo(-18, -37 + crouch);
-    context.lineTo(18, -37 + crouch);
-    context.stroke();
-
-    // Head and cap/helmet.
-    context.fillStyle = palette.skin;
-    context.beginPath();
-    context.arc(0, -96 + crouch, actor.archetype === 'captain' ? 15 : 13, 0, Math.PI * 2);
-    context.fill();
-    context.strokeStyle = palette.dark;
-    context.lineWidth = 3;
-    context.stroke();
-
+  private drawTailoredBody(actor: ActorSnapshot, pose: ProceduralPose, palette: Palette): void {
+    const c = this.context, top = pose.chest.y - 9, waist = pose.hip.y + 1;
+    const w = actor.archetype === 'captain' ? 25 : 21;
+    const shade = c.createLinearGradient(-w, top, w, waist);
+    shade.addColorStop(0, palette.bodyLight); shade.addColorStop(.45, palette.body); shade.addColorStop(1, palette.dark);
+    c.fillStyle = palette.skinShadow; c.beginPath(); c.roundRect(-5, pose.neck.y - 4, 11, Math.max(8, top - pose.neck.y + 12), 3); c.fill();
+    c.beginPath(); c.moveTo(-w, top + 7); c.quadraticCurveTo(-w * .9, top, -7, top);
+    c.lineTo(6, top); c.quadraticCurveTo(w * .9, top, w, top + 7);
+    c.bezierCurveTo(w - 2, top + 18, w * .68, waist - 12, w * .72, waist);
+    c.lineTo(w * .82, waist + 9); c.quadraticCurveTo(0, waist + 14, -w * .85, waist + 8);
+    c.lineTo(-w * .73, waist); c.bezierCurveTo(-w * .69, waist - 16, -w - 2, top + 19, -w, top + 7);
+    c.closePath(); c.fillStyle = shade; c.fill(); c.strokeStyle = palette.dark; c.lineWidth = 1.3; c.stroke();
+    c.fillStyle = palette.cream; c.beginPath(); c.moveTo(-9, top); c.lineTo(-2, top + 15);
+    c.lineTo(6, top + 2); c.lineTo(5, top - 2); c.lineTo(-5, top - 3); c.closePath(); c.fill();
+    c.strokeStyle = 'rgba(255,241,207,0.42)'; c.lineWidth = 1; c.beginPath();
+    c.moveTo(-w + 5, top + 9); c.quadraticCurveTo(-w * .6, (top + waist) / 2, -w * .7, waist - 5); c.stroke();
     if (actor.archetype === 'captain') {
-      context.fillStyle = '#73777a';
-      context.beginPath();
-      context.arc(0, -99 + crouch, 18, Math.PI, Math.PI * 2);
-      context.lineTo(18, -95 + crouch);
-      context.lineTo(-18, -95 + crouch);
-      context.closePath();
-      context.fill();
-      this.drawShield(actor, attackPhase, crouch);
-    } else if (actor.archetype === 'meyer') {
-      context.fillStyle = palette.accent;
-      context.beginPath();
-      context.ellipse(-2, -108 + crouch, 23, 8, -0.08, 0, Math.PI * 2);
-      context.fill();
-      context.fillRect(-5, -111 + crouch, 26, 5);
+      const steel = c.createLinearGradient(-w, top, w, waist);
+      steel.addColorStop(0, '#536975'); steel.addColorStop(.4, '#b6c0b9'); steel.addColorStop(.53, '#d8d8c7'); steel.addColorStop(.6, '#70868b'); steel.addColorStop(1, '#354b57');
+      c.beginPath(); c.moveTo(-w + 3, top + 8); c.lineTo(-7, top + 6); c.lineTo(6, top + 6); c.lineTo(w - 3, top + 8);
+      c.quadraticCurveTo(w + 1, waist - 14, 5, waist - 3); c.lineTo(-11, waist - 3); c.quadraticCurveTo(-w - 2, waist - 16, -w + 3, top + 8); c.closePath();
+      c.fillStyle = steel; c.fill(); c.strokeStyle = '#293b43'; c.stroke();
+      c.strokeStyle = '#e3c793'; c.lineWidth = 1; c.beginPath(); c.moveTo(3, top + 9); c.lineTo(5, waist - 7); c.stroke();
+      for (let j = 0; j < 3; j++) { c.strokeStyle = '#7c8b8c'; c.beginPath(); c.moveTo(-17, waist + j * 4); c.quadraticCurveTo(0, waist + 5 + j * 4, 18, waist + j * 4); c.stroke(); }
     } else {
-      context.fillStyle = palette.accent;
-      context.beginPath();
-      context.moveTo(-15, -104 + crouch);
-      context.lineTo(14, -104 + crouch);
-      context.lineTo(5, -118 + crouch);
-      context.closePath();
-      context.fill();
+      for (let j = 0; j < 4; j++) {
+        const x = -12 + j * 7;
+        c.strokeStyle = j % 2 ? palette.accent : palette.cream; c.lineWidth = 2.3; c.beginPath();
+        c.moveTo(x, top + 15); c.quadraticCurveTo(x - 3, top + 24, x - 1, waist - 8); c.stroke();
+      }
     }
-
-    // Rear arm.
-    context.strokeStyle = palette.body;
-    context.lineWidth = 9;
-    context.beginPath();
-    context.moveTo(-13, -65 + crouch);
-    context.lineTo(-30, -43 + crouch + attackPhase * 5);
-    context.stroke();
-
-    this.drawWeapon(actor, attackPhase, crouch, palette);
+    c.fillStyle = '#3b2723'; c.beginPath(); c.roundRect(-w * .82, waist - 4, w * 1.64, 6, 2); c.fill();
+    c.strokeStyle = palette.accent; c.lineWidth = 1.5; c.strokeRect(2, waist - 3.5, 6, 5);
+    c.fillStyle = palette.dark; c.beginPath(); c.roundRect(-w * .94, waist - 1, 8, 12, 3); c.fill();
+    c.strokeStyle = '#b68a59'; c.lineWidth = .8; c.stroke();
+    c.fillStyle = palette.accent;
+    for (let j = 0; j < 3; j++) { c.beginPath(); c.arc(2, top + 18 + j * 8, 1.15, 0, TAU); c.fill(); }
+    if (actor.archetype === 'spear') {
+      c.strokeStyle = '#846546'; c.lineWidth = 5; c.beginPath(); c.moveTo(-14, top + 5); c.lineTo(13, waist); c.stroke();
+      c.strokeStyle = '#c8ad79'; c.lineWidth = .8; c.stroke();
+    }
   }
 
-  private drawWeapon(actor: ActorSnapshot, attackPhase: number, crouch: number, palette: ReturnType<CanvasRenderer['palette']>): void {
-    const context = this.context;
-    let angle = -0.32;
-    if (actor.state === 'block') angle = -1.08;
-    if (actor.state === 'attack') {
-      const thrust = actor.attackId?.includes('thrust') || actor.attackId === 'captain_bash';
-      angle = thrust ? -0.05 + attackPhase * 0.08 : -1.85 + attackPhase * 2.65;
-      if (actor.attackId?.includes('_hl')) angle = 1.05 - attackPhase * 2.05;
-      if (actor.attackId?.includes('l2h') || actor.attackId?.includes('sweep')) angle = -2.3 + attackPhase * 4.2;
-    }
 
-    const handX = 15;
-    const handY = -58 + crouch;
+  private drawFace(actor: ActorSnapshot, pose: ProceduralPose, palette: Palette): void {
+    const c = this.context, h = pose.head, r = pose.headRadius;
+    c.save(); c.translate(h.x, h.y);
+    const skin = c.createLinearGradient(-r, -r, r, r * .8);
+    skin.addColorStop(0, palette.skinShadow); skin.addColorStop(.4, palette.skin); skin.addColorStop(.72, palette.skin); skin.addColorStop(1, palette.skinShadow);
+    c.beginPath(); c.moveTo(-r * .72, -r * .5);
+    c.bezierCurveTo(-r * .65, -r * 1.15, r * .55, -r * 1.18, r * .72, -r * .5);
+    c.quadraticCurveTo(r * .8, r * .03, r * .72, r * .42);
+    c.lineTo(r * .38, r * .9); c.quadraticCurveTo(-r * .15, r * 1.06, -r * .55, r * .57);
+    c.closePath(); c.fillStyle = skin; c.fill(); c.strokeStyle = palette.dark; c.lineWidth = 1.15; c.stroke();
+    c.fillStyle = palette.skinShadow; c.beginPath(); c.ellipse(-r * .65, r * .05, r * .2, r * .3, -.1, 0, TAU); c.fill();
+    c.strokeStyle = palette.skin; c.lineWidth = 1; c.beginPath(); c.arc(-r * .67, r * .04, r * .11, -2, 1); c.stroke();
+    c.fillStyle = '#eadcc0'; c.beginPath(); c.ellipse(r * .36, -r * .19, 3, 1.6, -.08, 0, TAU); c.fill();
+    c.fillStyle = '#25343a'; c.beginPath(); c.ellipse(r * .47, -r * .2, 1.2, 1.5, 0, 0, TAU); c.fill();
+    c.strokeStyle = '#473329'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(r * .09, -r * .34); c.lineTo(r * .62, -r * .31); c.stroke();
+    c.fillStyle = palette.skin; c.beginPath(); c.moveTo(r * .54, -r * .08); c.lineTo(r * .86, r * .24); c.lineTo(r * .45, r * .29); c.closePath(); c.fill();
+    c.strokeStyle = palette.skinShadow; c.lineWidth = .9; c.beginPath(); c.moveTo(r * .84, r * .25); c.lineTo(r * .52, r * .3); c.stroke();
+    c.strokeStyle = '#765043'; c.lineWidth = 1; c.beginPath(); c.moveTo(r * .22, r * .58); c.quadraticCurveTo(r * .43, r * .61, r * .59, r * .54); c.stroke();
+    c.fillStyle = actor.archetype === 'meyer' ? '#573b2a' : '#372e29';
+    c.beginPath(); c.moveTo(-r * .78, r * .04); c.lineTo(-r * .84, -r * .63);
+    c.bezierCurveTo(-r * .7, -r * 1.2, r * .5, -r * 1.2, r * .72, -r * .65);
+    c.quadraticCurveTo(r * .3, -r * .53, -r * .05, -r * .63); c.lineTo(-r * .48, -r * .18); c.lineTo(-r * .51, r * .22); c.closePath(); c.fill();
+    c.strokeStyle = '#987347'; c.lineWidth = .85;
+    for (let j = 0; j < 4; j++) { c.beginPath(); c.moveTo(-r * .6 + j * 3, -r * .71); c.quadraticCurveTo(-r * .6 + j * 2, -r * .4, -r * .59 + j, -r * .16); c.stroke(); }
+    if (actor.archetype === 'meyer') {
+      c.fillStyle = '#68352e'; c.beginPath(); c.ellipse(-2, -r * .94, r * 1.1, r * .4, -.11, 0, TAU); c.fill();
+      c.strokeStyle = palette.accent; c.lineWidth = 1.7; c.beginPath(); c.ellipse(-1, -r * .85, r * 1.14, 3, -.07, 0, Math.PI); c.stroke();
+      c.fillStyle = palette.cream; c.beginPath(); c.moveTo(r * .61, -r); c.quadraticCurveTo(r * .54, -r * 1.7, r * 1.36, -r * 1.92); c.quadraticCurveTo(r * 1.05, -r * 1.17, r * .61, -r); c.fill();
+      c.strokeStyle = '#ba9d68'; c.lineWidth = .7; c.beginPath(); c.moveTo(r * .62, -r); c.lineTo(r * 1.22, -r * 1.78); c.stroke();
+    } else if (actor.archetype === 'captain' || actor.archetype === 'spear') {
+      const metal = c.createLinearGradient(-r, -r, r, 0);
+      metal.addColorStop(0, '#415761'); metal.addColorStop(.48, '#c3d0c7'); metal.addColorStop(.61, '#80979a'); metal.addColorStop(1, '#344c5a');
+      c.fillStyle = metal; c.beginPath(); c.moveTo(-r * .97, -r * .06);
+      c.bezierCurveTo(-r, -r * 1.2, r * .5, -r * 1.42, r * .85, -r * .12);
+      c.lineTo(r * 1.18, r * .02); c.quadraticCurveTo(r * .1, r * .18, -r * 1.1, r * .11); c.closePath(); c.fill();
+      c.strokeStyle = '#273b45'; c.lineWidth = 1.25; c.stroke();
+      c.strokeStyle = '#dce0cc'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(-r * .1, -r * 1.15); c.quadraticCurveTo(r * .2, -r * .7, r * .22, -r * .07); c.stroke();
+      if (actor.archetype === 'captain') { c.fillStyle = '#657f86'; c.beginPath(); c.moveTo(-r * .72, r * .02); c.lineTo(-r * .55, r * .78); c.lineTo(-r * .1, r * .6); c.lineTo(-r * .23, r * .09); c.fill(); }
+    } else if (actor.archetype === 'thug') {
+      c.fillStyle = '#3c2e28'; c.beginPath(); c.moveTo(-r * .36, r * .3);
+      c.quadraticCurveTo(-r * .15, r * .67, r * .25, r * .65); c.lineTo(r * .58, r * .54);
+      c.quadraticCurveTo(r * .4, r * 1.04, -r * .17, r * .89); c.closePath(); c.fill();
+      c.strokeStyle = '#89724f'; c.lineWidth = .7; c.beginPath(); c.moveTo(-r * .06, r * .7); c.lineTo(r * .05, r * .86); c.stroke();
+      c.fillStyle = '#696252'; c.beginPath(); c.ellipse(-2, -r * .96, r * .94, r * .25, -.18, 0, TAU); c.fill();
+    }
+    c.restore();
+  }
+
+
+  private drawWretch(actor: ActorSnapshot, pose: ProceduralPose): void {
+    const context = this.context;
+    const pulse = 1 + Math.sin(actor.stateElapsed * 8.5 + actor.id) * 0.035;
     context.save();
-    context.translate(handX, handY);
-    context.rotate(angle);
-
-    // Weapon arm.
-    context.strokeStyle = palette.body;
-    context.lineWidth = 9;
-    context.lineCap = 'round';
-    context.beginPath();
-    context.moveTo(-26, 4);
-    context.lineTo(4, 0);
-    context.stroke();
-
-    if (actor.archetype === 'thug') {
-      context.strokeStyle = '#4b3426';
-      context.lineWidth = 9;
-      context.beginPath();
-      context.moveTo(2, 0);
-      context.lineTo(62, 0);
-      context.stroke();
-      context.fillStyle = '#2b221d';
-      context.fillRect(46, -7, 24, 14);
-    } else if (actor.archetype === 'spear') {
-      context.strokeStyle = '#5d4129';
-      context.lineWidth = 5;
-      context.beginPath();
-      context.moveTo(-20, 0);
-      context.lineTo(120, 0);
-      context.stroke();
-      context.fillStyle = '#c8c2ad';
-      context.beginPath();
-      context.moveTo(120, 0);
-      context.lineTo(98, -8);
-      context.lineTo(98, 8);
-      context.closePath();
-      context.fill();
-    } else if (actor.archetype === 'captain') {
-      this.drawStraightSword(78, '#d5d0bc');
-    } else if (actor.weapon === 'longsword') {
-      this.drawStraightSword(94, '#e0ddcf');
-    } else {
-      this.drawDussack();
-    }
-    context.restore();
-  }
-
-  private drawStraightSword(length: number, blade: string): void {
-    const context = this.context;
-    context.strokeStyle = '#5a432f';
-    context.lineWidth = 5;
-    context.beginPath();
-    context.moveTo(-8, 0);
-    context.lineTo(12, 0);
-    context.stroke();
-    context.strokeStyle = '#c1a86c';
-    context.lineWidth = 5;
-    context.beginPath();
-    context.moveTo(8, -13);
-    context.lineTo(8, 13);
-    context.stroke();
-    context.strokeStyle = blade;
-    context.lineWidth = 6;
-    context.beginPath();
-    context.moveTo(10, 0);
-    context.lineTo(length, 0);
-    context.stroke();
-    context.fillStyle = blade;
-    context.beginPath();
-    context.moveTo(length + 10, 0);
-    context.lineTo(length - 2, -5);
-    context.lineTo(length - 2, 5);
-    context.closePath();
-    context.fill();
-  }
-
-  private drawDussack(): void {
-    const context = this.context;
-    context.strokeStyle = '#5a3928';
-    context.lineWidth = 7;
-    context.beginPath();
-    context.moveTo(-5, 0);
-    context.lineTo(14, 0);
-    context.stroke();
-    context.strokeStyle = '#d8d1bb';
-    context.lineWidth = 8;
-    context.beginPath();
-    context.moveTo(12, 0);
-    context.quadraticCurveTo(55, -4, 76, -21);
-    context.stroke();
-    context.fillStyle = '#d8d1bb';
-    context.beginPath();
-    context.moveTo(79, -23);
-    context.lineTo(66, -18);
-    context.lineTo(73, -9);
-    context.closePath();
-    context.fill();
-    context.strokeStyle = '#b99051';
-    context.lineWidth = 4;
-    context.beginPath();
-    context.arc(5, 0, 13, -1.1, 1.1);
-    context.stroke();
-  }
-
-  private drawShield(actor: ActorSnapshot, attackPhase: number, crouch: number): void {
-    const context = this.context;
-    const forward = actor.state === 'block' ? 8 : actor.state === 'attack' ? attackPhase * 8 : 0;
-    context.save();
-    context.translate(18 + forward, -53 + crouch);
-    context.fillStyle = '#765335';
-    context.beginPath();
-    context.ellipse(0, 0, 18, 25, 0.12, 0, Math.PI * 2);
-    context.fill();
-    context.strokeStyle = '#b7aa88';
-    context.lineWidth = 4;
-    context.stroke();
-    context.fillStyle = '#838482';
-    context.beginPath();
-    context.arc(0, 0, 5, 0, Math.PI * 2);
-    context.fill();
-    context.restore();
-  }
-
-  private drawWretch(actor: ActorSnapshot): void {
-    const context = this.context;
-    const pulse = 1 + Math.sin(actor.stateElapsed * 9) * 0.06;
     context.scale(pulse, 1 / pulse);
-    context.fillStyle = '#171317';
+    const body = context.createRadialGradient(-10, -69, 10, 8, -71, 76);
+    body.addColorStop(0, '#47636a');
+    body.addColorStop(0.58, '#263a43');
+    body.addColorStop(1, '#111a23');
+    context.fillStyle = body;
     context.beginPath();
-    context.moveTo(-20, -10);
-    context.quadraticCurveTo(-28, -60, -8, -83);
-    context.quadraticCurveTo(2, -101, 16, -80);
-    context.quadraticCurveTo(30, -45, 18, -7);
+    context.moveTo(-28, -22);
+    context.quadraticCurveTo(-40, -84, -12, -115);
+    context.quadraticCurveTo(7, -131, 28, -102);
+    context.quadraticCurveTo(42, -63, 23, -18);
     context.closePath();
     context.fill();
-    context.fillStyle = '#d6c6a2';
-    context.beginPath();
-    context.arc(-4, -72, 3, 0, Math.PI * 2);
-    context.arc(8, -72, 3, 0, Math.PI * 2);
-    context.fill();
-    context.strokeStyle = '#171317';
-    context.lineWidth = 8;
-    context.beginPath();
-    context.moveTo(-14, -49);
-    context.lineTo(-35, -24);
-    context.moveTo(14, -49);
-    context.lineTo(39, -18);
+    context.strokeStyle = '#0c151c';
+    context.lineWidth = 5;
     context.stroke();
+    context.strokeStyle = 'rgba(192,167,119,0.48)';
+    context.lineWidth = 3;
+    for (let rib = 0; rib < 4; rib += 1) {
+      context.beginPath();
+      context.moveTo(-18 + rib * 4, -72 + rib * 12);
+      context.quadraticCurveTo(0, -61 + rib * 12, 19 - rib * 4, -72 + rib * 12);
+      context.stroke();
+    }
+    this.drawLimb(pose.rearArm.root, point(-45, -42), point(-72, -8), 10, '#0d171d', '#2e4a53');
+    this.drawLimb(pose.frontArm.root, point(42, -42), point(76, -9), 11, '#0d171d', '#385762');
+    this.drawClaw(point(-72, -8), -0.5);
+    this.drawClaw(point(76, -9), 0.3);
+    this.drawFace(actor, { ...pose, head: point(-2, -102), headRadius: 19 }, {
+      body: '#263a43', bodyLight: '#47636a', dark: '#0d171d', accent: '#819b91', cream: '#d6c49e',
+      skin: '#d3c0a0', skinShadow: '#8b765f', steel: '#b3c5c2', leather: '#2b1d25'
+    });
+    context.fillStyle = '#d6c49e';
+    context.beginPath();
+    context.arc(-10, -105, 3.5, 0, TAU);
+    context.arc(9, -105, 3.5, 0, TAU);
+    context.fill();
+    context.fillStyle = '#9e414b';
+    context.beginPath();
+    context.ellipse(0, -91, 13, 5, 0, 0, TAU);
+    context.fill();
+    context.restore();
   }
 
   private drawGrotesque(actor: ActorSnapshot): void {
     const context = this.context;
-    const motion = this.attackMotion(actor);
-    const pulse = 1 + Math.sin(actor.stateElapsed * 5) * 0.04;
+    const pulse = 1 + Math.sin(actor.stateElapsed * 4.8 + actor.id) * 0.035;
+    context.save();
     context.scale(pulse, 1 / pulse);
-
-    context.fillStyle = '#211820';
+    const body = context.createRadialGradient(-24, -121, 18, 12, -112, 112);
+    body.addColorStop(0, '#72594c');
+    body.addColorStop(0.42, '#3a3038');
+    body.addColorStop(1, '#161a23');
+    context.fillStyle = body;
     context.beginPath();
-    context.ellipse(0, -62, 53, 64, 0, 0, Math.PI * 2);
+    context.ellipse(0, -108, 62, 96, 0, 0, TAU);
     context.fill();
-    context.strokeStyle = '#88704f';
-    context.lineWidth = 7;
+    context.strokeStyle = '#10131c';
+    context.lineWidth = 8;
     context.stroke();
-
-    context.fillStyle = '#c6ae78';
+    context.fillStyle = '#7f6c58';
     context.beginPath();
-    context.moveTo(-28, -96);
-    context.lineTo(-9, -126);
-    context.lineTo(-3, -94);
-    context.moveTo(25, -96);
-    context.lineTo(8, -128);
-    context.lineTo(2, -94);
+    context.moveTo(-36, -165);
+    context.lineTo(-19, -214);
+    context.lineTo(-4, -176);
+    context.lineTo(15, -213);
+    context.lineTo(37, -163);
+    context.closePath();
     context.fill();
-
-    context.fillStyle = '#cbbd95';
+    context.strokeStyle = '#15151c';
+    context.lineWidth = 6;
+    context.stroke();
+    context.fillStyle = '#e3c98a';
     context.beginPath();
-    context.arc(-16, -73, 7, 0, Math.PI * 2);
-    context.arc(17, -73, 7, 0, Math.PI * 2);
+    context.ellipse(-21, -153, 8, 11, 0, 0, TAU);
+    context.ellipse(22, -153, 8, 11, 0, 0, TAU);
     context.fill();
-    context.fillStyle = '#20151a';
+    context.fillStyle = '#4a1d2c';
     context.beginPath();
-    context.arc(-16, -73, 3, 0, Math.PI * 2);
-    context.arc(17, -73, 3, 0, Math.PI * 2);
+    context.arc(-20, -153, 3.5, 0, TAU);
+    context.arc(22, -153, 3.5, 0, TAU);
     context.fill();
+    context.fillStyle = '#171018';
+    context.beginPath();
+    context.ellipse(0, -125, 31, 12, 0, 0, TAU);
+    context.fill();
+    context.strokeStyle = '#c38e62';
+    context.lineWidth = 3;
+    context.beginPath();
+    context.moveTo(-22, -115);
+    context.lineTo(-12, -108);
+    context.lineTo(-2, -115);
+    context.lineTo(9, -107);
+    context.lineTo(22, -115);
+    context.stroke();
+    this.drawLimb(point(-44, -106), point(-73, -55), point(-108, -15), 19, '#11151e', '#302b34');
+    this.drawLimb(point(43, -104), point(75, -55), point(110, -12), 19, '#11151e', '#3d3035');
+    this.drawClaw(point(-108, -15), -0.7, 16);
+    this.drawClaw(point(110, -12), 0.35, 16);
+    context.strokeStyle = '#ad9b83';
+    context.lineWidth = 5;
+    context.beginPath();
+    context.moveTo(-43, -115);
+    context.quadraticCurveTo(0, -70, 46, -111);
+    context.stroke();
+    for (let link = 0; link < 6; link += 1) {
+      context.beginPath();
+      context.ellipse(-34 + link * 14, -103 + Math.sin(link) * 15, 5, 8, 0.45, 0, TAU);
+      context.stroke();
+    }
+    context.strokeStyle = '#8f6b4c';
+    context.lineWidth = 9;
+    context.beginPath();
+    context.moveTo(-40, -28);
+    context.lineTo(-54, 4);
+    context.moveTo(40, -28);
+    context.lineTo(54, 4);
+    context.stroke();
+    context.fillStyle = '#c2a05f';
+    context.beginPath();
+    context.arc(-54, 5, 5, 0, TAU);
+    context.arc(54, 5, 5, 0, TAU);
+    context.fill();
+    context.restore();
+  }
 
-    context.strokeStyle = '#161116';
-    context.lineWidth = 18;
+  private drawLimb(root: RigPoint, elbow: RigPoint, end: RigPoint, width: number, dark: string, light: string): void {
+    const c = this.context;
+    const normal = (a: RigPoint, b: RigPoint): RigPoint => {
+      const d = Math.max(0.001, Math.hypot(b.x - a.x, b.y - a.y));
+      return { x: -(b.y - a.y) / d, y: (b.x - a.x) / d };
+    };
+    const n0 = normal(root, elbow), n1 = normal(elbow, end);
+    const m = { x: (n0.x + n1.x) * 0.5, y: (n0.y + n1.y) * 0.5 };
+    const r0 = width * 0.76, r1 = width * 0.56, r2 = width * 0.35;
+    const shade = c.createLinearGradient(root.x - width, root.y - width, end.x + width, end.y + width);
+    shade.addColorStop(0, light); shade.addColorStop(0.4, light); shade.addColorStop(1, dark);
+    c.beginPath(); c.moveTo(root.x + n0.x * r0, root.y + n0.y * r0);
+    c.quadraticCurveTo(elbow.x + n0.x * r0, elbow.y + n0.y * r0, elbow.x + m.x * r1, elbow.y + m.y * r1);
+    c.quadraticCurveTo(end.x + n1.x * r1, end.y + n1.y * r1, end.x + n1.x * r2, end.y + n1.y * r2);
+    c.lineTo(end.x - n1.x * r2, end.y - n1.y * r2);
+    c.quadraticCurveTo(elbow.x - n1.x * r1, elbow.y - n1.y * r1, elbow.x - m.x * r1, elbow.y - m.y * r1);
+    c.quadraticCurveTo(root.x - n0.x * r0, root.y - n0.y * r0, root.x - n0.x * r0, root.y - n0.y * r0);
+    c.closePath(); c.fillStyle = shade; c.fill(); c.strokeStyle = dark; c.lineWidth = 1.1; c.stroke();
+    c.strokeStyle = 'rgba(255,232,194,0.28)'; c.lineWidth = 1.2; c.beginPath();
+    c.moveTo(root.x - n0.x * r0 * .48, root.y - n0.y * r0 * .48);
+    c.quadraticCurveTo(elbow.x - m.x * r1 * .55, elbow.y - m.y * r1 * .55, end.x - n1.x * r2 * .5, end.y - n1.y * r2 * .5); c.stroke();
+    if (width < 12) {
+      for (let i = 1; i < 4; i++) {
+        const t = i / 5, x = root.x + (elbow.x - root.x) * t, y = root.y + (elbow.y - root.y) * t;
+        c.strokeStyle = 'rgba(245,216,169,0.6)'; c.lineWidth = 1.9; c.beginPath();
+        c.moveTo(x - n0.x * r0 * .36, y - n0.y * r0 * .36);
+        c.lineTo(x + n0.x * r0 * .34 + (elbow.x - root.x) * .06, y + n0.y * r0 * .34 + (elbow.y - root.y) * .06); c.stroke();
+      }
+    }
+  }
+
+  private drawBoot(foot: RigPoint, color: string, tilt: number): void {
+    const context = this.context;
+    context.save();
+    context.translate(foot.x, foot.y - 3);
+    context.rotate(tilt);
+    context.fillStyle = color;
+    context.beginPath();
+    context.moveTo(-7, 0);
+    context.lineTo(15, 0);
+    context.quadraticCurveTo(25, 2, 26, 8);
+    context.lineTo(-9, 8);
+    context.closePath();
+    context.fill();
+    context.fillStyle = '#a06a46';
+    context.fillRect(-6, -17, 12, 19);
+    context.strokeStyle = '#101b22';
+    context.lineWidth = 3;
+    context.stroke();
+    context.restore();
+  }
+
+  private drawArmCuff(hand: RigPoint, color: string): void {
+    const context = this.context;
+    context.fillStyle = color;
+    context.beginPath();
+    context.ellipse(hand.x, hand.y, 5.2, 3.8, -0.3, 0, TAU);
+    context.fill();
+  }
+
+  private drawHand(hand: RigPoint, skin: string, dark: string, radius: number): void {
+    const context = this.context;
+    context.fillStyle = skin;
+    context.beginPath();
+    context.arc(hand.x, hand.y, radius, 0, TAU);
+    context.fill();
+    context.strokeStyle = dark;
+    context.lineWidth = 0.8;
+    context.stroke();
+    context.strokeStyle = 'rgba(255,226,184,0.46)';
+    context.lineWidth = 1;
+    context.beginPath();
+    context.moveTo(hand.x - radius * 0.4, hand.y);
+    context.lineTo(hand.x + radius * 0.35, hand.y + radius * 0.25);
+    context.stroke();
+  }
+
+  private drawWeaponTrail(actor: ActorSnapshot, pose: ProceduralPose, previous: BladeHistory | undefined): void {
+    if (actor.state !== 'attack' || pose.attack.phase === 'anticipation') return;
+    const context = this.context;
+    const trail = pose.bladeTrail;
+    if (trail.length < 2 && !previous) return;
+    const points = trail.length >= 2 ? trail : [
+      point(pose.blade.base.x, pose.blade.base.y),
+      point(previous?.x ?? pose.blade.tip.x, previous?.y ?? pose.blade.tip.y),
+      pose.blade.tip
+    ];
+    const alpha = pose.attack.phase === 'contact' ? 0.48 : 0.2;
+    context.save();
+    context.globalCompositeOperation = 'lighter';
     context.lineCap = 'round';
-    const armSweep = actor.state === 'attack' ? (motion - 0.5) * 1.8 : 0;
-    context.save();
-    context.rotate(armSweep);
-    context.beginPath();
-    context.moveTo(-42, -70);
-    context.lineTo(-87, -35);
-    context.lineTo(-112, -10);
-    context.stroke();
+    for (let index = 1; index < points.length; index += 1) {
+      const from = points[index - 1];
+      const to = points[index];
+      if (!from || !to) continue;
+      context.globalAlpha = alpha * (index / points.length);
+      context.strokeStyle = index % 2 ? '#e4eff0' : '#b8dddf';
+      context.lineWidth = pose.attack.phase === 'contact' ? 4.5 - index * 0.45 : 3 - index * 0.28;
+      context.beginPath();
+      context.moveTo(from.x, from.y);
+      context.lineTo(to.x, to.y);
+      context.stroke();
+    }
     context.restore();
-    context.save();
-    context.rotate(-armSweep);
-    context.beginPath();
-    context.moveTo(42, -70);
-    context.lineTo(88, -34);
-    context.lineTo(112, -7);
-    context.stroke();
-    context.restore();
+  }
 
-    context.strokeStyle = '#88704f';
-    context.lineWidth = 7;
-    context.beginPath();
-    context.moveTo(-38, -22);
-    context.lineTo(-46, 20);
-    context.moveTo(38, -22);
-    context.lineTo(47, 20);
-    context.stroke();
+  private drawWeapon(actor: ActorSnapshot, pose: ProceduralPose, palette: Palette): void {
+    const context = this.context;
+    const blade = pose.blade;
+    if (pose.weapon === 'club') {
+      this.drawClub(pose, palette);
+    } else if (pose.weapon === 'spear') {
+      this.drawSpear(pose, palette);
+    } else {
+      this.drawBlade(blade, pose.weapon, palette.steel, palette.leather, palette.accent);
+    }
+    if (pose.attack.phase === 'contact' || actor.state === 'block') {
+      context.save();
+      context.globalCompositeOperation = 'lighter';
+      context.strokeStyle = 'rgba(255,246,207,0.82)';
+      context.lineWidth = 2;
+      const glintStart = point(blade.tip.x - Math.cos(blade.angle) * 18, blade.tip.y - Math.sin(blade.angle) * 18);
+      context.beginPath();
+      context.moveTo(glintStart.x, glintStart.y);
+      context.lineTo(blade.tip.x, blade.tip.y);
+      context.stroke();
+      context.restore();
+    }
+  }
 
-    // A broken chain slung across the bound body.
-    context.strokeStyle = '#9b9282';
+  private drawBlade(blade: BladeGeometry, weapon: 'longsword' | 'dussack', steel: string, leather: string, accent: string): void {
+    const context = this.context;
+    const direction = { x: Math.cos(blade.angle), y: Math.sin(blade.angle) };
+    const normal = { x: -direction.y, y: direction.x };
+    const width = weapon === 'longsword' ? 5.2 : 7.5;
+    const shoulder = point(blade.base.x - direction.x * 2, blade.base.y - direction.y * 2);
+    const tip = blade.tip;
+    drawPath(context, [
+      add(shoulder, scale(normal, width)),
+      add(tip, scale(normal, 0.8)),
+      add(tip, scale(normal, -0.8)),
+      add(shoulder, scale(normal, -width))
+    ]);
+    const metal = context.createLinearGradient(
+      shoulder.x + normal.x * width,
+      shoulder.y + normal.y * width,
+      tip.x + normal.x * width,
+      tip.y + normal.y * width
+    );
+    metal.addColorStop(0, '#a8c4c6');
+    metal.addColorStop(0.45, steel);
+    metal.addColorStop(0.72, '#f0f4e7');
+    metal.addColorStop(1, '#7c9b9f');
+    context.fillStyle = metal;
+    context.fill();
+    context.strokeStyle = '#273a40';
+    context.lineWidth = 2;
+    context.stroke();
+    context.strokeStyle = 'rgba(255,255,236,0.74)';
+    context.lineWidth = 1.2;
+    context.beginPath();
+    context.moveTo(shoulder.x + normal.x * 1.1, shoulder.y + normal.y * 1.1);
+    context.lineTo(tip.x + normal.x * 0.15, tip.y + normal.y * 0.15);
+    context.stroke();
+    context.strokeStyle = accent;
     context.lineWidth = 4;
     context.beginPath();
-    context.moveTo(-42, -54);
-    context.quadraticCurveTo(0, -22, 44, -50);
+    context.moveTo(blade.base.x + normal.x * 11, blade.base.y + normal.y * 11);
+    context.lineTo(blade.base.x - normal.x * 11, blade.base.y - normal.y * 11);
     context.stroke();
-    for (const link of [[-34, -44], [-16, -30], [4, -27], [24, -34], [38, -46]] as const) {
+    context.strokeStyle = '#402a24';
+    context.lineWidth = 5;
+    context.beginPath();
+    context.moveTo(blade.base.x - direction.x * 4, blade.base.y - direction.y * 4);
+    context.lineTo(blade.base.x - direction.x * blade.gripLength, blade.base.y - direction.y * blade.gripLength);
+    context.stroke();
+    context.strokeStyle = leather;
+    context.lineWidth = 3;
+    for (let wrap = 1; wrap < 4; wrap += 1) {
+      const amount = wrap / 4;
+      const x = blade.base.x - direction.x * blade.gripLength * amount;
+      const y = blade.base.y - direction.y * blade.gripLength * amount;
       context.beginPath();
-      context.ellipse(link[0], link[1], 5, 7, 0.55, 0, Math.PI * 2);
+      context.moveTo(x - normal.x * 3, y - normal.y * 3);
+      context.lineTo(x + normal.x * 3, y + normal.y * 3);
       context.stroke();
     }
   }
 
-  /**
-   * Little Fighter 2 reads a fight off the fighters: every living actor carries
-   * its own bar directly over its head, with the armour pool as a thin second
-   * track under it. There is no corner readout to fall back on any more, so this
-   * is the whole of a fighter's state — the bar, its armour, the find in his hand
-   * and the pips left in that find.
-   */
-  private drawActorBar(actor: ActorSnapshot): void {
+  private drawClub(pose: ProceduralPose, palette: Palette): void {
     const context = this.context;
-    const width = actor.archetype === 'grotesque' ? 150 : actor.team === 'players' ? 68 : 76;
-    const y = actor.z
-      - this.jumpOffset(actor)
-      - BAR_LIFT[actor.archetype] * this.depthScale(actor.z) * (actor.archetype === 'grotesque' ? 1.18 : 1);
-    const health = clamp(actor.health / actor.maxHealth, 0, 1);
+    const base = pose.blade.base;
+    const tip = pose.blade.tip;
+    const direction = { x: Math.cos(pose.blade.angle), y: Math.sin(pose.blade.angle) };
+    const normal = { x: -direction.y, y: direction.x };
+    context.strokeStyle = '#3b2723';
+    context.lineWidth = 10;
+    context.beginPath();
+    context.moveTo(base.x, base.y);
+    context.lineTo(tip.x - direction.x * 12, tip.y - direction.y * 12);
+    context.stroke();
+    drawPath(context, [
+      add(tip, scale(normal, 11)),
+      add(tip, scale(direction, -19)),
+      add(tip, scale(normal, -11)),
+      add(tip, scale(direction, 8))
+    ]);
+    const wood = context.createLinearGradient(tip.x, tip.y - 12, tip.x, tip.y + 12);
+    wood.addColorStop(0, '#a96f40');
+    wood.addColorStop(0.5, palette.leather);
+    wood.addColorStop(1, '#2b2020');
+    context.fillStyle = wood;
+    context.fill();
+    context.strokeStyle = '#17252a';
+    context.lineWidth = 3;
+    context.stroke();
+    context.strokeStyle = '#c38a4f';
+    context.lineWidth = 2;
+    context.beginPath();
+    context.moveTo(tip.x + normal.x * 7, tip.y + normal.y * 7);
+    context.lineTo(tip.x - normal.x * 7, tip.y - normal.y * 7);
+    context.stroke();
+  }
+
+  private drawSpear(pose: ProceduralPose, palette: Palette): void {
+    const context = this.context;
+    const direction = { x: Math.cos(pose.blade.angle), y: Math.sin(pose.blade.angle) };
+    const back = point(pose.blade.base.x - direction.x * pose.blade.gripLength, pose.blade.base.y - direction.y * pose.blade.gripLength);
+    context.strokeStyle = '#332923';
+    context.lineWidth = 7;
+    context.beginPath();
+    context.moveTo(back.x, back.y);
+    context.lineTo(pose.blade.tip.x, pose.blade.tip.y);
+    context.stroke();
+    context.strokeStyle = '#8d6039';
+    context.lineWidth = 4;
+    context.beginPath();
+    context.moveTo(back.x, back.y);
+    context.lineTo(pose.blade.tip.x, pose.blade.tip.y);
+    context.stroke();
+    const tip = pose.blade.tip;
+    const normal = { x: -direction.y, y: direction.x };
+    drawPath(context, [
+      add(tip, scale(direction, 19)),
+      add(tip, scale(normal, 7)),
+      add(tip, scale(direction, -5)),
+      add(tip, scale(normal, -7))
+    ]);
+    context.fillStyle = palette.steel;
+    context.fill();
+    context.strokeStyle = '#27373b';
+    context.lineWidth = 2;
+    context.stroke();
+    context.strokeStyle = '#d5b15c';
+    context.lineWidth = 3;
+    context.beginPath();
+    context.moveTo(pose.blade.base.x + normal.x * 5, pose.blade.base.y + normal.y * 5);
+    context.lineTo(pose.blade.base.x - normal.x * 5, pose.blade.base.y - normal.y * 5);
+    context.stroke();
+  }
+
+  private drawShield(pose: ProceduralPose, palette: Palette): void {
+    const context = this.context;
+    const center = point(pose.supportHand.x - 19, pose.supportHand.y + 4);
     context.save();
-    context.fillStyle = 'rgba(20,15,14,0.78)';
-    context.fillRect(actor.x - width / 2 - 2, y - 2, width + 4, 10);
-    // Mates read cool, the press reads red — the same colour language as the
-    // HUD, so a glance at the field tells you whose bar is draining.
-    context.fillStyle = actor.team === 'players' ? '#6f9c4e' : '#a43b31';
-    context.fillRect(actor.x - width / 2, y, width * health, 6);
-    if (actor.maxArmor > 0 && actor.armor > 0) {
-      context.fillStyle = '#a9a994';
-      context.fillRect(actor.x - width / 2, y + 9, width * clamp(actor.armor / actor.maxArmor, 0, 1), 3);
-    }
-    // A find has a life of its own: the pips over the bar say how many blows are
-    // left in the club before it comes apart in his hands.
-    if (actor.team === 'players' && (actor.weapon === 'club' || actor.weapon === 'spear') && actor.durability > 0) {
-      const pipWidth = 6;
-      const pipGap = 2;
-      const total = actor.durability * pipWidth + (actor.durability - 1) * pipGap;
-      const pipY = y + (actor.maxArmor > 0 && actor.armor > 0 ? 13 : 9);
-      let pipX = actor.x - total / 2;
-      context.fillStyle = 'rgba(20,15,14,0.72)';
-      context.fillRect(actor.x - total / 2 - 1.5, pipY - 1.5, total + 3, 5);
-      context.fillStyle = actor.durability <= 2 ? '#c2703f' : '#d8b25e';
-      for (let pip = 0; pip < actor.durability; pip += 1) {
-        context.fillRect(pipX, pipY, pipWidth, 2);
-        pipX += pipWidth + pipGap;
-      }
+    context.translate(center.x, center.y);
+    context.rotate(0.12);
+    drawPath(context, [
+      { x: -20, y: -24 }, { x: 19, y: -20 }, { x: 24, y: 7 }, { x: 0, y: 31 }, { x: -23, y: 7 }
+    ]);
+    const shield = context.createLinearGradient(-20, -25, 20, 22);
+    shield.addColorStop(0, '#9ba5a0');
+    shield.addColorStop(0.45, palette.body);
+    shield.addColorStop(1, palette.dark);
+    context.fillStyle = shield;
+    context.fill();
+    context.strokeStyle = '#182930';
+    context.lineWidth = 4;
+    context.stroke();
+    context.strokeStyle = palette.accent;
+    context.lineWidth = 3;
+    context.beginPath();
+    context.moveTo(0, -22);
+    context.lineTo(0, 25);
+    context.moveTo(-19, 0);
+    context.lineTo(20, 0);
+    context.stroke();
+    context.fillStyle = '#d4be7b';
+    context.beginPath();
+    context.arc(0, 0, 5, 0, TAU);
+    context.fill();
+    context.restore();
+  }
+
+  private drawStowedWeapon(actor: ActorSnapshot, palette: Palette): void {
+    if (actor.archetype !== 'meyer' || actor.weapon === 'longsword' || actor.weapon === 'dussack') return;
+    const context = this.context;
+    const angle = -1.86;
+    const direction = { x: Math.cos(angle), y: Math.sin(angle) };
+    const start = point(-19, -44);
+    const end = add(start, scale(direction, actor.weapon === 'spear' ? 80 : 49));
+    context.save();
+    context.globalAlpha = 0.78;
+    context.strokeStyle = palette.dark;
+    context.lineWidth = actor.weapon === 'spear' ? 6 : 9;
+    context.beginPath();
+    context.moveTo(start.x, start.y);
+    context.lineTo(end.x, end.y);
+    context.stroke();
+    context.strokeStyle = actor.weapon === 'spear' ? '#c4c9bc' : '#81543b';
+    context.lineWidth = actor.weapon === 'spear' ? 3 : 6;
+    context.beginPath();
+    context.moveTo(start.x, start.y);
+    context.lineTo(end.x, end.y);
+    context.stroke();
+    context.restore();
+  }
+
+  private drawClaw(origin: RigPoint, angle: number, size = 12): void {
+    const context = this.context;
+    context.save();
+    context.translate(origin.x, origin.y);
+    context.rotate(angle);
+    context.strokeStyle = '#b49d7a';
+    context.lineWidth = 3;
+    context.lineCap = 'round';
+    for (let claw = -1; claw <= 1; claw += 1) {
+      context.beginPath();
+      context.moveTo(claw * 4, 0);
+      context.quadraticCurveTo(claw * 8, -size * 0.7, claw * 11, -size);
+      context.stroke();
     }
     context.restore();
+  }
+
+  private drawItemShadow(item: ItemSnapshot): void {
+    const context = this.context;
+    const scale = this.depthScale(item.z);
+    const contact = clamp(1 - item.y / 44, 0.2, 1);
+    context.save();
+    context.globalAlpha = 0.32 * contact;
+    context.fillStyle = '#09131a';
+    context.beginPath();
+    context.ellipse(item.x, item.z + 4, (item.kind === 'spear' ? 22 : 14) * scale * contact, 5 * scale * contact, 0, 0, TAU);
+    context.fill();
+    context.restore();
+  }
+
+  private drawShadow(actor: ActorSnapshot): void {
+    if (actor.state === 'dead' && actor.stateElapsed > 0.86) return;
+    const context = this.context;
+    const scale = this.depthScale(actor.z);
+    context.save();
+    context.globalAlpha = clamp(0.42 - this.jumpAmount(actor) / 300, 0.12, 0.42);
+    context.fillStyle = '#081219';
+    context.beginPath();
+    context.ellipse(actor.x, actor.z + 7, actor.archetype === 'grotesque' ? 66 * scale : actor.radius * 1.65 * scale, actor.archetype === 'grotesque' ? 22 * scale : actor.radius * 0.48 * scale, 0, 0, TAU);
+    context.fill();
+    context.restore();
+  }
+
+  private drawItemOffers(snapshot: GameSnapshot, cameraX: number): void {
+    if (snapshot.items.length === 0) return;
+    const reachable = snapshot.actors.filter((actor) => actor.state !== 'dead' && ITEM_REACH_STATES.has(actor.state));
+    const context = this.context;
+    for (const item of snapshot.items) {
+      if (!this.isOnscreen(item.x, cameraX, 80) || !reachable.some((actor) => itemWithinReach(actor, item))) continue;
+      const scale = this.depthScale(item.z);
+      const pulse = 0.5 + 0.5 * Math.sin(snapshot.time * 4.2 + item.id * 1.7);
+      context.save();
+      context.translate(item.x, item.z - item.y * scale);
+      context.scale(scale, scale);
+      context.globalAlpha = 0.2 + pulse * 0.35;
+      context.strokeStyle = '#f1d27f';
+      context.lineWidth = 2.2;
+      context.beginPath();
+      context.ellipse(0, 3, 18, 6.5, 0, 0, TAU);
+      context.stroke();
+      context.globalAlpha = 0.5 + pulse * 0.5;
+      context.fillStyle = '#f8e8b3';
+      context.beginPath();
+      context.moveTo(-7, -40);
+      context.lineTo(7, -40);
+      context.lineTo(0, -29);
+      context.closePath();
+      context.fill();
+      context.restore();
+    }
+  }
+
+  private drawItem(item: ItemSnapshot, time: number): void {
+    const context = this.context;
+    const scale = this.depthScale(item.z);
+    const lift = item.y * scale;
+    const alpha = item.age > ITEM_LIFETIME_SECONDS - 3 ? 0.35 + 0.65 * Math.abs(Math.sin(item.age * 7)) : 1;
+    context.save();
+    context.globalAlpha = alpha;
+    context.translate(item.x, item.z - lift);
+    context.scale(scale, scale);
+    if (item.kind === 'potion') {
+      context.translate(0, Math.sin(time * 3.1 + item.id) * 1.4 - 12);
+      const glow = context.createRadialGradient(0, 2, 1, 0, 2, 24);
+      glow.addColorStop(0, 'rgba(239,122,91,0.46)');
+      glow.addColorStop(1, 'rgba(239,122,91,0)');
+      context.fillStyle = glow;
+      context.beginPath();
+      context.arc(0, 2, 24, 0, TAU);
+      context.fill();
+      context.fillStyle = '#d8e5d7';
+      context.beginPath();
+      context.ellipse(0, 4, 9, 10, 0, 0, TAU);
+      context.fill();
+      context.fillStyle = '#b84442';
+      context.beginPath();
+      context.ellipse(0, 5, 7, 8, 0, 0, TAU);
+      context.fill();
+      context.fillStyle = '#d8e5d7';
+      context.fillRect(-4, -9, 8, 7);
+      context.fillStyle = '#7b5837';
+      context.fillRect(-5, -14, 10, 5);
+      context.fillStyle = '#fff8dc';
+      context.beginPath();
+      context.arc(-3, 1, 2.2, 0, TAU);
+      context.fill();
+    } else {
+      context.rotate(item.thrown ? item.age * 11 : -0.2 + (item.id % 3) * 0.06);
+      const palette = this.paletteForWeapon(item.kind);
+      const blade = {
+        base: { x: -18, y: 0 },
+        tip: { x: item.kind === 'spear' ? 48 : item.kind === 'club' ? 42 : 52, y: 0 },
+        length: 60,
+        angle: 0,
+        gripLength: item.kind === 'spear' ? 24 : 10
+      } satisfies BladeGeometry;
+      if (item.kind === 'club') this.drawClub({ blade, scale: 1, bodyHeight: 0, jump: 0, crouch: 0, bodyRotation: 0, hip: point(0, 0), chest: point(0, 0), neck: point(0, 0), head: point(0, 0), headRadius: 0, frontShoulder: point(0, 0), rearShoulder: point(0, 0), frontHip: point(0, 0), rearHip: point(0, 0), frontKnee: point(0, 0), rearKnee: point(0, 0), frontFoot: point(0, 0), rearFoot: point(0, 0), frontElbow: point(0, 0), rearElbow: point(0, 0), frontHand: point(0, 0), rearHand: point(0, 0), supportHand: point(0, 0), frontArm: { root: point(0, 0), elbow: point(0, 0), end: point(0, 0), upperLength: 1, lowerLength: 1 }, rearArm: { root: point(0, 0), elbow: point(0, 0), end: point(0, 0), upperLength: 1, lowerLength: 1 }, attack: attackMotionFor({ ...emptyActor(item.x, item.z), weapon: item.kind, desiredWeapon: item.kind }), bladeTrail: [], weapon: item.kind, twoHanded: false, fallen: 0, stride: 0 }, palette);
+      else if (item.kind === 'spear') this.drawSpear({ blade, scale: 1, bodyHeight: 0, jump: 0, crouch: 0, bodyRotation: 0, hip: point(0, 0), chest: point(0, 0), neck: point(0, 0), head: point(0, 0), headRadius: 0, frontShoulder: point(0, 0), rearShoulder: point(0, 0), frontHip: point(0, 0), rearHip: point(0, 0), frontKnee: point(0, 0), rearKnee: point(0, 0), frontFoot: point(0, 0), rearFoot: point(0, 0), frontElbow: point(0, 0), rearElbow: point(0, 0), frontHand: point(0, 0), rearHand: point(0, 0), supportHand: point(0, 0), frontArm: { root: point(0, 0), elbow: point(0, 0), end: point(0, 0), upperLength: 1, lowerLength: 1 }, rearArm: { root: point(0, 0), elbow: point(0, 0), end: point(0, 0), upperLength: 1, lowerLength: 1 }, attack: attackMotionFor({ ...emptyActor(item.x, item.z), weapon: item.kind, desiredWeapon: item.kind }), bladeTrail: [], weapon: item.kind, twoHanded: false, fallen: 0, stride: 0 }, palette);
+      else this.drawBlade(blade, item.kind === 'longsword' ? 'longsword' : 'dussack', palette.steel, palette.leather, palette.accent);
+    }
+    context.restore();
+  }
+
+  private drawActorBar(actor: ActorSnapshot, pose: ProceduralPose, scale: number): void {
+    if (actor.maxHealth <= 0 || actor.health >= actor.maxHealth && actor.state === 'idle') return;
+    const context = this.context;
+    const width = actor.archetype === 'grotesque' ? 112 : 52;
+    const y = actor.z - pose.jump * scale - BAR_LIFT[actor.archetype] * this.depthScale(actor.z) * pose.scale;
+    const health = clamp(actor.health / actor.maxHealth, 0, 1);
+    context.save();
+    context.fillStyle = 'rgba(10,20,25,0.84)';
+    context.fillRect(actor.x - width / 2 - 2, y - 2, width + 4, 8);
+    context.fillStyle = '#b9463c';
+    context.fillRect(actor.x - width / 2, y, width * health, 4);
+    if (actor.maxArmor > 0 && actor.armor > 0) {
+      context.fillStyle = '#b9c9c1';
+      context.fillRect(actor.x - width / 2, y + 6, width * clamp(actor.armor / actor.maxArmor, 0, 1), 2);
+    }
+    context.restore();
+  }
+
+  private drawOffscreenIndicators(snapshot: GameSnapshot, cameraX: number): void {
+    if (snapshot.exitOpen && levelExitX(snapshot.roadWidth) - cameraX > this.width - 32) {
+      this.drawChevron(this.width - 18, 424, 1, '#f3d78b', 0.68 + Math.sin(snapshot.time * 5) * 0.24);
+    }
+    for (const enemy of snapshot.actors) {
+      if (enemy.team !== 'enemies' || enemy.state === 'dead') continue;
+      const screenX = enemy.x - cameraX;
+      if (screenX >= 40 && screenX <= this.width - 40) continue;
+      const right = screenX > this.width * 0.5;
+      const x = right ? this.width - 24 : 24;
+      const y = clamp(enemy.z - 60, 274, 634);
+      this.drawChevron(x, y, right ? 1 : -1, '#df6652', 0.7 + Math.sin(snapshot.time * 4.6 + enemy.id) * 0.16);
+    }
+  }
+
+  private drawChevron(x: number, y: number, direction: number, color: string, alpha: number): void {
+    const context = this.context;
+    context.save();
+    context.globalAlpha = clamp(alpha, 0, 1);
+    context.fillStyle = color;
+    context.strokeStyle = '#14232a';
+    context.lineWidth = 3;
+    context.beginPath();
+    context.moveTo(x + direction * 13, y - 17);
+    context.lineTo(x + direction * 13, y + 17);
+    context.lineTo(x - direction * 14, y);
+    context.closePath();
+    context.fill();
+    context.stroke();
+    context.restore();
+  }
+
+  private drawImpactMarks(): void {
+    const context = this.context;
+    for (const mark of this.impactMarks) {
+      const progress = 1 - mark.life / mark.maxLife;
+      const alpha = clamp(mark.life / mark.maxLife, 0, 1);
+      const scale = 0.7 + progress * 0.75;
+      context.save();
+      context.translate(mark.x, mark.y);
+      context.rotate(mark.angle);
+      context.scale(scale, scale);
+      context.globalAlpha = alpha;
+      context.lineCap = 'square';
+      if (mark.kind === 'parry') {
+        context.strokeStyle = '#f8e39d';
+        context.lineWidth = 5;
+        context.beginPath();
+        context.arc(0, 0, 30, 0, TAU);
+        for (let ray = 0; ray < 8; ray += 1) {
+          const angle = ray / 8 * TAU;
+          context.moveTo(Math.cos(angle) * 34, Math.sin(angle) * 34);
+          context.lineTo(Math.cos(angle) * 50, Math.sin(angle) * 50);
+        }
+        context.stroke();
+      } else if (mark.kind === 'interception') {
+        context.strokeStyle = '#ecf2e7';
+        context.lineWidth = 5;
+        context.beginPath();
+        context.moveTo(0, -40);
+        context.lineTo(40, 0);
+        context.lineTo(0, 40);
+        context.lineTo(-40, 0);
+        context.closePath();
+        context.moveTo(-46, -15);
+        context.lineTo(46, 15);
+        context.moveTo(-46, 15);
+        context.lineTo(46, -15);
+        context.stroke();
+      } else if (mark.kind === 'blocked') {
+        context.strokeStyle = '#e8dfc1';
+        context.lineWidth = 6;
+        context.beginPath();
+        context.arc(0, 4, 30, Math.PI * 0.22, Math.PI * 0.78);
+        context.moveTo(0, -27);
+        context.lineTo(0, 29);
+        context.stroke();
+      } else if (mark.kind === 'armor') {
+        context.strokeStyle = '#d9eeec';
+        context.lineWidth = 5;
+        context.strokeRect(-27, -23, 54, 46);
+        context.strokeStyle = '#789aa0';
+        context.beginPath();
+        context.moveTo(-38, -13);
+        context.lineTo(38, 13);
+        context.moveTo(-38, 13);
+        context.lineTo(38, -13);
+        context.stroke();
+      } else if (mark.kind === 'guardbreak') {
+        context.strokeStyle = '#efce7c';
+        context.lineWidth = 6;
+        context.beginPath();
+        context.moveTo(-8, -43);
+        context.lineTo(-32, -20);
+        context.lineTo(-22, 6);
+        context.moveTo(8, -43);
+        context.lineTo(32, -20);
+        context.lineTo(22, 6);
+        context.stroke();
+        context.strokeStyle = '#aa4240';
+        context.lineWidth = 4;
+        context.beginPath();
+        context.moveTo(-5, -42);
+        context.lineTo(7, -18);
+        context.lineTo(-4, 7);
+        context.lineTo(8, 36);
+        context.stroke();
+      } else {
+        const radius = mark.kind === 'heavy' ? 31 : 24;
+        context.fillStyle = '#fff1bd';
+        context.beginPath();
+        context.moveTo(0, -8);
+        context.lineTo(8, 0);
+        context.lineTo(0, 8);
+        context.lineTo(-8, 0);
+        context.closePath();
+        context.fill();
+        context.strokeStyle = mark.kind === 'heavy' ? '#eabf62' : '#f1dfba';
+        context.lineWidth = mark.kind === 'heavy' ? 4 : 3;
+        context.beginPath();
+        context.moveTo(-radius, radius * 0.4);
+        context.lineTo(radius, -radius * 0.4);
+        context.moveTo(-radius * 0.35, -radius * 0.8);
+        context.lineTo(radius * 0.45, radius * 0.72);
+        context.stroke();
+      }
+      context.restore();
+    }
   }
 
   private drawParticles(): void {
@@ -1517,131 +1238,20 @@ export class CanvasRenderer {
       context.save();
       context.globalAlpha = clamp(particle.life / particle.maxLife, 0, 1);
       context.fillStyle = particle.color;
-      context.beginPath();
-      context.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
-      context.fill();
-      context.restore();
-    }
-  }
-
-  private drawImpactMarks(): void {
-    const context = this.context;
-    for (const mark of this.impactMarks) {
-      const progress = 1 - mark.life / mark.maxLife;
-      const alpha = clamp(mark.life / mark.maxLife, 0, 1);
-      const scale = 0.72 + progress * 0.72;
-      context.save();
-      context.translate(mark.x, mark.y);
-      context.rotate(mark.angle);
-      context.scale(scale, scale);
-      context.globalAlpha = alpha;
-      context.lineCap = 'square';
-      context.lineJoin = 'miter';
-
-      if (mark.kind === 'flesh' || mark.kind === 'heavy') {
-        const radius = mark.kind === 'heavy' ? 30 : 23;
-        const core = mark.kind === 'heavy' ? 9 : 7;
-        context.fillStyle = '#fff3c4';
+      if (particle.shape === 'shard') {
+        context.translate(particle.x, particle.y);
+        context.rotate(Math.atan2(particle.vy, particle.vx));
+        context.fillRect(-particle.size * 1.8, -particle.size * 0.55, particle.size * 3.6, particle.size * 1.1);
+      } else if (particle.shape === 'ember') {
+        context.shadowColor = particle.color;
+        context.shadowBlur = particle.size * 3;
         context.beginPath();
-        context.moveTo(0, -core);
-        context.lineTo(core, 0);
-        context.lineTo(0, core);
-        context.lineTo(-core, 0);
-        context.closePath();
+        context.arc(particle.x, particle.y, particle.size, 0, TAU);
         context.fill();
-        context.strokeStyle = mark.kind === 'heavy' ? '#f3d58b' : '#f2e3c2';
-        context.lineWidth = mark.kind === 'heavy' ? 5 : 4;
-        context.beginPath();
-        context.moveTo(-radius, radius * 0.45);
-        context.lineTo(radius, -radius * 0.45);
-        context.moveTo(-radius * 0.42, -radius * 0.72);
-        context.lineTo(radius * 0.38, radius * 0.68);
-        context.stroke();
-        if (mark.kind === 'heavy') {
-          context.strokeStyle = '#9e2f28';
-          context.lineWidth = 3;
-          context.beginPath();
-          for (let index = 0; index < 12; index += 1) {
-            const angle = index / 12 * Math.PI * 2;
-            const inner = index % 2 === 0 ? 12 : 18;
-            const outer = index % 2 === 0 ? 38 : 30;
-            context.moveTo(Math.cos(angle) * inner, Math.sin(angle) * inner);
-            context.lineTo(Math.cos(angle) * outer, Math.sin(angle) * outer);
-          }
-          context.stroke();
-        }
-      } else if (mark.kind === 'armor') {
-        context.strokeStyle = '#e8f0e6';
-        context.lineWidth = 6;
-        context.strokeRect(-28, -24, 56, 48);
-        context.strokeStyle = '#73949c';
-        context.lineWidth = 4;
-        for (const offset of [-16, 0, 16]) {
-          context.beginPath();
-          context.moveTo(-39, offset - 7);
-          context.lineTo(39, offset + 7);
-          context.stroke();
-        }
-      } else if (mark.kind === 'blocked') {
-        context.strokeStyle = '#f1e5c7';
-        context.lineWidth = 7;
-        context.beginPath();
-        context.moveTo(-30, -31);
-        context.quadraticCurveTo(0, -43, 30, -31);
-        context.lineTo(26, 12);
-        context.quadraticCurveTo(0, 39, -26, 12);
-        context.closePath();
-        context.stroke();
-        context.beginPath();
-        context.moveTo(0, -28);
-        context.lineTo(0, 24);
-        context.stroke();
-      } else if (mark.kind === 'parry') {
-        context.strokeStyle = '#f8e39d';
-        context.lineWidth = 6;
-        context.beginPath();
-        context.arc(0, 0, 34, 0, Math.PI * 2);
-        context.moveTo(-39, -39);
-        context.lineTo(39, 39);
-        context.moveTo(39, -39);
-        context.lineTo(-39, 39);
-        context.stroke();
-      } else if (mark.kind === 'interception') {
-        context.strokeStyle = '#f4eee0';
-        context.lineWidth = 6;
-        context.beginPath();
-        context.moveTo(0, -43);
-        context.lineTo(43, 0);
-        context.lineTo(0, 43);
-        context.lineTo(-43, 0);
-        context.closePath();
-        context.moveTo(-52, -15);
-        context.lineTo(52, 15);
-        context.moveTo(-52, 15);
-        context.lineTo(52, -15);
-        context.stroke();
       } else {
-        const split = 8 + progress * 25;
-        context.strokeStyle = '#f3d58b';
-        context.lineWidth = 7;
         context.beginPath();
-        context.moveTo(-split, -35);
-        context.lineTo(-split - 25, -18);
-        context.lineTo(-split - 18, 22);
-        context.lineTo(-split, 38);
-        context.moveTo(split, -35);
-        context.lineTo(split + 25, -18);
-        context.lineTo(split + 18, 22);
-        context.lineTo(split, 38);
-        context.stroke();
-        context.strokeStyle = '#9e2f28';
-        context.lineWidth = 4;
-        context.beginPath();
-        context.moveTo(-5, -51);
-        context.lineTo(6, -19);
-        context.lineTo(-4, 2);
-        context.lineTo(8, 36);
-        context.stroke();
+        context.arc(particle.x, particle.y, particle.size, 0, TAU);
+        context.fill();
       }
       context.restore();
     }
@@ -1653,13 +1263,12 @@ export class CanvasRenderer {
     context.textBaseline = 'middle';
     for (const item of this.floatingTexts) {
       if (item.delay > 0) continue;
-      const alpha = clamp(item.life / item.maxLife, 0, 1);
       context.save();
-      context.globalAlpha = alpha;
-      context.font = item.large ? '700 24px Georgia, serif' : '700 18px system-ui, sans-serif';
+      context.globalAlpha = clamp(item.life / item.maxLife, 0, 1);
+      context.font = item.large ? '700 23px Georgia, serif' : '700 17px system-ui, sans-serif';
       context.lineWidth = 5;
-      context.strokeStyle = 'rgba(27,20,18,0.9)';
-      context.fillStyle = item.large ? '#f0d68b' : '#fff3cf';
+      context.strokeStyle = 'rgba(14,25,30,0.92)';
+      context.fillStyle = item.large ? '#f0d68b' : '#fff2ca';
       context.strokeText(item.text, item.x, item.y);
       context.fillText(item.text, item.x, item.y);
       context.restore();
@@ -1669,64 +1278,31 @@ export class CanvasRenderer {
   private drawDebug(snapshot: GameSnapshot): void {
     const context = this.context;
     context.save();
-    context.strokeStyle = 'rgba(80,235,185,0.75)';
-    context.fillStyle = 'rgba(10,15,14,0.72)';
+    context.strokeStyle = 'rgba(91,240,191,0.75)';
     for (const actor of snapshot.actors) {
       context.beginPath();
-      context.arc(actor.x, actor.z, actor.radius, 0, Math.PI * 2);
+      context.arc(actor.x, actor.z, actor.radius, 0, TAU);
       context.stroke();
-
-      const zoneWidths: Readonly<Record<HitZone, number>> = {
-        head: actor.radius * 0.72,
-        torso: actor.radius * 0.98,
-        legs: actor.radius * 0.88
-      };
-      for (const zone of ['head', 'torso', 'legs'] as const) {
-        const exposed = !(actor.state === 'crouch' && zone === 'head');
-        const zoneY = actor.z + this.hitZoneOffset(zone);
-        context.globalAlpha = exposed ? 0.82 : 0.2;
-        context.strokeStyle = this.hitZoneColor(zone);
-        context.strokeRect(
-          actor.x - zoneWidths[zone],
-          zoneY - 8,
-          zoneWidths[zone] * 2,
-          16
-        );
-      }
-      context.globalAlpha = 1;
-      if (actor.attackId) {
-        const definition = getAttack(actor.attackId);
-        context.strokeStyle = this.hitZoneColor(definition.hitZone);
-        if (definition.arc === 'radial') {
-          context.beginPath();
-          context.arc(actor.x, actor.z, Math.max(definition.reach, definition.depth), 0, Math.PI * 2);
-          context.stroke();
-        } else {
-          const start = actor.x + definition.minForward * actor.facing;
-          const end = actor.x + definition.reach * actor.facing;
-          context.strokeRect(Math.min(start, end), actor.z - definition.depth, Math.abs(end - start), definition.depth * 2);
-        }
-        context.fillStyle = 'rgba(10,15,14,0.78)';
-        context.fillRect(actor.x - 35, actor.z - 142, 70, 20);
-        context.fillStyle = this.hitZoneColor(definition.hitZone);
-        context.font = 'bold 12px monospace';
-        context.textAlign = 'center';
-        context.fillText(definition.hitZone.toUpperCase(), actor.x, actor.z - 128);
-        context.textAlign = 'start';
-        context.strokeStyle = 'rgba(80,235,185,0.75)';
+      if (!actor.attackId) continue;
+      const definition = ATTACKS[actor.attackId];
+      if (!definition) continue;
+      context.strokeStyle = definition.arc === 'radial' ? 'rgba(240,117,91,0.84)' : 'rgba(239,190,82,0.84)';
+      if (definition.arc === 'radial') {
+        context.beginPath();
+        context.arc(actor.x, actor.z, Math.max(definition.reach, definition.depth), 0, TAU);
+        context.stroke();
+      } else {
+        const start = actor.x + definition.minForward * actor.facing;
+        const end = actor.x + definition.reach * actor.facing;
+        context.strokeRect(Math.min(start, end), actor.z - definition.depth, Math.abs(end - start), definition.depth * 2);
       }
     }
-    context.restore();
-
-    // HUD-space debug summary (the world translate above must not shift it).
-    context.save();
-    context.fillStyle = 'rgba(10,15,14,0.72)';
-    context.fillRect(12, 88, 176, 54);
+    context.fillStyle = 'rgba(10,19,25,0.72)';
+    context.fillRect(12 - this.cameraOffsetX, 88, 182, 44);
     context.fillStyle = '#d9f8e8';
-    context.font = '14px monospace';
-    context.fillText(`tick ${snapshot.tick}`, 20, 108);
-    context.fillText(`actors ${snapshot.actors.length}`, 20, 128);
-    context.fillText(`camera ${Math.round(-this.cameraOffsetX)}`, 20, 138);
+    context.font = '13px monospace';
+    context.fillText(`tick ${snapshot.tick}`, 20 - this.cameraOffsetX, 106);
+    context.fillText(`actors ${snapshot.actors.length}`, 20 - this.cameraOffsetX, 124);
     context.restore();
   }
 
@@ -1742,12 +1318,11 @@ export class CanvasRenderer {
       if ((this.particles[index]?.life ?? 0) <= 0) this.particles.splice(index, 1);
     }
     for (const item of this.floatingTexts) {
-      if (item.delay > 0) {
-        item.delay = Math.max(0, item.delay - dt);
-        continue;
+      if (item.delay > 0) item.delay = Math.max(0, item.delay - dt);
+      else {
+        item.life -= dt;
+        item.y -= (item.large ? 28 : 46) * dt;
       }
-      item.life -= dt;
-      item.y -= (item.large ? 28 : 44) * dt;
     }
     for (let index = this.floatingTexts.length - 1; index >= 0; index -= 1) {
       if ((this.floatingTexts[index]?.life ?? 0) <= 0) this.floatingTexts.splice(index, 1);
@@ -1771,71 +1346,109 @@ export class CanvasRenderer {
   }
 
   private hitZoneOffset(hitZone: HitZone | undefined): number {
-    if (hitZone === 'head') return -94;
-    if (hitZone === 'legs') return -20;
-    return -54;
+    if (hitZone === 'head') return -112;
+    if (hitZone === 'legs') return -24;
+    return -68;
   }
 
   private crouchedContactOffset(hitZone: HitZone | undefined, crouched: boolean): number {
     if (!crouched) return 0;
-    // Feet keep the shared ground anchor while knees, torso, and head fold
-    // downward. Zone marks follow that authored posture instead of floating at
-    // standing height.
-    if (hitZone === 'legs') return 4;
-    if (hitZone === 'torso') return 24;
-    return 30;
-  }
-
-  private hitZoneColor(hitZone: HitZone): string {
-    if (hitZone === 'head') return 'rgba(239,92,76,0.9)';
-    if (hitZone === 'legs') return 'rgba(83,194,222,0.9)';
-    return 'rgba(239,190,82,0.9)';
-  }
-
-  private attackMotion(actor: ActorSnapshot): number {
-    if (!actor.attackId) return 0;
-    const definition = getAttack(actor.attackId);
-    const duration = attackDuration(definition);
-    const normalized = clamp(actor.attackElapsed / duration, 0, 1);
-    const windupEnd = definition.startup / duration;
-    const activeEnd = (definition.startup + definition.active) / duration;
-    if (normalized < windupEnd) return normalized / Math.max(0.001, windupEnd) * 0.22;
-    if (normalized < activeEnd) return 0.22 + (normalized - windupEnd) / Math.max(0.001, activeEnd - windupEnd) * 0.72;
-    return 0.94 + (normalized - activeEnd) / Math.max(0.001, 1 - activeEnd) * 0.06;
-  }
-
-  private actorLean(actor: ActorSnapshot): number {
-    if (actor.state === 'hitstun' || actor.state === 'dead') return -actor.facing * 0.22;
-    if (actor.state === 'dodge') return actor.facing * 0.18;
-    if (actor.state === 'attack') return actor.facing * (this.attackMotion(actor) - 0.35) * 0.12;
-    return 0;
-  }
-
-  private jumpOffset(actor: ActorSnapshot): number {
-    if (actor.state === 'jump') {
-      const progress = clamp(actor.stateElapsed / Math.max(0.01, actor.stateDuration), 0, 1);
-      return Math.sin(progress * Math.PI) * 72;
-    }
-    if (actor.attackId?.includes('_air_')) {
-      const definition = getAttack(actor.attackId);
-      const progress = clamp(actor.attackElapsed / attackDuration(definition), 0, 1);
-      return Math.sin(progress * Math.PI) * 58;
-    }
-    return 0;
+    if (hitZone === 'legs') return 5;
+    if (hitZone === 'torso') return 25;
+    return 34;
   }
 
   private depthScale(z: number): number {
-    return 0.86 + clamp((z - 248) / 364, 0, 1) * 0.18;
+    return 0.86 + clamp((finite(z, 248) - 248) / 364, 0, 1) * 0.18;
   }
 
-  private palette(actor: ActorSnapshot): { body: string; dark: string; accent: string; skin: string } {
+  private jumpAmount(actor: ActorSnapshot): number {
+    const pose = poseForActor(actor, actor.stateElapsed);
+    return pose.jump * this.depthScale(actor.z);
+  }
+
+  private palette(actor: ActorSnapshot): Palette {
     if (actor.archetype === 'meyer') {
       return actor.playerIndex === 1
-        ? { body: '#35546c', dark: '#1e2830', accent: '#d1b46d', skin: '#d8b792' }
-        : { body: '#783b35', dark: '#30201e', accent: '#d1b46d', skin: '#d8b792' };
+        ? { body: '#2f5e73', bodyLight: '#4e8490', dark: '#172a35', accent: '#d8b66f', cream: '#e6d6b3', skin: '#d2a27f', skinShadow: '#9b6d58', steel: '#cfe2df', leather: '#4a302d' }
+        : { body: '#913d45', bodyLight: '#b55c58', dark: '#261d26', accent: '#d9b76d', cream: '#ebddbe', skin: '#d5a481', skinShadow: '#9b6c55', steel: '#d5e6e1', leather: '#4d2d2b' };
     }
-    if (actor.archetype === 'spear') return { body: '#6e7042', dark: '#302d22', accent: '#a58b4f', skin: '#c59d75' };
-    if (actor.archetype === 'captain') return { body: '#6d7070', dark: '#2a2c2d', accent: '#9f7a43', skin: '#c2a17f' };
-    return { body: '#725039', dark: '#2f251f', accent: '#9b6d42', skin: '#bf9670' };
+    if (actor.archetype === 'spear') return { body: '#65714d', bodyLight: '#899267', dark: '#233036', accent: '#c0a15c', cream: '#d5c69f', skin: '#bf8d69', skinShadow: '#805843', steel: '#c5d5d0', leather: '#47372b' };
+    if (actor.archetype === 'captain') return { body: '#65757a', bodyLight: '#a4b3ae', dark: '#1d2d35', accent: '#bd9755', cream: '#d3d6c6', skin: '#c58f6d', skinShadow: '#835644', steel: '#d3e4dd', leather: '#41312d' };
+    return { body: '#78533d', bodyLight: '#a4734d', dark: '#2a2427', accent: '#b99055', cream: '#d4c49c', skin: '#bf8968', skinShadow: '#7f5544', steel: '#bfd0c9', leather: '#4b3027' };
   }
+
+  private paletteForWeapon(weapon: Weapon): Palette {
+    return weapon === 'spear'
+      ? { body: '#65714d', bodyLight: '#899267', dark: '#233036', accent: '#c0a15c', cream: '#d5c69f', skin: '#bf8d69', skinShadow: '#805843', steel: '#c5d5d0', leather: '#47372b' }
+      : weapon === 'club'
+        ? { body: '#78533d', bodyLight: '#a4734d', dark: '#2a2427', accent: '#b99055', cream: '#d4c49c', skin: '#bf8968', skinShadow: '#7f5544', steel: '#bfd0c9', leather: '#4b3027' }
+        : { body: '#913d45', bodyLight: '#b55c58', dark: '#261d26', accent: '#d9b76d', cream: '#ebddbe', skin: '#d5a481', skinShadow: '#9b6c55', steel: '#d5e6e1', leather: '#4d2d2b' };
+  }
+}
+
+function finite(value: number | undefined, fallback: number): number {
+  return value !== undefined && Number.isFinite(value) ? value : fallback;
+}
+
+function point(x: number, y: number): RigPoint {
+  return { x, y };
+}
+
+function add(left: RigPoint, right: RigPoint): RigPoint {
+  return { x: left.x + right.x, y: left.y + right.y };
+}
+
+function scale(value: RigPoint, amount: number): RigPoint {
+  return { x: value.x * amount, y: value.y * amount };
+}
+
+function emptyActor(x: number, z: number): ActorSnapshot {
+  return {
+    id: 0,
+    team: 'players',
+    archetype: 'meyer',
+    name: '',
+    playerIndex: 0,
+    x,
+    z,
+    vx: 0,
+    vz: 0,
+    facing: 1,
+    radius: 22,
+    health: 1,
+    maxHealth: 1,
+    guard: 1,
+    maxGuard: 1,
+    armor: 0,
+    maxArmor: 0,
+    state: 'idle',
+    stateElapsed: 0,
+    stateDuration: 1,
+    stateMoveX: 0,
+    stateMoveZ: 0,
+    weapon: 'longsword',
+    desiredWeapon: 'longsword',
+    stowedWeapon: 'dussack',
+    durability: 0,
+    attackId: null,
+    attackElapsed: 0,
+    reactionZone: null,
+    invulnerable: 0,
+    openingTimer: 0,
+    provokeTimer: 0,
+    counterWindow: 0,
+    flashTimer: 0,
+    comboCount: 0,
+    deathTimer: 0
+  };
+}
+
+function drawPath(context: ProceduralDrawingContext, points: readonly RigPoint[]): void {
+  const first = points[0];
+  if (!first) return;
+  context.beginPath();
+  context.moveTo(first.x, first.y);
+  for (const next of points.slice(1)) context.lineTo(next.x, next.y);
+  context.closePath();
 }

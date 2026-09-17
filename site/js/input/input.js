@@ -1,3 +1,4 @@
+import { NEUTRAL_INPUT } from '../sim/types.js';
 import { TouchControls } from './touch.js';
 import { TiltController } from './tilt.js';
 const BUTTON_KEYS = Object.freeze({
@@ -7,6 +8,7 @@ const BUTTON_KEYS = Object.freeze({
     guard: Object.freeze(['KeyI', 'KeyV', 'ShiftLeft', 'ShiftRight']),
     switch: Object.freeze(['KeyU', 'Space'])
 });
+const MOVEMENT_KEYS = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyA', 'KeyS', 'KeyD']);
 export class InputHub {
     tilt = new TiltController();
     touch;
@@ -14,9 +16,19 @@ export class InputHub {
     pressedOrder = [];
     previousHeld = new Map();
     constructor(controlRoot) {
-        this.touch = new TouchControls(controlRoot, (button) => this.recordPress(button));
+        this.touch = new TouchControls(controlRoot, (button) => this.recordPress(button), () => this.isGameplayInputBlocked());
         window.addEventListener('keydown', (event) => {
-            if (event.repeat && event.code !== 'ArrowLeft' && event.code !== 'ArrowRight')
+            // A focused form control, title button, or open overlay owns the key.
+            // This keeps Space from being turned into SWAP while activating Start,
+            // and keeps pairing textareas usable on touch keyboards.
+            if (this.isGameplayInputBlocked()) {
+                this.keys.delete(event.code);
+                return;
+            }
+            const focused = typeof document === 'undefined' ? null : document.activeElement;
+            if (event.code === 'Space' && typeof HTMLElement !== 'undefined' && focused instanceof HTMLElement && focused.matches('button, summary') && !focused.closest('#touch-controls'))
+                return;
+            if (event.repeat && !MOVEMENT_KEYS.has(event.code))
                 return;
             const wasDown = this.keys.has(event.code);
             this.keys.add(event.code);
@@ -26,19 +38,30 @@ export class InputHub {
                         this.recordPress(button);
                 }
             }
-            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(event.code))
+            if (MOVEMENT_KEYS.has(event.code) || event.code === 'Space')
                 event.preventDefault();
         });
         window.addEventListener('keyup', (event) => this.keys.delete(event.code));
         window.addEventListener('blur', () => this.reset());
+        if (typeof document !== 'undefined') {
+            document.addEventListener('visibilitychange', () => {
+                if (document.hidden)
+                    this.reset();
+            });
+        }
+        window.addEventListener('orientationchange', () => this.reset());
     }
     sample(dt) {
+        if (this.isGameplayInputBlocked()) {
+            this.reset();
+            return { ...NEUTRAL_INPUT };
+        }
         const keyboardX = (this.down('ArrowRight', 'KeyD') ? 1 : 0) - (this.down('ArrowLeft', 'KeyA') ? 1 : 0);
         const keyboardZ = (this.down('ArrowDown', 'KeyS') ? 1 : 0) - (this.down('ArrowUp', 'KeyW') ? 1 : 0);
         const tilt = this.tilt.sample(dt);
         let moveX = this.touch.moveX;
         let moveZ = this.touch.moveZ;
-        if (this.tilt.enabled && Math.hypot(tilt.x, tilt.z) > 0.03) {
+        if (this.tilt.enabled && !this.touch.hasMovementPointer && Math.hypot(tilt.x, tilt.z) > 0.03) {
             moveX = tilt.x;
             moveZ = tilt.z;
         }
@@ -66,9 +89,10 @@ export class InputHub {
         const firstAttackIndex = [lightIndex, heavyIndex]
             .filter((index) => index >= 0)
             .reduce((first, index) => Math.min(first, index), Number.POSITIVE_INFINITY);
-        // A single sampled frame can contain several physical edges. Duck only
-        // modifies an attack when its edge happened first; Attack -> Duck remains a
-        // standing attack even on 90/120 Hz displays.
+        // A single sampled frame can contain several physical edges. STEP only
+        // modifies an attack when its edge happened first; Attack -> STEP remains a
+        // standing attack even on 90/120 Hz displays. The physical order is kept in
+        // pressedOrder, so keyboard and touch follow the same route semantics.
         if (firstAttackIndex < mobilityIndex)
             pressed.delete('mobility');
         const frame = {
@@ -104,8 +128,34 @@ export class InputHub {
         return codes.some((code) => this.keys.has(code));
     }
     recordPress(button) {
+        if (this.isGameplayInputBlocked())
+            return;
         if (!this.pressedOrder.includes(button))
             this.pressedOrder.push(button);
+    }
+    isGameplayInputBlocked() {
+        if (typeof document === 'undefined')
+            return false;
+        if (document.body?.dataset.mode === 'title')
+            return true;
+        if (document.querySelector('.modal-overlay:not(.is-hidden)'))
+            return true;
+        const active = document.activeElement;
+        if (typeof HTMLElement === 'undefined' || !(active instanceof HTMLElement))
+            return false;
+        // Shell button focus must not strand touch controls after a guide closes.
+        // Space keeps its native button activation behavior in the key handler.
+        if (active.closest('#touch-controls'))
+            return false;
+        // A title button can remain the active element for one frame after Play
+        // hides the title. It no longer owns input once its panel is hidden.
+        const title = active.closest('#title-screen');
+        if (title?.classList.contains('is-hidden'))
+            return false;
+        const hiddenOverlay = active.closest('.modal-overlay');
+        if (hiddenOverlay?.classList.contains('is-hidden'))
+            return false;
+        return active.matches('input, textarea, select, [contenteditable="true"]');
     }
 }
 //# sourceMappingURL=input.js.map

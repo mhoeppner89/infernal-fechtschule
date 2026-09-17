@@ -2,12 +2,11 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-  <meta name="theme-color" content="#241b18">
-  <meta name="description" content="A mobile-first historical fencing horde-brawler vertical slice starring Joachim Meyer.">
-  <title>The Infernal Fechtschule — Vertical Slice</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#11191b">
+  <meta name="description" content="A mobile-first historical fencing arcade brawler starring Joachim Meyer.">
+  <title>The Infernal Fechtschule</title>
   <link rel="manifest" href="./manifest.webmanifest">
-  <link rel="icon" href="./icons/icon-192.png">
   <link rel="stylesheet" href="./styles.css">
 </head>
 <body data-mode="title">
@@ -16,48 +15,80 @@
 
     <section id="title-screen" class="overlay title-screen">
       <div class="title-panel manuscript-panel">
-        <img class="title-mark" src="./assets/woodcut-mark.svg" alt="Crossed fencing weapons above the road to Italy">
-        <p class="eyebrow">A HISTORICAL-ARCADE HORDE BRAWLER</p>
-        <h1>THE INFERNAL<br><span>FECHTSCHULE</span></h1>
+        <div class="title-heading">
+          <svg class="title-emblem" viewBox="0 0 160 160" role="img" aria-label="Crossed longswords emblem">
+            <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M33 119 111 41" stroke-width="7" />
+              <path d="m49 113-14 14M43 107l-14 14" stroke-width="5" />
+              <path d="m104 48 15-15 8 8-15 15" stroke-width="5" />
+              <path d="M127 119 49 41" stroke-width="7" />
+              <path d="m111 113 14 14M117 107l14 14" stroke-width="5" />
+              <path d="m56 48-15-15-8 8 15 15" stroke-width="5" />
+              <path d="m72 80 16-16M88 80 72 64" stroke-width="3" opacity=".6" />
+            </g>
+          </svg>
+          <p class="eyebrow">INFERNAL FECHTSCHULE</p>
+          <span class="edition-mark">EDITION 02 · MEYER / ARCADE</span>
+          <h1>THE<br><span>FECHTSCHULE</span></h1>
+        </div>
         <p class="title-copy">
-          Joachim Meyer crosses the Alps to seek out the Italian masters. Change between
-          longsword and dussack, chain short signature combinations, and cut a road through
-          streets, gatehouses, fencing halls, and castle courts.
+          Cross a Renaissance road as Joachim Meyer. Cut through the press, read the opening,
+          and keep your feet under you.
         </p>
         <div class="title-actions">
-          <button id="start-solo" class="primary-button">Begin Meyer’s Italian Journey</button>
-          <button id="open-network" class="secondary-button">Two-phone Co-op Lab</button>
+          <button id="start-solo" class="primary-button">Play the road</button>
+          <button id="practice-button" class="secondary-button">Move guide</button>
+          <button id="open-network" class="secondary-button">Co-op</button>
         </div>
+        <p class="title-note">Historical fencing inspiration · arcade adaptations · original code-drawn art</p>
         <div class="setup-row">
           <button id="enable-tilt" class="text-button">Enable tilt</button>
           <button id="recenter-tilt" class="text-button">Recenter</button>
           <span id="tilt-status">Virtual stick and keyboard are ready.</span>
         </div>
         <details class="controls-primer">
-          <summary>Controls and signature routes</summary>
-          <div class="primer-grid">
-            <div><strong>Move</strong><span>Tilt, virtual stick, WASD, or arrows</span></div>
-            <div><strong>Light</strong><span>J / Z</span></div>
-            <div><strong>Heavy</strong><span>K / X</span></div>
-            <div><strong>Duck / Dodge</strong><span>L / C · Direction + Duck dodges</span></div>
-            <div><strong>Guard / Parry</strong><span>I / V / Shift</span></div>
-            <div><strong>Switch / take / throw</strong><span>U / Space · Takes what lies within arm’s reach when the road marks it, otherwise switches blades or hurls the find in your hand</span></div>
+          <summary>Keyboard reference</summary>
+          <div class="primer-inline">
+            <span><strong>Move</strong> WASD / arrows</span>
+            <span><strong>Cut</strong> J / Z</span>
+            <span><strong>Finish</strong> K / X</span>
+            <span><strong>Guard</strong> I / V / Shift</span>
+            <span><strong>Step</strong> L / C</span>
+            <span><strong>Swap</strong> U / Space</span>
           </div>
-          <p>Tap Duck, then quickly Light or Heavy for a low attack. Direction + Duck dodges. Try Light → Light → Heavy, Heavy → Light, and Parry → Heavy.</p>
-          <p>A level is a place — a road, a setting, and the waves fought along it. Clearing a wave only brings the next one on: the road, the view, and anything the fallen dropped stay exactly where they were. A level is not over when the last man falls either — the way east bars itself while the place is held, opens when it is clear, and the level ends when you walk out through it. Loot the fallen before you go.</p>
-          <p>Every wave asks one question. The crowd teaches the press; the town gate narrows the road to a queue of one; the fencing hall gives you a single captain and no crowd; the courtyard opens doors behind you; the flood comes in surges with a lull between them, and the castle road only asks you to stand. Nothing is ever dropped in front of you: every fighter walks in from off the edge of the screen, so what you can see is what is coming.</p>
-          <p>Fallen arms stay on the road, and the road marks what your hands can take: a gold ring and caret under it mean Switch will pick it up. Nothing is collected by walking over it — step onto the mark and press Switch to take a cudgel, a shaft, or steel off a captain, then press it again to hurl the find at whoever is left. A draught is only offered when you are hurt enough for it to matter. Finds splinter after a few blows.</p>
         </details>
-        <p class="prototype-note">Original production art and animation. No Little Fighter 2 assets or code are used.</p>
       </div>
     </section>
 
-    <section id="game-hud" class="game-hud is-hidden" aria-live="polite">
-      <button id="pause-button" class="pause-button" aria-label="Pause">Ⅱ</button>
+    <section id="game-hud" class="game-hud is-hidden">
+      <div class="combat-topbar" aria-label="Fight status">
+        <div id="player-vitals" class="player-vitals" aria-label="Player vitality and guard">
+          <div class="player-line">
+            <span id="player-label">MEYER · P1</span>
+            <strong id="player-weapon">LONGSWORD</strong>
+          </div>
+          <div id="health-bar" class="vital-bar health-bar" role="progressbar" aria-label="Vitality" aria-valuemin="0" aria-valuemax="110" aria-valuenow="110">
+            <span id="health-fill"></span>
+            <small>VIT <b id="health-value">110</b></small>
+          </div>
+          <div id="guard-bar" class="vital-bar guard-bar" role="progressbar" aria-label="Guard" aria-valuemin="0" aria-valuemax="72" aria-valuenow="72">
+            <span id="guard-fill"></span>
+            <small>GUARD <b id="guard-value">72</b></small>
+          </div>
+        </div>
+        <div class="encounter-status">
+          <strong id="wave-label">READY</strong>
+          <span id="wave-context">MEYER’S ROAD</span>
+          <small id="wave-objective" class="wave-objective is-hidden"></small>
+          <span id="route-cue" class="route-cue">READY · CUT / FINISH</span>
+        </div>
+        <div class="top-actions">
+          <button id="guide-button" class="hud-button" aria-label="Open move guide" aria-haspopup="dialog">?</button>
+          <button id="pause-button" class="hud-button" aria-label="Pause">Ⅱ</button>
+        </div>
+      </div>
+      <span class="orientation-hint" aria-hidden="true">LANDSCAPE RECOMMENDED</span>
 
-      <!-- The only things on screen while fighting are the fight's own cues, in
-           one column low in the picture: nothing is read out in a corner, and
-           health, guard, weapon and pips are drawn over the fighters themselves. -->
       <div class="cue-stack">
         <div id="combo-count" class="combo-count is-hidden"></div>
         <div id="doctrine" class="doctrine" aria-label="Meyer doctrine: Provoke, Take, Hit">
@@ -68,77 +99,104 @@
           <span id="doctrine-hit">HIT</span>
         </div>
         <div id="take-prompt" class="take-prompt is-hidden">⇄ TAKE CUDGEL</div>
-        <div id="wave-objective" class="wave-objective is-hidden"></div>
         <div id="wave-prompt" class="wave-prompt is-hidden">LEVEL CLEAR · WALK EAST</div>
       </div>
+      <div id="ui-announcer" class="sr-only" aria-live="polite"></div>
     </section>
 
     <section id="touch-controls" class="touch-controls is-hidden" aria-label="Touch controls">
-      <div class="joystick" data-control="joystick" aria-label="Virtual movement stick">
-        <div class="joystick-runes">✥</div>
+      <div class="joystick" data-control="joystick" aria-label="Move with virtual stick">
+        <span class="joystick-label">MOVE</span>
         <div class="joystick-knob" data-control="joystick-knob"></div>
       </div>
-      <div class="action-cluster">
-        <button class="action-button duck" data-button="mobility" aria-label="Duck; tap, then quickly press Light or Heavy for a low attack; press a direction with Duck to dodge"><b>↓</b><span>DUCK</span></button>
-        <button class="action-button light" data-button="light" aria-label="Light attack"><b>L</b><span>LIGHT</span></button>
-        <button class="action-button heavy" data-button="heavy" aria-label="Heavy attack"><b>H</b><span>HEAVY</span></button>
-        <button class="action-button guard" data-button="guard" aria-label="Block or parry"><b>◇</b><span>GUARD</span></button>
-        <button class="switch-button" data-button="switch" aria-label="Switch weapon; take what the road marks within arm's reach; hurl the find in hand"><b>⇄</b><span>SWITCH</span></button>
+      <div class="action-cluster" aria-label="Fight actions">
+        <button class="action-button step" data-button="mobility" aria-label="Step; neutral tap crouches; pair with a direction to dodge; step then Cut or Finish for a low attack"><b>↓</b><span>STEP</span></button>
+        <button class="action-button cut" data-button="light" aria-label="Cut"><b>Ⅰ</b><span>CUT</span></button>
+        <button class="action-button finish" data-button="heavy" aria-label="Finish"><b>Ⅱ</b><span>FINISH</span></button>
+        <button class="action-button guard" data-button="guard" aria-label="Guard or parry"><b>◇</b><span>GUARD</span></button>
+        <button id="switch-button" class="switch-button" data-button="switch" aria-label="Swap weapon or throw the item in hand"><b>⇄</b><span id="switch-label">SWAP</span></button>
       </div>
     </section>
 
-    <section id="banner" class="banner is-hidden" aria-live="assertive">
+    <section id="banner" class="banner is-hidden" aria-live="assertive" role="status">
       <small id="banner-note"></small>
       <span id="banner-title"></span>
       <small id="banner-subtitle"></small>
     </section>
 
-    <section id="lesson-overlay" class="overlay modal-overlay is-hidden">
+    <section id="guide-overlay" class="overlay modal-overlay is-hidden" role="dialog" aria-modal="true" aria-labelledby="guide-title">
+      <div class="guide-panel manuscript-panel">
+        <button id="close-guide" class="modal-close" aria-label="Close move guide">×</button>
+        <p class="eyebrow">FIELD NOTES · ARCADE ADAPTATION</p>
+        <h2 id="guide-title">Read the hands</h2>
+        <p class="guide-lede">Base routes are ready from the first wave. HEMA-inspired names are adapted for a fast arcade fight.</p>
+        <div class="guide-grid">
+          <div><kbd>STICK</kbd><span>Move and choose direction</span></div>
+          <div><kbd>CUT</kbd><span>Quick strike · J / Z</span></div>
+          <div><kbd>FINISH</kbd><span>Heavy strike · K / X</span></div>
+          <div><kbd>GUARD</kbd><span>Hold to block · I / V / Shift</span></div>
+          <div><kbd>STEP</kbd><span>L / C · neutral crouches</span></div>
+          <div><kbd>SWAP</kbd><span>U / Space · take marked finds</span></div>
+        </div>
+        <div class="guide-routes">
+          <div><b>CUT → CUT → CUT</b>Three-part cut chain, available immediately.</div>
+          <div><b>CUT → CUT → FINISH</b>Commit to a harder knockback finish.</div>
+          <div><b>GUARD → FORWARD → CUT</b>Enter behind the long point.</div>
+          <div><b>GUARD → UP → CUT</b>High-cover crosscut: Zwerchhau.</div>
+          <div><b>GUARD → DOWN → CUT</b>Rising cut from below: Unterhau.</div>
+          <div><b>GUARD → BACK → CUT</b>Withdraw while cutting: Abzug.</div>
+          <div><b>DIRECTION + STEP → CUT</b>Pass through with a moving cut.</div>
+          <div><b>PARRY → CUT / FINISH</b>Answer a timed deflection.</div>
+        </div>
+        <p class="guide-foot">Forward and back follow your facing at the Guard tap. Complete a guard command within 450 ms. A fresh follow-up waits up to 260 ms; confirmed light hits link sooner. Holding Cut never repeats. A simultaneous Cut + Finish chord chooses Cut. These route names describe the longsword; the dussack uses shorter one-handed variants.</p>
+        <p class="guide-route"><strong>Routes:</strong> direction + STEP dodges · neutral STEP → CUT / FINISH attacks low; directional STEP → CUT makes a passing cut · GUARD + direction → CUT · PARRY → CUT / FINISH.</p>
+        <p class="guide-foot">When an item is marked on the road, SWAP changes to TAKE. Release the guide to return to the fight.</p>
+      </div>
+    </section>
+
+    <section id="lesson-overlay" class="overlay modal-overlay is-hidden" role="dialog" aria-modal="true" aria-labelledby="lesson-title">
       <div class="lesson-panel manuscript-panel">
         <p class="eyebrow">NEW LESSON LEARNED</p>
-        <h2>Lessons of the Road</h2>
-        <p>Each lesson unlocks new combos. The routes below show the exact buttons — they stay yours for the rest of the run.</p>
+        <h2 id="lesson-title">Lessons of the Road</h2>
+        <p>Lessons strengthen routes already available in the run. Base CUT, FINISH, GUARD, and STEP routes are already in your hands.</p>
         <div id="lesson-cards" class="lesson-cards"></div>
         <p id="lesson-waiting" class="waiting-note is-hidden">The host is choosing the shared co-op lesson.</p>
       </div>
     </section>
 
-    <section id="end-overlay" class="overlay modal-overlay is-hidden" data-outcome="victory">
+    <section id="end-overlay" class="overlay modal-overlay is-hidden" data-outcome="victory" role="dialog" aria-modal="true" aria-labelledby="end-title">
       <div class="end-panel manuscript-panel">
         <p class="eyebrow">RUN COMPLETE</p>
         <h2 id="end-title">THE JOURNEY CONTINUES</h2>
         <p id="end-copy">A name echoes across the castle court.</p>
         <div class="end-actions">
-          <button id="end-restart" class="primary-button">Fence the Road Again</button>
-          <button id="end-title-button" class="secondary-button">Return to Title</button>
+          <button id="end-restart" class="primary-button">Fence the road again</button>
+          <button id="end-title-button" class="secondary-button">Return to title</button>
         </div>
       </div>
     </section>
 
-    <section id="pause-overlay" class="overlay modal-overlay is-hidden">
+    <section id="pause-overlay" class="overlay modal-overlay is-hidden" role="dialog" aria-modal="true" aria-labelledby="pause-title">
       <div class="pause-panel manuscript-panel">
         <p class="eyebrow">PAUSED</p>
-        <h2>The Road Waits</h2>
+        <h2 id="pause-title">The road waits</h2>
         <div class="pause-actions">
           <button id="resume-button" class="primary-button">Resume</button>
-          <button id="restart-button" class="secondary-button">Restart Run</button>
-          <button id="pause-title-button" class="text-button">Return to Title</button>
+          <button id="restart-button" class="secondary-button">Restart run</button>
+          <button id="pause-title-button" class="text-button">Return to title</button>
         </div>
       </div>
     </section>
 
-    <section id="network-overlay" class="overlay modal-overlay is-hidden">
+    <section id="network-overlay" class="overlay modal-overlay is-hidden" role="dialog" aria-modal="true" aria-labelledby="network-title">
       <div class="network-panel manuscript-panel">
         <button id="close-network" class="modal-close" aria-label="Close network setup">×</button>
         <p class="eyebrow">EXPERIMENTAL WEBRTC CO-OP</p>
-        <h2>Pair Two Phones</h2>
-        <p class="network-intro">
-          Use the same Wi-Fi or a phone hotspot. Pairing is manual in this slice so the GitHub Pages build needs no signaling server.
-          Exchange the tokens through a message, email, or nearby-share tool.
-        </p>
-        <div class="network-tabs">
-          <button class="is-active" data-network-tab="host">Host</button>
-          <button data-network-tab="guest">Guest</button>
+        <h2 id="network-title">Pair two phones</h2>
+        <p class="network-intro">Use the same Wi-Fi or a phone hotspot. Exchange the pairing tokens through a message, email, or nearby-share tool.</p>
+        <div class="network-tabs" role="tablist" aria-label="Co-op role">
+          <button class="is-active" data-network-tab="host" role="tab">Host</button>
+          <button data-network-tab="guest" role="tab">Guest</button>
         </div>
 
         <div data-network-panel="host" class="network-flow">
@@ -147,7 +205,7 @@
             <li>Paste the guest’s answer below.</li>
             <li>Start when the connection indicator turns ready.</li>
           </ol>
-          <button id="host-generate" class="secondary-button">Create Host Invitation</button>
+          <button id="host-generate" class="secondary-button">Create host invitation</button>
           <label>Host invitation
             <textarea id="host-offer" spellcheck="false" readonly></textarea>
           </label>
@@ -155,8 +213,8 @@
           <label>Guest answer
             <textarea id="host-answer" spellcheck="false"></textarea>
           </label>
-          <button id="host-apply-answer" class="secondary-button">Apply Guest Answer</button>
-          <button id="host-start" class="primary-button" disabled>Start Two-player Run</button>
+          <button id="host-apply-answer" class="secondary-button">Apply guest answer</button>
+          <button id="host-start" class="primary-button" disabled>Start two-player run</button>
         </div>
 
         <div data-network-panel="guest" class="network-flow is-hidden">
@@ -168,20 +226,13 @@
           <label>Host invitation
             <textarea id="guest-offer" spellcheck="false"></textarea>
           </label>
-          <button id="guest-generate-answer" class="secondary-button">Create Guest Answer</button>
+          <button id="guest-generate-answer" class="secondary-button">Create guest answer</button>
           <label>Guest answer
             <textarea id="guest-answer" spellcheck="false" readonly></textarea>
           </label>
           <button class="text-button copy-button" data-copy-target="guest-answer">Copy</button>
         </div>
         <p id="network-status" class="network-status">No peer connection.</p>
-      </div>
-    </section>
-
-    <section class="rotate-overlay" aria-live="polite">
-      <div>
-        <strong>Rotate the phone</strong>
-        <span>The arena is designed for landscape play.</span>
       </div>
     </section>
   </main>

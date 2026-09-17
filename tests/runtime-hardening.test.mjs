@@ -131,15 +131,15 @@ test('low attacks stay crouched against head blows and report crouched torso con
   }
 });
 
-test('second-intention block snapshots stay finite and reaction zones clear on recovery', () => {
+test('confirmed light recovery can intentionally enter guard and stays finite', () => {
   const world = readyWorld(736);
   const player = world.actors[0];
   assert.ok(player);
-  world.lessons.add('ls-provoker');
-  armAttack(player, 'ls_h', null);
-  player.attack.blocked = true;
-  player.attack.elapsed = getAttack('ls_h').startup + getAttack('ls_h').active;
-  world.step(1 / 60, [frame({ guardHeld: true })]);
+  armAttack(player, 'ls_l1', null);
+  player.attack.hitConfirmed = true;
+  const light = getAttack('ls_l1');
+  player.attack.elapsed = light.startup + light.active + light.recovery * 0.6;
+  world.step(1 / 60, [frame({ guardHeld: true, guardPressed: true })]);
   assert.equal(player.state, 'block');
   assert.equal(player.stateDuration, 0);
   assert.equal(Number.isFinite(world.snapshot().actors[0]?.stateDuration), true);

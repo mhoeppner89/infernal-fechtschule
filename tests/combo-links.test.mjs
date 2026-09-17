@@ -69,7 +69,7 @@ function chainArena({ weapon, lessons, gap }) {
   return { world, player, dummy };
 }
 
-function mash({ weapon, lessons = ALL_LESSONS, gap, heavy = false, frames = 420 }) {
+function mash({ weapon, lessons = ALL_LESSONS, gap, heavy = false, pressEvery = 8, frames = 420 }) {
   const { world, player, dummy } = chainArena({ weapon, lessons, gap });
   const contacts = [];
   const starts = [];
@@ -87,7 +87,12 @@ function mash({ weapon, lessons = ALL_LESSONS, gap, heavy = false, frames = 420 
     const remaining = reacting ? dummy.stateDuration - dummy.stateElapsed : 0;
 
     world.consumeEvents();
-    world.step(FRAME, [{ ...NEUTRAL_INPUT, lightPressed: !heavy, heavyPressed: heavy }]);
+    const pressing = frame % pressEvery === 0;
+    world.step(FRAME, [{
+      ...NEUTRAL_INPUT,
+      lightPressed: pressing && !heavy,
+      heavyPressed: pressing && heavy
+    }]);
     // The wave keeps releasing reinforcements: this is a one-on-one arena, so
     // nothing but the player and the pinned dummy survives a frame.
     world.actors.splice(2);
@@ -241,21 +246,21 @@ test('the dussack chain wraps through the wheel and then lets the target go', ()
 });
 
 test('the starter cuts chain among themselves before any lesson is learned', () => {
-  for (const [weapon, expected] of [['longsword', 'ls_l1'], ['dussack', 'ds_l1']]) {
+  for (const [weapon, first, second, third] of [
+    ['longsword', 'ls_l1', 'ls_l2', 'ls_l3'],
+    ['dussack', 'ds_l1', 'ds_l2', 'ds_l3']
+  ]) {
     const { contacts } = mash({ weapon, lessons: new Set(), gap: 64 });
     const longest = longestString(contacts);
     assert.ok(longest.length >= 3, `the ${weapon} starter produces isolated pokes, not a rhythm`);
     assert.ok(longest.length <= 8, `the ${weapon} starter string of ${longest.length} never ends`);
-    assert.ok(
-      longest.every((contact) => contact.attackId === expected),
-      'an ungated chain resolved to something other than the basic cut'
-    );
+    assert.deepEqual(longest.slice(0, 3).map((contact) => contact.attackId), [first, second, third]);
   }
 });
 
 test('a whiffed cut pays its full recovery, so a connected chain is worth chasing', () => {
   const connected = mash({ weapon: 'longsword', gap: 74 });
-  const whiffed = mash({ weapon: 'longsword', gap: 220 });
+  const whiffed = mash({ weapon: 'longsword', gap: 220, pressEvery: 20 });
 
   assert.ok(connected.contacts.length > 0);
   assert.equal(whiffed.contacts.length, 0, 'an out-of-reach cut should not connect');

@@ -33,12 +33,13 @@ test('every literal UI id used by the TypeScript exists in the game shell', asyn
   assert.deepEqual(missing, []);
 });
 
-test('the mobility control is presented as Duck with its low-attack route', async () => {
+test('the mobility control is presented as Step with its base routes', async () => {
   const html = await readFile(path.join(root, 'site/index.html'), 'utf8');
-  assert.match(html, /data-button="mobility"[^>]+aria-label="Duck; tap, then quickly press Light or Heavy for a low attack; press a direction with Duck to dodge"/);
-  assert.match(html, /<span>DUCK<\/span>/);
-  assert.match(html, /Tap Duck, then quickly Light or Heavy for a low attack\./);
-  assert.match(html, /Direction \+ Duck dodges\./);
+  assert.match(html, /data-button="mobility"[^>]+aria-label="Step; neutral tap crouches; pair with a direction to dodge; step then Cut or Finish for a low attack"/);
+  assert.match(html, /<span>STEP<\/span>/);
+  assert.match(html, /neutral crouches/);
+  assert.match(html, /direction \+ STEP dodges/);
+  assert.match(html, /STEP → CUT \/ FINISH/);
   assert.doesNotMatch(html, /Jump \/ Dodge|Jump or dodge/);
 });
 
@@ -87,15 +88,15 @@ test('the service worker matches its precache regardless of the query string', a
   // markup no longer has), not merely an old one. Being a build behind is
   // recoverable; being half of two is not.
   const source = await readFile(path.join(root, 'site/sw.js'), 'utf8');
-  assert.match(source, /caches\.match\(event\.request, \{ ignoreSearch: true \}\)/);
-  assert.match(source, /caches\.match\('\.\/index\.html', \{ ignoreSearch: true \}\)/);
-  assert.doesNotMatch(source, /caches\.match\(event\.request\)\.then/);
+  assert.match(source, /cache\.match\(event\.request, \{ ignoreSearch: true \}\)/);
+  assert.match(source, /cache\.match\('\.\/index\.html', \{ ignoreSearch: true \}\)/);
+  assert.doesNotMatch(source, /cache\.match\(event\.request\)\.then/);
 });
 
 test('manifest icons and start URL are valid package-relative assets', async () => {
   const manifest = JSON.parse(await readFile(path.join(root, 'site/manifest.webmanifest'), 'utf8'));
   assert.equal(manifest.start_url, './');
-  assert.equal(manifest.orientation, 'landscape');
+  assert.equal(manifest.orientation, 'any');
   for (const icon of manifest.icons) {
     const iconPath = icon.src.replace(/^\.\//, '');
     await stat(path.join(root, 'site', iconPath));

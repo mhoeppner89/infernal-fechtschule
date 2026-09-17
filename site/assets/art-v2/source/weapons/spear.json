@@ -1,9 +1,0 @@
-{
-  "id": "spear-v2",
-  "kind": "spear",
-  "length": 92,
-  "shaftWidth": 8,
-  "headWidth": 12,
-  "attachment": "frontWrist",
-  "palette": { "wood": "#7a5230", "light": "#a8754a", "dark": "#3c2b1e", "band": "#858d88", "steel": "#cfd5d2", "steelDark": "#6f7778" }
-}

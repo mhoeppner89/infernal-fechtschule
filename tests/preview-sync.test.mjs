@@ -241,13 +241,33 @@ test('the service-worker cache name follows the served bytes, not the version st
   }
 });
 
-test('the precache list keeps editable art out of every art root', async () => {
+test('the build worker matches only its own same-origin cache and ignores search', async () => {
   const fixture = await workspace();
   const site = path.join(fixture.base, 'site');
   try {
-    // Two art roots, because the rule has to name all of them: the runtime cast
-    // moved to art-v2 while the exclusion still checked the v1 prefix, and the
-    // preview sheets under the new root shipped for it. Both roots are covered.
+    await mkdir(path.join(site, 'js'), { recursive: true });
+    await writeFile(path.join(site, 'index.html'), '<html>worker</html>');
+    await writeFile(path.join(site, 'js', 'main.js'), 'export const main = true;');
+
+    await writeServiceWorker({ siteDirectory: site, version: '0.1.1' });
+    const worker = await read(path.join(site, 'sw.js'));
+    assert.match(worker, /caches\.open\(CACHE\)/, 'the worker opens its named cache');
+    assert.match(worker, /ignoreSearch:\s*true/, 'cache matching ignores query strings');
+    assert.match(worker, /new URL\(event\.request\.url\)\.origin !== self\.location\.origin/);
+    assert.doesNotMatch(worker, /caches\.keys\(\)/, 'activation does not inspect unrelated caches');
+    assert.doesNotMatch(worker, /caches\.delete\(/, 'activation does not delete unrelated-origin caches');
+  } finally {
+    await fixture.cleanup();
+  }
+});
+
+test('the precache excludes both retired art trees, including WebP runtime frames', async () => {
+  const fixture = await workspace();
+  const site = path.join(fixture.base, 'site');
+  try {
+    // The old builder filtered individual files and accidentally allowed a new
+    // raster tree to become an offline dependency. The procedural builder does
+    // not walk either retired art root at all, so every file below must stay out.
     for (const root of ['art', 'art-v2']) {
       await mkdir(path.join(site, 'assets', root, 'thug'), { recursive: true });
       await mkdir(path.join(site, 'assets', root, 'previews'), { recursive: true });
@@ -260,16 +280,9 @@ test('the precache list keeps editable art out of every art root', async () => {
     }
     await writeFile(path.join(site, 'index.html'), '<html></html>');
     const files = await precacheList(site);
-    for (const root of ['art', 'art-v2']) {
-      assert.ok(files.includes(`./assets/${root}/thug/01.webp`));
-      assert.ok(!files.includes(`./assets/${root}/thug/01.png`), 'editable strips stay out of the payload');
-      assert.ok(!files.includes(`./assets/${root}/thug/normalization.json`));
-      assert.ok(files.includes(`./assets/${root}/thug/clip.json`), 'runtime clips stay in');
-      assert.ok(
-        !files.includes(`./assets/${root}/previews/thug-animation.png`),
-        'preview sheets stay out of the payload'
-      );
-    }
+    assert.ok(files.includes('./index.html'));
+    assert.ok(!files.some((file) => /^\.\/assets\/(?:art|art-v2)(?:\/|$)/.test(file)));
+    assert.ok(!files.some((file) => file.endsWith('.webp')), 'WebP frames stay out of the payload');
     assert.ok(!files.some((file) => file.endsWith('.map')), 'source maps stay out of the payload');
     assert.deepEqual(files, [...files].sort(), 'the list is sorted, so its order cannot move the digest');
     assert.match(await contentDigest(site, files), /^[0-9a-f]{10}$/);

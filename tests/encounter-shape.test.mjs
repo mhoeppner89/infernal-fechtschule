@@ -18,7 +18,6 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { CAMERA, MIN_LEVEL_ROAD } from '../site/js/sim/world.js';
-import { BACKGROUND_MANIFEST } from '../site/js/render/background-catalog.js';
 import { ATTACK_SLOTS, ENCOUNTER_LABELS, LEVELS, laneNarrowingAt } from '../site/js/sim/waves.js';
 
 // The camera window, from the sim rather than from the canvas width: a road no
@@ -61,8 +60,8 @@ test('a level is one place and owns the ground its waves are fought on', () => {
   assert.ok(LEVELS.filter((level) => level.waves.length > 1).length >= 1, 'a place holds more than one fight');
 });
 
-test('every place has art, and a level is dressed in exactly one of them', () => {
-  const scenery = new Set(Object.keys(BACKGROUND_MANIFEST));
+test('every place has procedural scenery, and a level is dressed in exactly one of them', () => {
+  const scenery = new Set(['cobbled-streets', 'town-gate', 'sala-darmi', 'castello']);
   for (const level of LEVELS) {
     assert.ok(scenery.has(level.setting), `${level.name} is dressed in ${level.setting}`);
   }

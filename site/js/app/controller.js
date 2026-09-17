@@ -42,6 +42,7 @@ export class GameController {
         this.bindUi();
         this.bindPeer();
         this.bindPauseKeys();
+        this.bindLifecycle();
         this.renderTitleBackdrop();
         const params = new URLSearchParams(location.search);
         if (params.get('autostart') === '1') {
@@ -164,6 +165,21 @@ export class GameController {
             this.togglePause();
         });
     }
+    bindLifecycle() {
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden && this.mode !== 'title' && !this.paused) {
+                this.setPaused(true);
+                if (this.mode === 'host' || this.mode === 'guest')
+                    this.peer.send({ type: 'pause', paused: true });
+            }
+        });
+        window.addEventListener('resize', () => {
+            this.input.reset();
+            this.pendingLocal = cloneInput(NEUTRAL_INPUT);
+            if (this.mode === 'title')
+                this.renderTitleBackdrop();
+        });
+    }
     async startSolo(skipCountdown, seed) {
         await this.audio.unlock();
         this.mode = 'solo';
@@ -203,6 +219,7 @@ export class GameController {
         this.ui.setNetworkStatus(`Co-op run started (seed ${seed}).`);
     }
     startRunLoop() {
+        this.manualClock = false;
         this.paused = false;
         this.accumulator = 0;
         this.networkAccumulator = 0;
@@ -233,7 +250,7 @@ export class GameController {
                     this.updateAuthority(dt);
             }
         }
-        this.renderCurrentSnapshot(this.manualClock ? 0 : dt || FIXED_STEP);
+        this.renderCurrentSnapshot(this.manualClock || this.paused ? 0 : dt || FIXED_STEP);
         requestAnimationFrame((time) => this.frame(time));
     }
     renderCurrentSnapshot(dt) {
@@ -242,7 +259,7 @@ export class GameController {
             : this.world?.snapshot() ?? null;
         if (!snapshot)
             return;
-        this.renderer.render(snapshot, dt);
+        this.renderer.render(snapshot, dt, this.localPlayerIndex);
         this.ui.update(snapshot, this.localPlayerIndex);
         this.syncOverlayToSnapshot(snapshot);
     }
@@ -563,7 +580,7 @@ export function interpolateGuestSnapshot(previous, latest, elapsed, snapshotPeri
     const timeAdvanced = previous && latest.time >= previous.time
         ? lerp(previous.time, latest.time, alpha)
         : base.time;
-    const cameraAdvanced = previous && latest.cameraX >= previous.cameraX
+    const cameraAdvanced = previous && Number.isFinite(previous.cameraX) && Number.isFinite(latest.cameraX)
         ? lerp(previous.cameraX, latest.cameraX, alpha)
         : base.cameraX;
     return {

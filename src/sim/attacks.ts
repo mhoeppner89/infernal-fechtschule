@@ -3,6 +3,7 @@ import type {
   ActorState,
   Archetype,
   AttackDefinition,
+  GuardDirection,
   HitZone,
   ImprovisedWeapon,
   LessonId,
@@ -93,6 +94,41 @@ export const ATTACKS: Readonly<Record<string, AttackDefinition>> = Object.freeze
     maxTargets: 3, arc: 'front', signature: 'Long Edge Entry', nextLight: 'ls_l2', nextHeavy: 'ls_h'
   }),
 
+  // Guard-command branches. These are arcade adaptations of fencing ideas,
+  // not claims to reconstruct a complete historical action. Each is a short,
+  // definition-driven cut so the mobile controls can advertise the same names.
+  ls_guard_forward: attack({
+    id: 'ls_guard_forward', label: 'Long Point Entry', owner: 'player', weapon: 'longsword', hitZone: 'torso',
+    startup: 0.11, active: 0.1, recovery: 0.23,
+    damage: 12, guardDamage: 11, reach: 124, depth: 25, minForward: 12,
+    knockback: 58, hitstun: 0.32, hitStop: 0.045, movement: 40,
+    maxTargets: 1, arc: 'front', guardDirection: 'forward', nextLight: 'ls_l2', nextHeavy: 'ls_h'
+  }),
+  ls_guard_up: attack({
+    id: 'ls_guard_up', label: 'Zwerchhau', owner: 'player', weapon: 'longsword', hitZone: 'head',
+    startup: 0.1, active: 0.1, recovery: 0.24,
+    damage: 13, guardDamage: 13, reach: 105, depth: 43, minForward: -12,
+    knockback: 66, hitstun: 0.34, hitStop: 0.05, movement: 24,
+    maxTargets: 3, arc: 'front', guardDirection: 'up', deflectStart: 0.05, deflectEnd: 0.16,
+    nextLight: 'ls_l2', nextHeavy: 'ls_h'
+  }),
+  ls_guard_down: attack({
+    id: 'ls_guard_down', label: 'Unterhau', owner: 'player', weapon: 'longsword', hitZone: 'torso',
+    startup: 0.11, active: 0.1, recovery: 0.24,
+    damage: 12, guardDamage: 10, reach: 96, depth: 34, minForward: -10,
+    knockback: 54, hitstun: 0.31, hitStop: 0.045, movement: 32,
+    maxTargets: 2, arc: 'front', crouchedPosture: true, guardDirection: 'down',
+    nextLight: 'ls_l2', nextHeavy: 'ls_h'
+  }),
+  ls_guard_back: attack({
+    id: 'ls_guard_back', label: 'Abzug', owner: 'player', weapon: 'longsword', hitZone: 'torso',
+    startup: 0.13, active: 0.1, recovery: 0.27,
+    damage: 14, guardDamage: 12, reach: 82, depth: 36, minForward: -10,
+    knockback: 74, hitstun: 0.36, hitStop: 0.05, movement: -34,
+    maxTargets: 2, arc: 'front', guardDirection: 'back', signature: 'Abzug',
+    nextLight: 'ls_l2', nextHeavy: 'ls_h'
+  }),
+
   // Meyer — dussack
   ds_l1: attack({
     id: 'ds_l1', label: 'Forehand Cut', owner: 'player', weapon: 'dussack', hitZone: 'torso',
@@ -157,6 +193,37 @@ export const ATTACKS: Readonly<Record<string, AttackDefinition>> = Object.freeze
     damage: 12, guardDamage: 9, reach: 75, depth: 35, minForward: -14,
     knockback: 49, hitstun: 0.29, hitStop: 0.045, movement: 38,
     maxTargets: 4, arc: 'front', signature: 'Dussack Entry', nextLight: 'ds_l2', nextHeavy: 'ds_h'
+  }),
+  ds_guard_forward: attack({
+    id: 'ds_guard_forward', label: 'Dussack Point', owner: 'player', weapon: 'dussack', hitZone: 'torso',
+    startup: 0.08, active: 0.1, recovery: 0.2,
+    damage: 10, guardDamage: 9, reach: 94, depth: 27, minForward: 8,
+    knockback: 45, hitstun: 0.29, hitStop: 0.04, movement: 38,
+    maxTargets: 1, arc: 'front', guardDirection: 'forward', nextLight: 'ds_l2', nextHeavy: 'ds_h'
+  }),
+  ds_guard_up: attack({
+    id: 'ds_guard_up', label: 'High Backhand', owner: 'player', weapon: 'dussack', hitZone: 'head',
+    startup: 0.075, active: 0.1, recovery: 0.21,
+    damage: 11, guardDamage: 10, reach: 82, depth: 39, minForward: -14,
+    knockback: 51, hitstun: 0.3, hitStop: 0.043, movement: 29,
+    maxTargets: 3, arc: 'front', guardDirection: 'up', deflectStart: 0.045, deflectEnd: 0.15,
+    nextLight: 'ds_l2', nextHeavy: 'ds_h'
+  }),
+  ds_guard_down: attack({
+    id: 'ds_guard_down', label: 'Rising Dussack Cut', owner: 'player', weapon: 'dussack', hitZone: 'legs',
+    startup: 0.08, active: 0.1, recovery: 0.21,
+    damage: 10, guardDamage: 8, reach: 78, depth: 34, minForward: -11,
+    knockback: 43, hitstun: 0.28, hitStop: 0.04, movement: 35,
+    maxTargets: 2, arc: 'front', crouchedPosture: true, guardDirection: 'down',
+    nextLight: 'ds_l2', nextHeavy: 'ds_h'
+  }),
+  ds_guard_back: attack({
+    id: 'ds_guard_back', label: 'Retreating Dussack Cut', owner: 'player', weapon: 'dussack', hitZone: 'torso',
+    startup: 0.1, active: 0.1, recovery: 0.23,
+    damage: 12, guardDamage: 10, reach: 76, depth: 36, minForward: -100,
+    knockback: 62, hitstun: 0.33, hitStop: 0.045, movement: -42,
+    maxTargets: 2, arc: 'front', guardDirection: 'back', signature: 'Retreating Cut',
+    nextLight: 'ds_l2', nextHeavy: 'ds_h'
   }),
 
   // Improvised kits — the finds. Meyer can swing whatever he picks up, but a
@@ -482,6 +549,25 @@ const KIT_STARTERS: Readonly<Record<Weapon, { light: string; heavy: string; coun
   spear: { light: 'sp_l1', heavy: 'sp_h', counter: 'sp_h', dodge: 'sp_l1', crouch: 'sp_l1', air: 'sp_h', entry: 'sp_l1' }
 });
 
+const GUARD_ATTACKS: Readonly<Record<Weapon, Readonly<Record<GuardDirection, string>>>> = Object.freeze({
+  longsword: Object.freeze({
+    forward: 'ls_guard_forward',
+    up: 'ls_guard_up',
+    down: 'ls_guard_down',
+    back: 'ls_guard_back'
+  }),
+  dussack: Object.freeze({
+    forward: 'ds_guard_forward',
+    up: 'ds_guard_up',
+    down: 'ds_guard_down',
+    back: 'ds_guard_back'
+  }),
+  // Finds keep the same command grammar without pretending a cudgel or shaft
+  // has Meyer's fencing branches. The command falls through to its light kit.
+  club: Object.freeze({ forward: 'cl_l1', up: 'cl_l1', down: 'cl_l1', back: 'cl_l1' }),
+  spear: Object.freeze({ forward: 'sp_l1', up: 'sp_l1', down: 'sp_l1', back: 'sp_l1' })
+});
+
 /** True for the finds: weapons that are picked up, thrown, and break. */
 export function isImprovisedWeapon(weapon: Weapon): weapon is ImprovisedWeapon {
   return weapon === 'club' || weapon === 'spear';
@@ -502,11 +588,14 @@ export function resolvePlayerAttack(
   lessons: ReadonlySet<LessonId> = ALWAYS_SET
 ): string {
   const kit = KIT_STARTERS[weapon];
-  if (afterParry && action === 'heavy') return kit.counter;
+  // A timed parry gives either attack button the same immediate answer. This
+  // keeps Guard -> parry -> Cut usable on a phone, while a normal guard never
+  // manufactures a counter window.
+  if (afterParry) return kit.counter;
   if (currentAttackId) {
     const current = getAttack(currentAttackId);
     const chained = action === 'light' ? current.nextLight : current.nextHeavy;
-    if (chained && isAttackUnlocked(chained, lessons)) return chained;
+    if (current.weapon === weapon && chained && getAttack(chained).weapon === weapon && isAttackUnlocked(chained, lessons)) return chained;
     // A locked chain falls through to the basic starter so the input always
     // produces a legal attack instead of a dead buffer.
   }
@@ -540,6 +629,10 @@ export function resolveSwitchAttack(weapon: Weapon): string {
   return KIT_STARTERS[weapon].entry;
 }
 
+export function resolveGuardAttack(weapon: Weapon, direction: GuardDirection): string {
+  return GUARD_ATTACKS[weapon][direction];
+}
+
 export function nextAttackForAction(definition: AttackDefinition, action: ActionName): string | null {
   if (action === 'light') return definition.nextLight ?? null;
   if (action === 'heavy') return definition.nextHeavy ?? null;
@@ -548,25 +641,26 @@ export function nextAttackForAction(definition: AttackDefinition, action: Action
 }
 
 /**
- * Which attacks each lesson unlocks. Meyer starts with only his opening cuts
- * (ls_l1/ds_l1 lights, committed heavies, and the movement/air/counter
- * strikes); every chained route beyond that is learned through a lesson. The
- * two behaviour lessons add no attacks — they unlock recovery cancels and
- * faster hit-confirmed switching instead.
+ * Attack ids referenced by lesson cards as upgrade targets. Every id here is
+ * also in BASIC_ATTACKS below, so this table documents the lesson's focus but
+ * never gates the starter repertoire. Behaviour upgrades are handled by the
+ * simulation's hit-confirm and switch rules.
  */
 export const LESSON_ATTACKS: Readonly<Record<LessonId, readonly string[]>> = Object.freeze({
   'ls-crossing': Object.freeze(['ls_l2']),
   'ls-threefold': Object.freeze(['ls_l3']),
-  'ls-provoker': Object.freeze([]),
+  'ls-provoker': Object.freeze(['ls_h']),
   'ds-backhand': Object.freeze(['ds_l2']),
   'ds-wheel': Object.freeze(['ds_l3']),
-  'switch-flourish': Object.freeze([])
+  'switch-flourish': Object.freeze(['ls_switch_in', 'ds_switch_in'])
 });
 
 /** The basic repertoire everyone starts the run with. */
 const BASIC_ATTACKS = new Set<string>([
-  'ls_l1', 'ls_h', 'ls_dodge_l', 'ls_low_l', 'ls_air_l', 'ls_counter', 'ls_switch_in',
-  'ds_l1', 'ds_h', 'ds_dodge_l', 'ds_low_l', 'ds_air_l', 'ds_counter', 'ds_switch_in',
+  'ls_l1', 'ls_l2', 'ls_l3', 'ls_h', 'ls_dodge_l', 'ls_low_l', 'ls_air_l', 'ls_counter', 'ls_switch_in',
+  'ls_guard_forward', 'ls_guard_up', 'ls_guard_down', 'ls_guard_back',
+  'ds_l1', 'ds_l2', 'ds_l3', 'ds_h', 'ds_dodge_l', 'ds_low_l', 'ds_air_l', 'ds_counter', 'ds_switch_in',
+  'ds_guard_forward', 'ds_guard_up', 'ds_guard_down', 'ds_guard_back',
   // Finds need no lesson: the player earns them by taking them off the street.
   'cl_l1', 'cl_l2', 'cl_h', 'cl_throw',
   'sp_l1', 'sp_h', 'sp_throw'
@@ -584,27 +678,27 @@ export function isAttackUnlocked(attackId: string, lessons: ReadonlySet<LessonId
 }
 
 /**
- * Chained routes hidden behind a specific lesson, used by the lesson cards to
- * explain exactly which inputs gain a new branch.
+ * Lesson-card copy for upgrades to the starter routes. These descriptions do
+ * not imply that the underlying chain is locked.
  */
 export const LESSON_ROUTES: Readonly<Record<LessonId, readonly string[]>> = Object.freeze({
   'ls-crossing': Object.freeze([
-    'J after Opening Hew — Crossing Hew'
+    'J after a confirmed Opening Hew — sharper Crossing Hew'
   ]),
   'ls-threefold': Object.freeze([
-    'J after Crossing Hew — Threefold Cut'
+    'J after Crossing Hew — heavier Threefold finish'
   ]),
   'ls-provoker': Object.freeze([
-    'Hold I after a blocked provoke — cancel into Guard'
+    'A provoked opening makes the next committed hit stronger'
   ]),
   'ds-backhand': Object.freeze([
-    'J after Forehand Cut — Backhand Cut'
+    'J after a confirmed Forehand Cut — harder-to-guard Backhand Cut'
   ]),
   'ds-wheel': Object.freeze([
     'J after Backhand Cut — Circular Pursuit',
-    'J after Circular Pursuit — back to the Forehand Cut'
+    'The capped fourth beat gets a clearer knockback finish'
   ]),
   'switch-flourish': Object.freeze([
-    'U after a confirmed hit — instant weapon switch'
+    'U after a confirmed hit — faster weapon switch into the entry'
   ])
 });

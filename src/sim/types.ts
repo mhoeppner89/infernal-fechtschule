@@ -31,10 +31,30 @@ export type Archetype =
   | 'grotesque';
 
 export type ActionName = 'light' | 'heavy' | 'mobility' | 'switch';
+/** Relative directions used by the guard-to-cut command recognizer. */
+export type GuardDirection = 'forward' | 'back' | 'up' | 'down';
+
 /**
- * Lessons are the run's combo unlocks: Meyer starts with only his basic cuts
- * and learns chained routes over the course of the journey. Each id unlocks a
- * specific set of attacks (see LESSON_ATTACKS in attacks.ts).
+ * One internal player intent waiting for a usable state. It is deliberately
+ * not part of InputFrame or the network snapshot: the host consumes it and the
+ * replica only needs the resulting actor state.
+ */
+export interface ActionBuffer {
+  action: Exclude<ActionName, 'mobility'>;
+  age: number;
+}
+
+/** Internal state for the short Guard -> direction -> Cut recognizer. */
+export interface GuardCommandState {
+  direction: GuardDirection | null;
+  referenceFacing: -1 | 1;
+  elapsed: number;
+}
+
+/**
+ * Lessons are the run's combat upgrades: Meyer starts with the complete basic
+ * cuts and learns sharper variants over the course of the journey. Basic
+ * chains and guard commands are available from the first wave.
  */
 export type LessonId =
   | 'ls-crossing'
@@ -115,6 +135,8 @@ export interface AttackDefinition {
   nextLight?: string;
   nextHeavy?: string;
   nextSwitch?: string;
+  /** Optional arcade command route started from a guarded direction. */
+  guardDirection?: GuardDirection;
   parryable?: boolean;
   shockwave?: boolean;
 }
@@ -127,6 +149,8 @@ export interface AttackRuntime {
   hitConfirmed: boolean;
   blocked: boolean;
   queuedAction: ActionName | null;
+  /** Optional age for compatibility with older replay fixtures. */
+  queuedActionAge?: number;
   activeCuePlayed: boolean;
   signatureShown: boolean;
   /** A throw only lets go of its weapon once. */
@@ -233,6 +257,12 @@ export interface Actor {
   comboHits: number;
   /** Seconds since this actor last landed a hit; a long lull ends the chain. */
   comboLull: number;
+  /** One bounded light/heavy/switch intent waiting for a usable state. */
+  actionBuffer: ActionBuffer | null;
+  /** Guard command recognition state; never serialized into a snapshot. */
+  guardCommand: GuardCommandState | null;
+  /** Number of player attacks in the current string, including committed exits. */
+  chainLength: number;
   reactionZone: HitZone | null;
   scoreValue: number;
 }

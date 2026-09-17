@@ -50,6 +50,7 @@ export class GameController {
     this.bindUi();
     this.bindPeer();
     this.bindPauseKeys();
+    this.bindLifecycle();
     this.renderTitleBackdrop();
 
     const params = new URLSearchParams(location.search);
@@ -178,6 +179,20 @@ export class GameController {
     });
   }
 
+  private bindLifecycle(): void {
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden && this.mode !== 'title' && !this.paused) {
+        this.setPaused(true);
+        if (this.mode === 'host' || this.mode === 'guest') this.peer.send({ type: 'pause', paused: true });
+      }
+    });
+    window.addEventListener('resize', () => {
+      this.input.reset();
+      this.pendingLocal = cloneInput(NEUTRAL_INPUT);
+      if (this.mode === 'title') this.renderTitleBackdrop();
+    });
+  }
+
   private async startSolo(skipCountdown: boolean, seed?: number): Promise<void> {
     await this.audio.unlock();
     this.mode = 'solo';
@@ -220,6 +235,7 @@ export class GameController {
   }
 
   private startRunLoop(): void {
+    this.manualClock = false;
     this.paused = false;
     this.accumulator = 0;
     this.networkAccumulator = 0;
@@ -250,7 +266,7 @@ export class GameController {
       }
     }
 
-    this.renderCurrentSnapshot(this.manualClock ? 0 : dt || FIXED_STEP);
+    this.renderCurrentSnapshot(this.manualClock || this.paused ? 0 : dt || FIXED_STEP);
 
     requestAnimationFrame((time) => this.frame(time));
   }
@@ -260,7 +276,7 @@ export class GameController {
       ? this.updateGuestPresentation(dt)
       : this.world?.snapshot() ?? null;
     if (!snapshot) return;
-    this.renderer.render(snapshot, dt);
+    this.renderer.render(snapshot, dt, this.localPlayerIndex);
     this.ui.update(snapshot, this.localPlayerIndex);
     this.syncOverlayToSnapshot(snapshot);
   }
@@ -602,7 +618,7 @@ export function interpolateGuestSnapshot(
     ? lerp(previous.time, latest.time, alpha)
     : base.time;
 
-  const cameraAdvanced = previous && latest.cameraX >= previous.cameraX
+  const cameraAdvanced = previous && Number.isFinite(previous.cameraX) && Number.isFinite(latest.cameraX)
     ? lerp(previous.cameraX, latest.cameraX, alpha)
     : base.cameraX;
 

@@ -1,0 +1,77 @@
+{
+  "checks": [
+    {
+      "name": "offline cache contains no retired artwork",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "offline runtime stays below 2 MiB",
+      "pass": true,
+      "detail": "500871 bytes / 30 entries"
+    },
+    {
+      "name": "game boots while fully offline",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "manual WebRTC pairing connects two browser peers",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "guest receives a two-player authoritative snapshot",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "guest movement reaches the authoritative host",
+      "pass": true,
+      "detail": "138 -> 181.22170024233222"
+    },
+    {
+      "name": "no browser errors during offline/peer tests",
+      "pass": true,
+      "detail": ""
+    }
+  ],
+  "errors": [],
+  "cache": {
+    "name": "infernal-fechtschule-0.2.0-681d94d034",
+    "entries": 30,
+    "bytes": 500871,
+    "urls": [
+      "http://localhost:4187/",
+      "http://localhost:4187/icons/icon-192.png",
+      "http://localhost:4187/icons/icon-512.png",
+      "http://localhost:4187/icons/icon.svg",
+      "http://localhost:4187/index.html",
+      "http://localhost:4187/js/app/controller.js",
+      "http://localhost:4187/js/audio/audio.js",
+      "http://localhost:4187/js/input/input.js",
+      "http://localhost:4187/js/input/tilt.js",
+      "http://localhost:4187/js/input/touch.js",
+      "http://localhost:4187/js/main.js",
+      "http://localhost:4187/js/network/manual-peer.js",
+      "http://localhost:4187/js/network/protocol.js",
+      "http://localhost:4187/js/render/canvas-renderer.js",
+      "http://localhost:4187/js/render/procedural-rig.js",
+      "http://localhost:4187/js/render/procedural-scene.js",
+      "http://localhost:4187/js/sim/attacks.js",
+      "http://localhost:4187/js/sim/combo.js",
+      "http://localhost:4187/js/sim/factories.js",
+      "http://localhost:4187/js/sim/lessons.js",
+      "http://localhost:4187/js/sim/math.js",
+      "http://localhost:4187/js/sim/rng.js",
+      "http://localhost:4187/js/sim/targeting.js",
+      "http://localhost:4187/js/sim/types.js",
+      "http://localhost:4187/js/sim/upgrades.js",
+      "http://localhost:4187/js/sim/waves.js",
+      "http://localhost:4187/js/sim/world.js",
+      "http://localhost:4187/js/ui/ui.js",
+      "http://localhost:4187/manifest.webmanifest",
+      "http://localhost:4187/styles.css"
+    ]
+  }
+}
