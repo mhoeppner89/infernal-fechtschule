@@ -10,7 +10,7 @@ Scope of this pass:
 - **Meyer, longsword**: three signature combos, drawn in full. §8.
 - **Everything else** — his dussack, club and spear, and all five opponent archetypes —
   keeps the **standard idiom**: one light, one heavy, one low, and the state set. §7.
-- **The road, the tapestry backdrop, the weapons as objects, the cast costumes.** §3–§6.
+- **The road, the layered background, the weapons as objects, the cast costumes.** §3–§6.
 
 Out of scope: simulation changes, hit effects and particles (drawn in code, §10), UI chrome,
 codex illustrations, portraits.
@@ -121,7 +121,7 @@ Four blocks, in this order, no edits:
 
 ### 2.1 STYLE — copy this block verbatim into every prompt
 
-```text
+   0 ┌───────────────────────────  layered street scene (far 0.15×)  ────────┐
 STYLE
 Single full-body figure of a fencer, drawn in the manner of an early
 sixteenth-century printed fencing book: bold even black contour, interior shading
@@ -211,56 +211,58 @@ no figure smaller or larger than its neighbours, no perspective floor grid.
 
 ### 3.1 What the road is today, and the one thing wrong with it
 
-The ground the fighters stand on is **baked into the parallax backdrop**: the cobbles are
-part of the 1280-wide background image, drawn at 0.35× camera speed. So a fighter walking
-100 px travels 35 px of cobble. It has passed unnoticed because the backdrop is soft, but
-it is wrong, and it caps how much detail the road can carry — detail *shows* the slip.
+The ground the fighters stand on is **separate from the background**. The street is a
+world-space surface, so a fighter walking 100 px travels over 100 px of cobble. The scenery
+behind the cast is a layered 2D stage, in the spirit of Little Fighter 2: distance planes
+move at different rates, while the road and its furniture move with the fighters.
 
-The overhaul therefore splits the picture into three planes:
+The overhaul therefore splits the picture into five planes:
 
 | Plane | Speed | Contents | Where it is drawn |
 |---|---|---|---|
-| Wall | 0.35× camera | the tapestry (§4) | `drawBackgroundImage`, behind everything |
-| **Road** | **1.0× camera** | tileable ground under the cast | new layer, between the wall and the actors |
+| Far scene | 0.15× camera | distant roofs, towers, trees and sky | behind the road |
+| Middle scene | 0.42× camera | transparent side façades, galleries and awnings | behind the road |
+| Front scene | 0.70× camera | transparent posts, canopies and market dressing | over the road, behind the cast |
+| **Road** | **1.0× camera** | tileable perspective ground under the cast | between the scene and furniture |
 | Furniture | 1.0× camera | boundary posts, the choke funnel, the gate, kerbs | already in code, unchanged |
 
-That is one added layer in `canvas-renderer.ts` (a tile loop) and the road detail coming out
-of the four backdrops. Nothing else moves.
+The close layers contain no painted sky or street. Their transparent centre leaves the far
+scene and the road visible, so the whole picture reads as one place rather than a flat card.
 
 ### 3.2 The road's geometry — exact, and required by the art
 
 ```text
 screen y
-   0 ┌───────────────────────────  tapestry wall (parallax 0.35×)  ──────────┐
+   0 ┌───────────────────────────  layered street scene (far 0.15×)  ────────┐
      │                                                                       │
  232 ├───────────────────────────  road shoulder / far kerb  ────────────────┤
      │                                                                       │
  248 │  ......................... walkable depth starts (ARENA.minZ) ......  │
      │                        ...................................            │
      │     fighters' feet live in here (364 px of depth, z 248 … 612)        │
- 612 │  .......................... walkable depth ends (ARENA.maxZ) .......  │
-     │                                                                       │
- 624 ├───────────────────────────  near kerb / road edge  ───────────────────┤
-     │            dark foreground band (code: drawPlayfieldFocus)            │
+ 624 ├───────────────────────────  playable road edge  ──────────────────────┤
+     │                 road continues as the foreground                 │
  720 └───────────────────────────────────────────────────────────────────────┘
 ```
 
-- The road's **length is authored per level** — The Town is 2360 px of street — and the
-  camera shows a **1096 px window** of it. So every road asset must tile cleanly: the player
-  walks up to 2360 px past it and never sees an edge or a seam.
+- The road's **length is authored per level** — The Town is 2360 px of street and the widest
+  later road is 2700 px — while the camera shows a **1096 px window**. The approved street
+  asset is one continuous long stretch, drawn once across the road, so scrolling never
+  exposes a repeated tile seam.
 - The walkable **depth** is 364 px (z 248 … 612). A narrow place squeezes the depth, never the
   length.
 - Drawn figures are scaled by depth: **0.86 at the far edge (z 248) to 1.04 at the near
-  edge (z 612)** — a 21 % size swing the art must not fight. Keep the road's stone size
-  roughly constant across the band; the perspective is carried by the figure scale.
+  edge (z 612)** — a 21 % size swing the art must not fight. The road must reinforce that
+  scale: stones are small and tightly packed at the far edge, then larger and more open
+  toward the near edge, with joints receding toward the scene's vanishing direction.
 - The choke funnel (§3.4) narrows the depth band to as little as **162 px** (z 360…522),
-  so the road art has to read at both widths.
+  so the perspective tile has to read at both widths.
 
 ### 3.3 Road deliverables
 
 | Id | Size | Tiling | Brief |
 |---|---|---|---|
-| `road/cobbles` | **512 × 392** | horizontal, seamless | Set cobbles in irregular courses running *across* the road, not down it: stones 26–44 px, wide joints of dark sand, a thin rim of light on each stone's top edge only (the key light is upper-left). Ten or twelve stones visibly worn smooth and pale, the rest darker, so the eye has something to follow while running. No perspective convergence — the far stones are the same size as the near ones. |
+| `road/cobbles` | **2172 × 724 source** | one long stretch | A continuous perspective street: very small, dense cobbles at the far edge; modestly larger stones toward the viewer; irregular courses and joints receding toward the vanishing direction. Draw it once across the authored road length; do not repeat it while scrolling. |
 | `road/cobbles-worn` | 512 × 392 | horizontal, seamless | The same tile with one cart rut, a patch of mud and two or three missing stones. Lay it over `cobbles` at 40 % in a level's mid-section so a long road has a middle. |
 | `road/kerb` | 512 × 24 | horizontal, seamless | The far shoulder: a mended stone kerb, half-buried, with weeds in the joints (level-tinted: none in the Castello). |
 | `road/floor-boards` | 512 × 392 | horizontal, seamless | *The Sala d'Armi* only: a swept plank floor with straw, sanded boards 40 px wide, a worn practice ring's arc crossing the tile so the ring reads once every few tiles. |
@@ -288,37 +290,43 @@ sand `#a1937a`, mud `#4a3d31`, floor boards `#a97a4a` / `#7d5530`, rammed earth 
 
 ---
 
-## 4. The tapestry — the background
+## 4. The layered street scene — the background
 
 ### 4.1 The idea
 
-Each place is staged in front of a **wall-hung tapestry**: one great woven hanging, seen
-flat, filling the picture above and behind the road. The fight happens in front of a piece
-of cloth. This buys four things at once:
+Each place is a **proper 2D side-scrolling environment**, staged like an LF2 beat-em-up:
+the far plane establishes the street and horizon, the middle plane dresses the sides, and
+the front plane adds close posts, awnings and props. The road is a separate perspective
+surface under the cast. It is not a tapestry, a wall-hung picture, or a full scene image
+with the street baked into it.
 
-- a coherent identity for four places without four painted panoramas;
-- a surface that is *legitimately* low-contrast and low-detail, so line-art fighters always
-  read against it (LF2's separation trick; `docs/VERTICAL_SLICE.md`: "effects must preserve
-  silhouettes and attack lines");
-- the historical frame the game already claims — a fencing hall, a burgher's hall, a crypt
-  with hangings — and a place for the infernal arc to live as *imagery* rather than as
-  monsters in a corridor;
-- the woven picture can show the story (vignettes, motto bands, borders) that a generic
-  skybox cannot.
+This buys four things at once:
 
-**In-world justification is part of the brief.** The hangings carry the place's own
-propaganda: a town's trade and its guilds, the gate's muster roll, the fencing hall's
-figures, the castle's hunting and its chains.
+- a coherent place with real depth cues and readable silhouettes;
+- faster-feeling travel, because nearby dressing moves more than distant architecture;
+- a clean combat window in the centre, with transparent side layers rather than a painted
+  foreground blocking the fighters;
+- reusable art that can be cropped and composed for phone landscape without shipping
+  unnecessary lower background pixels.
+
+**In-world justification is part of the brief.** The buildings, guild stalls, gate towers,
+hall beams and castle masonry carry the place's identity. Their arrangement should feel
+like one connected street, not a repeated decorative panel.
 
 ### 4.2 The canvas and the safe window
 
-The renderer draws the backdrop into a 1920 × 1104 box at `(parallax − 12, −24)`, and the
-source art is 1280 × 720 today — so it is upscaled 1.5× *and* stretched 2.2 % vertically,
-and its bottom 224 px are never on screen at all.
+The renderer uses a logical **1280 × 720** canvas and scales it down cleanly for phone
+landscape. The street pass does not ship a full street in every layer. It uses shallow,
+wide source planes so the road can own the lower part of the frame.
 
-**Deliver tapestry art at 1920 × 1080, and let it be drawn 1:1.** That is one number in
-`drawBackgroundImage` (`1104` → `1080`), removes the upscale and the stretch, and matches
-what image models produce natively.
+For the first street pass, the source planes are:
+
+| Plane | Source size | Runtime parallax | Alpha |
+|---|---:|---:|---|
+| Far | 1536 × 360 | 0.15× | opaque |
+| Middle | 2304 × 360 | 0.42× | transparent |
+| Front | 2560 × 360 | 0.70× | transparent |
+| Road | 2172 × 724 source | 1.0×, drawn once across the road | opaque |
 
 ```text
 source 1920 × 1080, drawn at (parallax − 12, −24), parallax ∈ [−640, −12]
@@ -332,55 +340,50 @@ source 1920 × 1080, drawn at (parallax − 12, −24), parallax ∈ [−640, �
   source x   0 ─ 12      cropped: nothing here
 ```
 
-So: **compose the picture for a 1920 × 208 strip above the road, and a 1920 × 512 field
-behind it that only ever shows through gaps.** The one thing to get right is the bottom
-edge of the hanging — its fringe and border — which must sit in the source band
-y 200–420 where the road's far kerb meets it.
+Compose the environment for the upper **360 px** only. The road owns the lower frame from
+y 232 down, and the middle/front source images must leave their centre transparent so the
+far scene and the perspective road remain visible between the side structures.
 
-### 4.3 The weaving language (shared by all four)
+### 4.3 The layering language (shared by all four)
 
-- **Warp and weft are visible.** A fine regular weave of horizontal and vertical thread,
-  and the image is built like a weave: flat colour areas with *stepped, staggered edges*
-  (weft-faced tapestry cannot do a smooth diagonal), slits where two colour blocks meet,
-  and visible thread direction inside each shape.
-- **Three threads per colour.** Every colour is one flat thread tone plus a lighter
-  highlight thread laid on top, never a blend.
-- **The border.** A woven border 120 px deep on all sides: a repeating geometric band, a
-  motto band on the upper border in woven Gothic blackletter (text is *woven*, not printed),
-  and a **fringe** of threads hanging 40 px along the bottom border, each thread slightly
-  disturbed, so the cloth reads as hanging rather than painted.
-- **The key.** Upper-left, warm, even — the same key as the cast. Deep folds read as woven
-  shadow bands (2–3 stepped tones), never as gradients.
-- **The scale of the vignettes.** Figures inside the hanging are **one third to one half the
-  size of the cast** and much lower contrast (they are cloth). They may be partial, repeated
-  in a frieze, or shown as a heraldic device.
-- **No lettering of the game's own UI, no modern heraldry, no real coats of arms.** The
-  motto bands are woven pseudo-Gothic, legible as lettering at a glance and not readable.
+- **One connected place.** The far, middle and front planes share the same street direction,
+  light and architecture. Side structures should align as parts of the same market or hall.
+- **Far plane is opaque and quiet.** It carries the horizon, distant buildings and sky, and
+  moves slowly enough that the scene feels deep rather than rubbery.
+- **Middle and front planes are transparent.** They contain only side façades, awnings,
+  beams, posts, signs and props. Leave a clear central combat window; never paint a second
+  sky, road or dark rectangle behind the opening.
+- **Perspective belongs to the road.** The upper scene can be shallow, but the ground must
+  show receding joints and stones that grow toward the viewer.
+- **The key.** Keep the warm upper-left light shared with the cast. Reduce contrast behind
+  fighters and keep close objects at the sides so attack lines remain readable.
+- **No tapestry border, woven motto, modern heraldry or real coats of arms.** Any signs or
+  banners are environmental details, not UI text.
 
-### 4.4 The four hangings
+### 4.4 The four scene sets
 
-| Level | Scenery id | Size | The hanging |
+| Level | Scenery id | Layer set | The environment |
 |---|---|---|---|
-| The Town | `cobbled-streets` | 1920 × 1080 | **The Guilds' Hanging.** A market street in frieze: booths with awnings, a fishwife, a cooper rolling a barrel, two burghers arguing over a purse, dogs. Warm ground: ochre, madder red, woad blue, undyed cream, with a deep verdigris border. Motto band reads as if it says *the town keeps its own peace*. The weave is fresh and bright — this is the hanging the town is proud of. |
-| The Town Gate | `town-gate` | 1920 × 1080 | **The Muster Roll.** A gate wall with its portcullis, a muster of spearmen in ranks, a drummer, a herald on the wall, banners at the top edge. Colder, greyer, more wool: slate blue, iron, dark green, bone. The border is plain and repaired in places (this is an old hanging, patched after a siege). |
-| The Sala d'Armi | `sala-darmi` | 1920 × 1080 | **The Master's Hanging.** The fencing hall's own tapestry, and the most precise of the four: a grid of small paired fencers in the guards — one pair high, one pair low, one pair crossing — copied in spirit from Meyer's own figure plates, with an oak-and-laurel border and a motto band. Cleanest weave, most contrast, the richest colour (madder, gold, ink blue). This is where the game wants a *studio* feel. |
-| The Castello | `castello` | 1920 × 1080 | **The Crypt Hanging.** Old, dark, and damaged: a hunt in the upper field that turns into grotesques in the margin — chained shapes, a jaw, a claw, things that were once decorative — with the lower third gone to rot and dull metal thread. Bone, umber, rust, and a single ember orange used *once* per repeat. The fringe is broken and hanging in threads. |
+| The Town | `cobbled-streets` | far 1536 × 360; middle 2304 × 360 alpha; front 2560 × 360 alpha | **The Guild Street.** A warm market road with half-timbered façades, projecting galleries, red and blue awnings, a gate tower in the distance, and close timber posts at the sides. The street is the first approved layered implementation. |
+| The Town Gate | `town-gate` | far / middle / front bands | **The Muster Street.** Portcullis, wall-walks, spearmen and repaired banners, with the same clear road window and colder stone palette. |
+| The Sala d'Armi | `sala-darmi` | far / middle / front bands | **The Master's Hall.** Beams, racks, practice galleries and paired figure plates behind a clean wooden floor, with close posts framing the sparring space. |
+| The Castello | `castello` | far / middle / front bands | **The Castle Court.** Dark masonry, a chained gate, wet flags and infernal details that can grow toward the final fight without hiding the cast. |
 
-Between places the renderer cross-fades over 0.55 s, so the two hangings must share a
-palette of temperature at their edges: keep stone, bone and wool tones in every one.
+Between places the renderer cross-fades over 0.55 s, so all scene sets should share a
+warm upper-left key and enough stone, bone and timber tones to transition cleanly.
 
 ### 4.5 The corruption overlay (the finale)
 
 `drawInfernalCorruption` is already called at `bossPhase ≥ 1`. Deliver it as **two overlay
 sheets, 1920 × 1080, transparent**:
 
-- `walls/corruption-1` — the weave darkening from the bottom: threads pulling apart, slits
-  opening, a rust stain spreading up the cloth, the fringe burning. ~35 % opacity feel.
-- `walls/corruption-2` — the hanging turned: blackened threads, a great torn hole, chains
-  showing *through* the cloth as if behind it, embers in the weave. ~60 % opacity feel.
+- `walls/corruption-1` — the street darkening from the bottom: shadows climbing the masonry,
+  seams splitting, and a rust stain spreading through the lower scene. ~35 % opacity feel.
+- `walls/corruption-2` — the environment turned: blackened masonry, a great torn opening,
+  chains showing behind the structures, and embers in the air. ~60 % opacity feel.
 
-They are drawn over whichever hanging is current, so they must not rely on its colours: use
-black, ember and rust only.
+They are drawn over whichever scene set is current, so they must not rely on the layer
+colours: use black, ember and rust only, and keep the central combat window readable.
 
 ---
 

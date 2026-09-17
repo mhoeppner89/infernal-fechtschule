@@ -22,7 +22,9 @@ import {
 import {
   BackgroundCatalog,
   sceneryIndexOf,
-  type BackgroundReadinessReport
+  type BackgroundLayerOrder,
+  type BackgroundReadinessReport,
+  type ResolvedBackgroundLayer
 } from './background-catalog.js';
 
 interface Particle {
@@ -242,8 +244,9 @@ export class CanvasRenderer {
     context.translate(shakeX, shakeY);
     this.drawBackground(snapshot);
 
-    // World space: everything grounded in the stage translates with the camera;
-    // the background image stays at parallax so distance recedes.
+    // The wall stays at distance, while the road is a world-space surface. The
+    // close market dressing is drawn after the road so its posts and awnings can
+    // overlap the far edge without carrying a second ground plane.
     context.save();
     context.translate(this.cameraOffsetX * 0.25, 0);
     this.drawBackgroundAtmosphere(snapshot);
@@ -251,7 +254,14 @@ export class CanvasRenderer {
 
     context.save();
     context.translate(this.cameraOffsetX, 0);
+    this.drawRoad(snapshot);
     this.drawPlayfieldFocus(snapshot);
+    context.restore();
+
+    this.drawBackgroundForeground();
+
+    context.save();
+    context.translate(this.cameraOffsetX, 0);
     this.drawRoadBounds(snapshot);
     // Furniture goes under the cast: a fighter leaving through the doorway, or
     // filing through a gate, stands in front of what he is passing.
@@ -294,6 +304,43 @@ export class CanvasRenderer {
 
     this.drawOffscreenIndicators(snapshot);
     context.restore();
+  }
+
+  private drawRoad(snapshot: GameSnapshot): void {
+    const road = this.backgrounds.resolveRoad(this.backgroundScenery);
+    if (!road) return;
+
+    const context = this.context;
+    const bounds = roadBounds(snapshot.roadWidth);
+    const roadWidth = bounds.maxX - bounds.minX;
+    const top = 232;
+    const roadHeight = this.height - top;
+
+    context.save();
+    context.beginPath();
+    context.rect(bounds.minX, top, roadWidth, roadHeight);
+    context.clip();
+    context.fillStyle = '#4c4339';
+    context.fillRect(bounds.minX, top, roadWidth, roadHeight);
+
+    if (road.spec.repeatX) {
+      const firstTile = Math.floor(bounds.minX / road.spec.width) * road.spec.width;
+      for (let x = firstTile; x < bounds.maxX; x += road.spec.width) {
+        context.drawImage(road.image, x, top, road.spec.width, roadHeight);
+      }
+    } else {
+      context.drawImage(road.image, bounds.minX, top, roadWidth, roadHeight);
+    }
+    context.restore();
+
+    // A quiet shoulder keeps the perspective tile tied to the existing stage
+    // bounds without flattening the stone texture into a painted rectangle.
+    context.strokeStyle = 'rgba(32,24,19,0.62)';
+    context.lineWidth = 4;
+    context.beginPath();
+    context.moveTo(bounds.minX, top + 2);
+    context.lineTo(bounds.maxX, top + 2);
+    context.stroke();
   }
 
   private drawRoadBounds(snapshot: GameSnapshot): void {
@@ -506,18 +553,23 @@ export class CanvasRenderer {
   }
 
   private drawBackground(snapshot: GameSnapshot): void {
-    const context = this.context;
-    const image = this.backgrounds.resolve(this.backgroundScenery);
-    if (image) {
-      const previous = this.backgrounds.resolve(this.previousBackgroundScenery);
-      if (previous && this.backgroundTransition < 1) {
-        this.drawBackgroundImage(previous, snapshot.time, this.previousBackgroundScenery, 1);
+    const current = this.backgrounds.resolveLayers(this.backgroundScenery, 'back');
+    const previous = this.backgrounds.resolveLayers(this.previousBackgroundScenery, 'back');
+    if (current.length > 0 || previous.length > 0) {
+      this.drawBackgroundBase(snapshot);
+      if (previous.length > 0 && this.backgroundTransition < 1) {
+        this.drawBackgroundLayerSet(this.previousBackgroundScenery, 'back', 1);
       }
       const eased = 1 - Math.pow(1 - this.backgroundTransition, 3);
-      this.drawBackgroundImage(image, snapshot.time, this.backgroundScenery, previous ? eased : 1);
+      this.drawBackgroundLayerSet(
+        this.backgroundScenery,
+        'back',
+        previous.length > 0 ? eased : 1
+      );
       return;
     }
 
+    const context = this.context;
     const gradient = context.createLinearGradient(0, 0, 0, this.height);
     gradient.addColorStop(0, snapshot.bossPhase >= 2 ? '#241c22' : '#6f5a45');
     gradient.addColorStop(0.42, snapshot.bossPhase >= 2 ? '#40302f' : '#ad9270');
@@ -624,16 +676,58 @@ export class CanvasRenderer {
     context.restore();
   }
 
-  private drawBackgroundImage(image: HTMLImageElement, time: number, scenery: SceneryId | null, alpha: number): void {
+  private drawBackgroundBase(snapshot: GameSnapshot): void {
     const context = this.context;
-    const pan = Math.sin(time * 0.18 + sceneryIndexOf(scenery) * 1.7) * 4;
-    // Parallax: the far scenery moves at a fraction of camera speed. The source
-    // art is 1920 px wide and drawn once at its natural aspect, so the widest
-    // stage can never outrun it and no tiling seam appears.
-    const parallax = Math.max(this.cameraOffsetX * 0.35, -(1920 - this.width)) + pan;
+    const sky = context.createLinearGradient(0, 0, 0, 300);
+    sky.addColorStop(0, snapshot.bossPhase >= 2 ? '#252a34' : '#778a98');
+    sky.addColorStop(1, snapshot.bossPhase >= 2 ? '#4a3437' : '#c0ad8d');
+    context.fillStyle = sky;
+    context.fillRect(0, 0, this.width, this.height);
+
+    // Transparent middle and front planes reveal this quiet stage colour. The
+    // road is painted separately below, so no layer has to smuggle in a floor.
+    context.fillStyle = snapshot.bossPhase >= 2 ? '#30282b' : '#51483f';
+    context.fillRect(0, 232, this.width, this.height - 232);
+    context.fillStyle = snapshot.bossPhase >= 2 ? 'rgba(24,18,22,0.34)' : 'rgba(246,223,178,0.16)';
+    context.fillRect(0, 214, this.width, 28);
+  }
+
+  private drawBackgroundForeground(): void {
+    const current = this.backgrounds.resolveLayers(this.backgroundScenery, 'front');
+    const previous = this.backgrounds.resolveLayers(this.previousBackgroundScenery, 'front');
+    if (current.length === 0 && previous.length === 0) return;
+    if (previous.length > 0 && this.backgroundTransition < 1) {
+      this.drawBackgroundLayerSet(this.previousBackgroundScenery, 'front', 1);
+    }
+    const eased = 1 - Math.pow(1 - this.backgroundTransition, 3);
+    this.drawBackgroundLayerSet(
+      this.backgroundScenery,
+      'front',
+      previous.length > 0 ? eased : 1
+    );
+  }
+
+  private drawBackgroundLayerSet(
+    scenery: SceneryId | null,
+    order: BackgroundLayerOrder,
+    alpha: number
+  ): void {
+    if (!scenery || alpha <= 0) return;
+    for (const layer of this.backgrounds.resolveLayers(scenery, order)) {
+      this.drawBackgroundLayer(layer, alpha);
+    }
+  }
+
+  private drawBackgroundLayer(layer: ResolvedBackgroundLayer, alpha: number): void {
+    const context = this.context;
+    const { spec, image } = layer;
+    const travel = Math.max(0, spec.drawWidth - this.width);
+    // cameraOffsetX is negative as the party walks east. Clamping to the
+    // texture's spare width prevents transparent edges from entering the frame.
+    const offsetX = clamp(spec.originX + this.cameraOffsetX * spec.parallax, -travel, 0);
     context.save();
     context.globalAlpha = alpha;
-    context.drawImage(image, parallax - 12, -24, 1920, 1104);
+    context.drawImage(image, offsetX, spec.y, spec.drawWidth, spec.drawHeight);
     context.restore();
   }
 

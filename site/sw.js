@@ -1,4 +1,4 @@
-const CACHE = "infernal-fechtschule-0.1.1-bc51310456";
+const CACHE = "infernal-fechtschule-0.1.1-fcd07a6273";
 const CORE = [
   "./",
   "./assets/art-v2/README.md",
@@ -939,7 +939,10 @@ const CORE = [
   "./assets/art-v2/wretch/claws/wretch_claw/06.webp",
   "./assets/art-v2/wretch/claws/wretch_claw/clip.json",
   "./assets/art/backgrounds/castello.webp",
-  "./assets/art/backgrounds/cobbled-streets.webp",
+  "./assets/art/backgrounds/cobbled-streets-far.webp",
+  "./assets/art/backgrounds/cobbled-streets-front.webp",
+  "./assets/art/backgrounds/cobbled-streets-middle.webp",
+  "./assets/art/backgrounds/cobbled-streets-road.webp",
   "./assets/art/backgrounds/sala-darmi.webp",
   "./assets/art/backgrounds/town-gate.webp",
   "./assets/woodcut-mark.svg",

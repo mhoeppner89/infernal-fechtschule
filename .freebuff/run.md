@@ -133,7 +133,8 @@ correctly proportioned arena, just small.
 ## Regression checks
 
 ```bash
-node --test tests/*.test.mjs                          # 121 unit tests
+node --test tests/*.test.mjs                          # 125 unit tests
+node --test tests/payload-budget.test.mjs             # just the download budget
 npm run measure                                       # bot playthroughs: what each encounter costs
 npm run measure -- --fresh --seeds 5,17,29,41           # a full bar at every wave line, four seeds
 npm run measure -- --seeds 5,17,29,41,53,67,79,91,103,115,127,139   # twelve seeds, campaign mode
@@ -141,3 +142,12 @@ node tools/lesson-flow-verify.mjs                     # live probe against :4174
 node tools/scroll-stage-verify.mjs                    # scrolling-road march probe
 node tools/zone-reaction-verify.mjs                   # per-zone hit reactions probe
 ```
+
+`tests/payload-budget.test.mjs` is the one that watches the *download* rather than the
+game. It walks the same precache list the build writes and holds four things: no art file
+ships that neither the manifest nor the scenery catalogue names (nor the small declared set
+of authored-but-unwired chain variants), every frame and backdrop the game asks for is
+present, a sprite frame stays under 64 KB with a 40 KB mean, and the payload as a whole
+stays under 60 MB / 2200 files. The budgets are guards, not targets — the pathology they
+exist for is a superseded art tree arriving unnoticed, which is how 135 MB of unreachable
+sprites once got into every first load.

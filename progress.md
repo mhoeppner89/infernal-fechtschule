@@ -505,4 +505,38 @@ and a 1920 × 512 field behind it that only shows through gaps.
 not come from the rig has no metadata; the validator checksums it, anchors it, and cross-checks
 every bone against the rig's proportions. Repainting a *rig-blocked* strip keeps the landmarks
 valid, which is the practical argument for posing first and painting second — and the reason
-the brief asks for a metadata refresh mode beside the validator.
+  the brief asks for a metadata refresh mode beside the validator.
+
+# Background layer implementation
+
+- The tapestry direction was superseded by the approved LF2-style 2D stage direction:
+  an opaque far street, transparent middle/front side dressing, and a separate world-space
+  perspective road.
+- The Town now uses `cobbled-streets-far.webp` (1536 × 360 at 0.15× camera),
+  `cobbled-streets-middle.webp` (2304 × 360 at 0.42×), and
+  `cobbled-streets-front.webp` (2560 × 360 at 0.70×). The new
+  `cobbled-streets-road.webp` is one 2172 × 724 continuous street stretch with very dense,
+  small stones that recede and grow toward the viewer; it is drawn once across the full road
+  at world speed, with no scrolling tile seam.
+- `BackgroundCatalog` now preloads layer and road assets, and the renderer cross-fades
+  scene sets while keeping the close layers transparent. The other three places retain their
+  existing single backdrop until their own layered art is approved.
+- Browser preview evidence: all 5 new street assets and all 744 animation assets loaded,
+  with no page errors in the clean preview copy. The latest road strip is the finer
+  small-cobble revision. The full Node suite passes **126/126**.
+
+# Local test build
+
+- Recompiled `src/` into `site/js/` and regenerated the service-worker precache.
+- Started a clean local server at `http://localhost:4176` from the rebuilt checkout.
+- Browser smoke test loaded the first wave, moved Meyer, and accepted a light attack;
+  all 744 animation assets and all 4 background assets reported ready with no console
+  errors. The full Node suite remains **126/126**.
+
+# Road perspective refinement
+
+- Replaced `cobbled-streets-road.webp` with a regenerated 2172 × 724 strip whose cobble
+  scale is anchored to the former upper-half size. The back now shrinks only slightly,
+  and the foreground grows modestly instead of producing a strong size gradient.
+- Rebuilt the service-worker manifest and recaptured the 844 × 390 phone preview. All
+  background and animation assets load cleanly; the full Node suite remains **126/126**.
